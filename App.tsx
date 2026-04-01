@@ -12,6 +12,7 @@ import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
 import AIChat from './components/AIChat';
 import BrandLogo from './components/BrandLogo';
+import { Analytics } from '@vercel/analytics/react';
 import mikeMillerImage from './mike-miller.png';
 import headerImage from './studio set 1 still_1.1.1.png';
 import dfwImage from './studio 2 set still_1.1.2.png';
@@ -476,6 +477,7 @@ const App: React.FC = () => {
           </motion.button>
         )}
       </AnimatePresence>
+      <Analytics />
     </div>
   );
 };
