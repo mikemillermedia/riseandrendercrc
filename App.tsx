@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-
+import PrayerWall from './PrayerWall';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -446,6 +446,7 @@ const App: React.FC = () => {
           >
             Fill out the quick form
           </a>
+          <PrayerWall />
         </div>
       </section>
 
