@@ -4,7 +4,7 @@ import { Send, Heart, Quote, PrayingHands } from 'lucide-react';
 
 // Replace these with your actual Supabase credentials
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function PrayerWall() {
