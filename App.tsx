@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, MapPin, Wrench, HeartHandshake, Video, Globe, ArrowUp
 } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
 import AIChat from './components/AIChat';
@@ -476,6 +477,7 @@ const App: React.FC = () => {
           </motion.button>
         )}
       </AnimatePresence>
+      <SpeedInsights />
     </div>
   );
 };
