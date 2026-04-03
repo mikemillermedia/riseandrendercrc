@@ -1,3 +1,4 @@
+import ProfileTab from './ProfileTab';
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -175,7 +176,7 @@ export default function Hub() {
             </div>
           </div>
         )}
-        {activeTab === 'profile' && <div><h1 className="text-3xl font-black uppercase tracking-widest mb-4">My Profile</h1><p className="text-[#F5F5F0]/60">Profile editor coming soon...</p></div>}
+        {activeTab === 'profile' && <ProfileTab user={user} />}
       </div>
 
     </div>
