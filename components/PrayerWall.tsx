@@ -42,9 +42,10 @@ export default function PrayerWall() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('prayer_requests')
-        .insert([formData]);
+      // Inserting data MUST match your table columns:
+const { error } = await supabase
+  .from('prayer_requests')
+  .insert([{ author_name: myNameVariable, request_text: myRequestVariable }]);
 
       if (error) throw error;
       
