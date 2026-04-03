@@ -55,25 +55,38 @@ const App: React.FC = () => {
       <FluidBackground />
       <AIChat />
 
-      {/* HEADER / NAVBAR */}
+     {/* HEADER / NAVBAR */}
       <div className="fixed top-0 left-0 w-full z-50 bg-[#131313]/90 backdrop-blur-md border-b border-[#F5F5F0]/5 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-           <BrandLogo className="h-14 md:h-16 w-auto" />
+          <BrandLogo className="h-14 md:h-16 w-auto" />
         </div>
-        {/* 1. This is your existing desktop menu */}
-      <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
-          {/* ... your existing desktop buttons ... */}
-      </nav>
 
-      {/* 2. ADD THIS: The subtle mobile hamburger button */}
-      <button 
-        className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+        {/* 1. DESKTOP MENU */}
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
+          <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
+          <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
+          <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
+          <button onClick={() => scrollToSection('prayer')} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
+        </nav>
 
-    </div> {/* <-- This is likely the closing div for your top header bar */}
+        {/* 2. MOBILE HAMBURGER BUTTON */}
+        <button 
+          className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* 3. MOBILE DROPDOWN MENU */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-[76px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-50">
+          <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
+          <button onClick={() => { scrollToSection('resources'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Resources</button>
+          <button onClick={() => { scrollToSection('dfw-studio'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
+          <button onClick={() => { scrollToSection('prayer'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
+        </div>
+      )}
 
     {/* 3. ADD THIS: The actual mobile dropdown menu that appears when clicked */}
     {isMobileMenuOpen && (
