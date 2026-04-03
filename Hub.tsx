@@ -1,4 +1,5 @@
-import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Folder } from 'lucide-react';
+import freeKitImage from './The Content Creator Studio Kit.jpg';
+import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
@@ -91,26 +92,30 @@ export default function Hub() {
 
       {/* Main Content Area */}
       <div className="flex-grow p-6 md:p-12 max-w-5xl mx-auto w-full">
-        {activeTab === 'vault' && (
-       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-         <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">The Vault</h1>
-         <p className="text-[#F5F5F0]/60 mb-8">Download your exclusive assets and templates.</p>
-
-         {/* Free Kit Card */}
-         <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl max-w-sm hover:border-[#ff4d00]/50 transition-colors shadow-xl">
-           <div className="bg-white/5 h-40 rounded-xl mb-6 flex items-center justify-center">
-             <Folder size={48} className="text-[#ff4d00]/80" />
-           </div>
-           <h3 className="text-xl font-bold mb-2 text-white uppercase tracking-wider">Content Creator Kit</h3>
-           <p className="text-sm text-[#F5F5F0]/60 mb-6">The ultimate starter kit for your church's media ministry. Includes templates, assets, and guides.</p>
-
-           {/* Replace the # with your actual Google Drive / Dropbox link! */}
-           <a href="https://checkout.mailerlite.com/checkout/13297" target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-3 px-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
-             <Download size={18} /> Download Kit
-           </a>
-         </div>
-       </div>
-     )}
+      {activeTab === 'vault' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">The Vault</h1>
+            <p className="text-[#F5F5F0]/60 mb-8">Download your exclusive assets and templates.</p>
+            
+            {/* Free Kit Card */}
+            <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl max-w-sm hover:border-[#ff4d00]/50 transition-colors shadow-xl">
+              <div className="bg-black h-40 rounded-xl mb-6 overflow-hidden flex items-center justify-center border border-[#F5F5F0]/5">
+                <img 
+                  src={freeKitImage} 
+                  alt="Content Creator Kit" 
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white uppercase tracking-wider">Content Creator Kit</h3>
+              <p className="text-sm text-[#F5F5F0]/60 mb-6">The ultimate starter kit for your church's media ministry. Includes templates, assets, and guides.</p>
+              
+              {/* Replace the # with your actual Google Drive / Dropbox link! */}
+              <a href="#" target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-3 px-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
+                <Download size={18} /> Download Kit
+              </a>
+            </div>
+          </div>
+        )}
         {activeTab === 'prayer' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Prayer Wall</h1>
