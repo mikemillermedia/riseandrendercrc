@@ -2,6 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
+import { useNavigate } from 'react-router-dom';
 import PrayerWall from './components/PrayerWall';
 import { Send, Heart, Quote, Menu, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
