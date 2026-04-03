@@ -132,7 +132,7 @@ export default function Hub() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Prayer Wall</h1>
             <p className="text-[#F5F5F0]/60 mb-8">Bear one another's burdens.</p>
-            <PrayerWall />
+            <PrayerWall user={user} />
           </div>
         )}
         
