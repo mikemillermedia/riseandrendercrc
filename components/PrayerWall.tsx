@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, Heart, Quote, PrayingHands } from 'lucide-react';
+import { Send, Heart, Quote, } from 'lucide-react';
 
 // Replace these with your actual Supabase credentials
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
