@@ -62,6 +62,7 @@ const App: React.FC = () => {
           <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
+          <button onClick={() => scrollToSection('prayer')} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
         </nav>
         <a 
           href={TALLY_FORM_URL}
