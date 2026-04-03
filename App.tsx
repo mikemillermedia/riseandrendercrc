@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import PrayerWall from './components/PrayerWall';
+import { Send, Heart, Quote, Menu, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -23,6 +24,7 @@ const TALLY_FORM_URL = "https://tally.so/r/J90Nez";
 
 const App: React.FC = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,6 +60,30 @@ const App: React.FC = () => {
         <div className="flex items-center gap-3">
            <BrandLogo className="h-14 md:h-16 w-auto" />
         </div>
+        {/* 1. This is your existing desktop menu */}
+      <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
+          {/* ... your existing desktop buttons ... */}
+      </nav>
+
+      {/* 2. ADD THIS: The subtle mobile hamburger button */}
+      <button 
+        className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+    </div> {/* <-- This is likely the closing div for your top header bar */}
+
+    {/* 3. ADD THIS: The actual mobile dropdown menu that appears when clicked */}
+    {isMobileMenuOpen && (
+      <div className="md:hidden absolute top-full left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-50">
+        <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
+        <button onClick={() => { scrollToSection('resources'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Resources</button>
+        <button onClick={() => { scrollToSection('dfw-studio'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
+        <button onClick={() => { scrollToSection('prayer'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
+      </div>
+    )}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
           <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
