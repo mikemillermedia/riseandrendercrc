@@ -99,6 +99,7 @@ const App: React.FC = () => {
           Join
         </a>
       </div>
+    )}
 
       {/* HERO SECTION */}
       <section className="relative pt-48 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
