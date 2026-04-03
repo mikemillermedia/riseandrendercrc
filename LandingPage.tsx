@@ -20,11 +20,10 @@ import freeKitImage from './The Content Creator Studio Kit.jpg';
 
 // Easter Eggs
 
-const TALLY_FORM_URL = "https://tally.so/r/J90Nez";
-
 const LandingPage: React.FC = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,19 +67,16 @@ const LandingPage: React.FC = () => {
           <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
-          <button onClick={() => scrollToSection('prayer')} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
         </nav>
 
         {/* Right Side: Join Button & Mobile Toggle */}
         <div className="flex items-center gap-4">
-          <a 
-            href={TALLY_FORM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button 
+            onClick={() => navigate('/login')}
             className="bg-[#ff4d00] text-[#131313] text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg shadow-orange-900/20 hover:scale-105 transition-transform"
           >
             Join
-          </a>
+          </button>
 
           <button 
             className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
@@ -97,7 +93,6 @@ const LandingPage: React.FC = () => {
           <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => { scrollToSection('resources'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => { scrollToSection('dfw-studio'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
-          <button onClick={() => { scrollToSection('prayer'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
         </div>
       )}
       
@@ -127,14 +122,9 @@ const LandingPage: React.FC = () => {
           A community for Creatives Representing Christ focusing on tech, gear, and elevating your content.
         </p>
 
-        <a 
-          href={TALLY_FORM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#ff4d00] text-[#131313] px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl shadow-orange-900/30 flex items-center gap-3"
-        >
-          Join the Waitlist <ArrowRight className="w-5 h-5" />
-        </a>
+        <button onClick={() => navigate('/login')} className="...">
+  Join Now
+</button>
       </section>
 
       {/* WHY WE EXIST SECTION */}
@@ -244,14 +234,9 @@ const LandingPage: React.FC = () => {
           </p>
 
           <div className="flex justify-center">
-            <a 
-              href={TALLY_FORM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#ff4d00] text-[#131313] px-10 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-lg shadow-orange-900/20 inline-block"
-            >
-              Get Access
-            </a>
+            <button onClick={() => navigate('/login')} className="...">
+  Join Now
+</button>
           </div>
         </div>
       </section>
@@ -466,14 +451,9 @@ const LandingPage: React.FC = () => {
             Have a say in how this community takes shape. Be the first to know when doors open.
           </p>
           
-          <a 
-            href={TALLY_FORM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-[#131313] text-[#F5F5F0] px-12 py-6 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-black transition-all shadow-2xl inline-block"
-          >
-           Fill out the quick form
-    </a>
+          <button onClick={() => navigate('/login')} className="...">
+  Join Now
+</button>
     
     <div id="prayer">
       <PrayerWall />
