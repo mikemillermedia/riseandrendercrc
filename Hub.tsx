@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder } from 'lucide-react';
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
+import CommunityChat from './CommunityChat';
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -135,7 +136,7 @@ export default function Hub() {
           </div>
         )}
         
-        {activeTab === 'chat' && <div><h1 className="text-3xl font-black uppercase tracking-widest mb-4">Community Chat</h1><p className="text-[#F5F5F0]/60">Live chat coming soon...</p></div>}
+      {activeTab === 'chat' && <CommunityChat user={user} />}
         
         {activeTab === 'setups' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
