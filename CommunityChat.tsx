@@ -13,195 +13,164 @@ export default function CommunityChat({ user }: { user: any }) {
   const [posting, setPosting] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  
-  // NEW: State to hold the logged-in user's avatar for the input box
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
+  const [openCommentId, setOpenCommentId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
     fetchPosts();
     fetchCurrentUserAvatar();
   }, []);
 
-  // NEW: Fetch the logged-in user's face
   const fetchCurrentUserAvatar = async () => {
     const { data } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single();
     if (data) setCurrentUserAvatar(data.avatar_url);
   };
 
   const fetchPosts = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('posts')
-      .select(`*, profiles (first_name, last_name, instagram_url, avatar_url)`)
+      .select(`
+        *,
+        profiles (first_name, last_name, instagram_url, avatar_url),
+        post_likes (user_id),
+        comments (*, profiles (first_name, last_name, avatar_url))
+      `)
       .order('created_at', { ascending: false });
     
     if (data) setPosts(data);
     setLoading(false);
   };
 
-  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setMediaFile(file);
-      setMediaPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const removeMedia = () => {
-    setMediaFile(null);
-    setMediaPreview(null);
-  };
-
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim() && !mediaFile) return; 
     setPosting(true);
-
     let media_url = null;
 
     if (mediaFile) {
-      const fileExt = mediaFile.name.split('.').pop();
-      const fileName = `chat_${user.id}_${Math.random()}.${fileExt}`;
+      const fileName = `chat_${user.id}_${Math.random()}`;
       const { error: uploadError } = await supabase.storage.from('setups').upload(fileName, mediaFile);
-      
       if (!uploadError) {
         const { data: { publicUrl } } = supabase.storage.from('setups').getPublicUrl(fileName);
         media_url = publicUrl;
       }
     }
 
-    const { error } = await supabase.from('posts').insert([
-      { user_id: user.id, content: newPost.trim(), media_url: media_url }
-    ]);
-
-    if (!error) {
-      setNewPost('');
-      removeMedia();
-      fetchPosts(); 
-    }
+    await supabase.from('posts').insert([{ user_id: user.id, content: newPost.trim(), media_url }]);
+    setNewPost('');
+    setMediaFile(null);
+    setMediaPreview(null);
+    fetchPosts();
     setPosting(false);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const toggleLike = async (postId: string, currentLikes: any[]) => {
+    const isLiked = currentLikes.some(like => like.user_id === user.id);
+    if (isLiked) {
+      await supabase.from('post_likes').delete().match({ post_id: postId, user_id: user.id });
+    } else {
+      await supabase.from('post_likes').insert([{ post_id: postId, user_id: user.id }]);
+    }
+    fetchPosts();
   };
 
-  const isVideo = (url: string) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
+  const submitComment = async (postId: string) => {
+    if (!commentText.trim()) return;
+    await supabase.from('comments').insert([{ post_id: postId, user_id: user.id, content: commentText.trim() }]);
+    setCommentText('');
+    fetchPosts();
+  };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
-      
-      {/* Threads-style Input Box */}
-      <div className="bg-[#131313] border border-[#F5F5F0]/10 p-4 md:p-6 rounded-2xl shadow-xl mb-8">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto pb-20">
+      {/* Input Box Code (Existing) */}
+      <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-xl mb-8">
         <form onSubmit={handlePost} className="flex gap-4">
-          
-          {/* USER'S AVATAR IN THE INPUT BOX */}
-          <div className="w-10 h-10 rounded-full bg-white/5 flex-shrink-0 border border-[#F5F5F0]/10 flex items-center justify-center overflow-hidden">
-            {currentUserAvatar ? (
-               <img src={currentUserAvatar} alt="Your Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User size={20} className="text-[#F5F5F0]/40" />
-            )}
+          <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden">
+            {currentUserAvatar ? <img src={currentUserAvatar} className="w-full h-full object-cover" /> : <User className="p-2 text-white/20" />}
           </div>
-
-          <div className="flex-grow flex flex-col">
+          <div className="flex-grow">
             <input 
-              type="text"
-              placeholder="Start a thread or share an image..."
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              className="w-full bg-transparent border-none text-[#F5F5F0] placeholder:text-[#F5F5F0]/40 focus:outline-none focus:ring-0 text-base md:text-lg pt-1.5"
+              value={newPost} 
+              onChange={e => setNewPost(e.target.value)} 
+              placeholder="Start a thread..." 
+              className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-lg"
             />
-            
-            {mediaPreview && (
-              <div className="mt-4 relative inline-block w-fit">
-                <button type="button" onClick={removeMedia} className="absolute -top-2 -right-2 bg-[#131313] border border-[#F5F5F0]/20 text-white rounded-full p-1 hover:bg-[#ff4d00] transition-colors z-10"><X size={14} /></button>
-                {mediaFile?.type.startsWith('video/') ? (
-                  <video src={mediaPreview} className="max-h-64 rounded-xl border border-[#F5F5F0]/10" />
-                ) : (
-                  <img src={mediaPreview} alt="Preview" className="max-h-64 rounded-xl border border-[#F5F5F0]/10 object-contain" />
-                )}
-              </div>
-            )}
-
-            <div className="flex justify-between items-center mt-4">
-              <label className="text-[#F5F5F0]/40 hover:text-[#ff4d00] cursor-pointer p-2 -ml-2 rounded-full hover:bg-[#ff4d00]/10 transition-colors" title="Attach Image or Video">
-                <ImageIcon size={20} />
-                <input type="file" accept="image/*,video/*" onChange={handleMediaSelect} className="hidden" />
-              </label>
-              
-              <button type="submit" disabled={posting || (!newPost.trim() && !mediaFile)} className="bg-[#F5F5F0] text-[#131313] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white font-bold py-1.5 px-5 rounded-full text-sm transition-colors">
-                {posting ? 'Posting...' : 'Post'}
-              </button>
+            {mediaPreview && <img src={mediaPreview} className="mt-4 rounded-xl max-h-64" />}
+            <div className="flex justify-between mt-4">
+               <label className="cursor-pointer text-white/40 hover:text-[#ff4d00] transition-colors">
+                 <ImageIcon size={20} /><input type="file" className="hidden" onChange={e => {
+                   if (e.target.files?.[0]) {
+                     setMediaFile(e.target.files[0]);
+                     setMediaPreview(URL.createObjectURL(e.target.files[0]));
+                   }
+                 }} />
+               </label>
+               <button type="submit" className="bg-[#F5F5F0] text-black px-6 py-1.5 rounded-full font-bold text-sm">Post</button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* The Feed */}
+      {/* Feed */}
       <div className="space-y-0">
-        {loading ? (
-           <div className="text-[#F5F5F0]/60 animate-pulse text-center py-12">Loading threads...</div>
-        ) : posts.length > 0 ? (
-          posts.map((post) => (
-            <div key={post.id} className="flex gap-3 md:gap-4 py-5 border-b border-[#F5F5F0]/10 hover:bg-white/[0.02] px-2 transition-colors -mx-2 rounded-xl">
-              
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-white/5 flex-shrink-0 border border-[#F5F5F0]/10 flex items-center justify-center overflow-hidden">
-                  {post.profiles?.avatar_url ? (
-                     <img src={post.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={20} className="text-[#F5F5F0]/40" />
+        {posts.map((post) => {
+          const isLiked = post.post_likes?.some((l: any) => l.user_id === user.id);
+          return (
+            <div key={post.id} className="py-6 border-b border-white/5">
+              <div className="flex gap-4 px-2">
+                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0">
+                  <img src={post.profiles?.avatar_url} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-grow min-w-0">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-sm">{post.profiles?.first_name} {post.profiles?.last_name}</h3>
+                    <span className="text-xs text-white/30">Just now</span>
+                  </div>
+                  <p className="text-[#F5F5F0]/90 mt-1">{post.content}</p>
+                  {post.media_url && <img src={post.media_url} className="mt-3 rounded-xl border border-white/5 max-h-96" />}
+                  
+                  {/* Action Bar */}
+                  <div className="flex gap-6 mt-4 text-white/40">
+                    <button onClick={() => toggleLike(post.id, post.post_likes)} className={`flex items-center gap-1.5 hover:text-red-500 transition-colors ${isLiked ? 'text-red-500' : ''}`}>
+                      <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+                      <span className="text-xs">{post.post_likes?.length || 0}</span>
+                    </button>
+                    <button onClick={() => setOpenCommentId(openCommentId === post.id ? null : post.id)} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                      <MessageCircle size={20} />
+                      <span className="text-xs">{post.comments?.length || 0}</span>
+                    </button>
+                  </div>
+
+                  {/* Comments Section */}
+                  {openCommentId === post.id && (
+                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+                      {post.comments?.map((c: any) => (
+                        <div key={c.id} className="flex gap-3 items-start">
+                          <img src={c.profiles?.avatar_url} className="w-6 h-6 rounded-full object-cover" />
+                          <div className="bg-white/5 p-3 rounded-2xl flex-grow">
+                            <p className="text-xs font-bold">{c.profiles?.first_name}</p>
+                            <p className="text-sm text-white/80">{c.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex gap-2">
+                        <input 
+                          value={commentText} 
+                          onChange={e => setCommentText(e.target.value)}
+                          placeholder="Reply..." 
+                          className="flex-grow bg-white/5 border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-[#ff4d00]"
+                        />
+                        <button onClick={() => submitComment(post.id)} className="text-[#ff4d00] font-bold text-sm px-2">Send</button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
-
-              <div className="flex-grow min-w-0">
-                <div className="flex items-baseline justify-between mb-0.5">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-white text-sm md:text-base leading-none">
-                      {post.profiles?.first_name || 'CRC'} {post.profiles?.last_name || 'Member'}
-                    </h3>
-                    {post.profiles?.instagram_url && (
-                       <span className="text-xs text-[#F5F5F0]/40 hidden md:inline">
-                         @{post.profiles.instagram_url.split('/').filter(Boolean).pop()}
-                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-[#F5F5F0]/40 text-xs">
-                    <span>{formatDate(post.created_at)}</span>
-                    <button className="hover:text-white transition-colors"><MoreHorizontal size={16} /></button>
-                  </div>
-                </div>
-
-                {post.content && (
-                  <p className="text-[#F5F5F0]/90 text-sm md:text-base mt-1 whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
-                )}
-
-                {post.media_url && (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-[#F5F5F0]/10 w-fit max-w-full">
-                    {isVideo(post.media_url) ? (
-                      <video src={post.media_url} controls className="max-h-96 w-full object-contain bg-black" />
-                    ) : (
-                      <img src={post.media_url} alt="Attachment" className="max-h-96 w-full object-contain" />
-                    )}
-                  </div>
-                )}
-
-                <div className="flex gap-5 mt-3 text-[#F5F5F0]/40">
-                  <button className="hover:text-[#ff4d00] hover:bg-[#ff4d00]/10 p-1.5 rounded-full transition-all"><Heart size={18} /></button>
-                  <button className="hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all"><MessageCircle size={18} /></button>
-                  <button className="hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all"><Send size={18} /></button>
-                </div>
-              </div>
-
             </div>
-          ))
-        ) : (
-          <div className="text-[#F5F5F0]/60 border border-dashed border-[#F5F5F0]/20 p-12 rounded-2xl text-center">
-            No threads yet. Be the first to start a conversation!
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );
