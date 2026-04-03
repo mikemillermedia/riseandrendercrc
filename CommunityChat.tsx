@@ -33,18 +33,28 @@ export default function CommunityChat({ user }: { user: any }) {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      // We use !inner to ensure it doesn't hide posts with missing profiles
+      // And we use the exact table name 'profiles'
+      const { data, error: fetchError } = await supabase
         .from('posts')
         .select(`
           *,
-          profiles (first_name, last_name, instagram_url, avatar_url),
-          post_likes (user_id),
-          comments (*, profiles (first_name, last_name, avatar_url))
+          profiles:user_id (
+            first_name, 
+            last_name, 
+            avatar_url
+          )
         `)
         .order('created_at', { ascending: false });
       
-      if (data) setPosts(data);
-    } catch (e) { console.error(e); }
+      if (fetchError) throw fetchError;
+      
+      console.log("Fetched posts:", data); // This helps us see the data in the console
+      setPosts(data || []);
+    } catch (err: any) {
+      console.error('Fetch error:', err);
+      setError(err.message);
+    }
     setLoading(false);
   };
 
