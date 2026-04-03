@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, Heart, Quote } from 'lucide-react';
+import { Send, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -9,6 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export default function PrayerWall() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false); // Controls the dropdown
   const [formData, setFormData] = useState({ author_name: '', request_text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +48,7 @@ export default function PrayerWall() {
       if (error) throw error;
       setFormData({ author_name: '', request_text: '' });
       fetchRequests();
+      setIsOpen(true); // Open the list automatically after posting
     } catch (error) {
       alert('Error sharing prayer request.');
     } finally {
@@ -55,17 +57,17 @@ export default function PrayerWall() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans antialiased text-[#0D0D0D]">
+    <div className="min-h-screen bg-[#0D0D0D] font-sans antialiased text-white pb-20">
       
-      {/* --- SECTION 1: DARK FORM CARD --- */}
-      <section className="px-4 py-12">
-        <div className="max-w-4xl mx-auto bg-[#0D0D0D] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 shadow-2xl">
+      {/* --- FORM SECTION (Dark Hero Card) --- */}
+      <section className="px-4 pt-12 pb-6">
+        <div className="max-w-4xl mx-auto bg-[#141414] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 shadow-2xl border-none">
           <div className="text-center mb-10">
-            <h2 className="text-white text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4 leading-none">
-              PRAYER <span className="text-[#FF5106]">WALL</span>
+            <h2 className="text-white text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4 leading-none italic">
+              PRAYER <span className="text-[#FF5106] not-italic">WALL</span>
             </h2>
-            <p className="text-zinc-400 text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
-              Need us to come to you? Share your heart and join our community of prayer.
+            <p className="text-zinc-400 text-lg md:text-xl max-w-lg mx-auto leading-relaxed font-medium">
+              Join the Creatives Representing Christ (CRC) community in lifting each other up.
             </p>
           </div>
 
@@ -74,7 +76,7 @@ export default function PrayerWall() {
               type="text"
               required
               placeholder="YOUR NAME"
-              className="w-full bg-[#1A1A1A] text-white border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#FF5106] outline-none uppercase font-bold tracking-widest text-sm placeholder:text-zinc-600"
+              className="w-full bg-[#0D0D0D] text-white border-none rounded-2xl py-5 px-6 focus:ring-2 focus:ring-[#FF5106] outline-none uppercase font-black tracking-widest text-xs placeholder:text-zinc-700 transition-all"
               value={formData.author_name}
               onChange={(e) => setFormData({...formData, author_name: e.target.value})}
             />
@@ -82,15 +84,15 @@ export default function PrayerWall() {
               required
               rows="4"
               placeholder="HOW CAN WE PRAY FOR YOU?"
-              className="w-full bg-[#1A1A1A] text-white border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#FF5106] outline-none font-medium text-lg placeholder:text-zinc-600"
+              className="w-full bg-[#0D0D0D] text-white border-none rounded-2xl py-5 px-6 focus:ring-2 focus:ring-[#FF5106] outline-none font-medium text-lg placeholder:text-zinc-700 transition-all"
               value={formData.request_text}
               onChange={(e) => setFormData({...formData, request_text: e.target.value})}
             />
-            <div className="text-center">
+            <div className="text-center pt-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-[#FF5106] hover:bg-[#e64a05] text-white font-black uppercase tracking-widest px-10 py-5 rounded-2xl transition-all active:scale-95 shadow-lg shadow-[#FF5106]/20 disabled:opacity-50"
+                className="bg-[#FF5106] hover:bg-[#FF6A2B] text-white font-black uppercase tracking-[0.2em] text-xs px-12 py-6 rounded-2xl transition-all active:scale-95 shadow-xl shadow-[#FF5106]/10 disabled:opacity-50"
               >
                 {isSubmitting ? 'SENDING...' : 'REQUEST PRAYER'}
               </button>
@@ -99,56 +101,58 @@ export default function PrayerWall() {
         </div>
       </section>
 
-      {/* --- SECTION 2: LIGHT PRAYER FEED --- */}
-      <section className="px-4 py-12">
-        <div className="max-w-4xl mx-auto bg-[#F3F4F6] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 border border-zinc-100">
-          <div className="text-center mb-12">
-            <h2 className="text-[#0D0D0D] text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">
-              COMMUNITY <span className="text-[#FF5106]">FEED</span>
-            </h2>
-          </div>
+      {/* --- DROPDOWN TOGGLE BUTTON --- */}
+      <div className="max-w-4xl mx-auto px-4 mt-8 text-center">
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="group flex items-center justify-center gap-4 w-full md:w-auto mx-auto bg-[#141414] hover:bg-[#1A1A1A] text-white font-black uppercase tracking-[0.2em] text-[10px] px-10 py-6 rounded-full transition-all border border-zinc-800/50"
+        >
+          {isOpen ? 'CLOSE PRAYER WALL' : 'VIEW COMMUNITY PRAYERS'}
+          {isOpen ? <ChevronUp className="w-4 h-4 text-[#FF5106]" /> : <ChevronDown className="w-4 h-4 text-[#FF5106]" />}
+        </button>
+      </div>
 
-          <div className="grid grid-cols-1 gap-6">
+      {/* --- COMMUNITY FEED (Dropdown Content) --- */}
+      <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isOpen ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <section className="px-4 py-12">
+          <div className="max-w-4xl mx-auto space-y-4">
             {loading ? (
-              <p className="text-center py-10 font-bold uppercase tracking-widest text-zinc-400">Loading Prayers...</p>
+              <p className="text-center py-10 font-black uppercase tracking-widest text-zinc-600 text-xs italic">Loading...</p>
             ) : requests.length > 0 ? (
               requests.map((prayer) => (
                 <div 
                   key={prayer.id} 
-                  className="bg-white rounded-[2rem] p-8 shadow-sm border border-zinc-200/50 hover:shadow-md transition-shadow relative overflow-hidden group"
+                  className="bg-[#141414] rounded-[2rem] p-8 border border-zinc-900/50 hover:border-[#FF5106]/30 transition-all group"
                 >
-                  {/* Subtle Accent Line */}
-                  <div className="absolute top-0 left-0 w-2 h-full bg-[#FF5106] opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="bg-[#0D0D0D] text-white px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="text-[#FF5106] text-[10px] font-black uppercase tracking-[0.3em]">
                       {prayer.author_name}
-                    </div>
-                    <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                    </span>
+                    <span className="text-zinc-600 text-[10px] font-bold uppercase">
                       {new Date(prayer.created_at).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <p className="text-zinc-800 text-xl md:text-2xl font-bold leading-tight tracking-tight mb-8 italic">
+                  <p className="text-zinc-200 text-xl md:text-2xl font-bold leading-tight tracking-tight italic mb-8">
                     "{prayer.request_text}"
                   </p>
                   
-                  <div className="pt-6 border-t border-zinc-50 flex justify-end">
-                    <button className="flex items-center gap-2 text-zinc-300 hover:text-[#FF5106] transition-colors font-black uppercase tracking-tighter text-xs">
-                      <Heart className="w-5 h-5 fill-current" />
-                      I'M PRAYING
+                  <div className="flex justify-start">
+                    <button className="flex items-center gap-2 text-zinc-500 hover:text-[#FF5106] transition-colors font-black uppercase tracking-widest text-[9px]">
+                      <Heart className="w-4 h-4 fill-current" />
+                      STAYING IN PRAYER
                     </button>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-20 bg-white/50 rounded-[2rem] border border-dashed border-zinc-300">
-                <p className="text-zinc-400 font-bold uppercase tracking-widest">No requests yet.</p>
+              <div className="text-center py-20 bg-[#141414] rounded-[2rem] border border-dashed border-zinc-800">
+                <p className="text-zinc-600 font-bold uppercase tracking-widest text-xs">No community requests yet.</p>
               </div>
             )}
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
