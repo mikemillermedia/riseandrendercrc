@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import { useNavigate } from 'react-router-dom';
-import PrayerWall from './components/PrayerWall';
 import { Send, Heart, Quote, Menu, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,7 +16,6 @@ import BrandLogo from './components/BrandLogo';
 import mikeMillerImage from './mike-miller.png';
 import headerImage from './studio set 1 still_1.1.1.png';
 import dfwImage from './studio 2 set still_1.1.2.png';
-import freeKitImage from './The Content Creator Studio Kit.jpg';
 
 // Easter Eggs
 
@@ -242,37 +240,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* FREE KIT SECTION */}
-      <section className="py-20 bg-[#131313] border-t border-[#F5F5F0]/5 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-6 relative z-10">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
-            <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
-              <h2 className="text-3xl md:text-5xl font-bold mb-8 text-[#F5F5F0]">
-                Free Kit
-              </h2>
-              <img 
-                src={freeKitImage} 
-                alt="The Content Creator Studio Kit" 
-                className="w-full max-w-sm rounded-[2rem] shadow-2xl"
-              />
-            </div>
-            <div className="w-full md:w-1/2 text-left md:pt-20">
-              <p className="text-xl text-[#F5F5F0]/80 mb-8 leading-relaxed">
-                Don't let gear confusion keep you invisible. I created the Content Creator Studio Kit to give you a proven blueprint for a polished video presence. Click the button to get instant access to the guide.
-              </p>
-              <a 
-                href="https://checkout.mailerlite.com/checkout/13297"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block border-2 border-[#ff4d00] text-[#ff4d00] px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#ff4d00] hover:text-[#131313] transition-colors"
-              >
-                Get Your Free Kit
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* DFW STUDIO & SETUP OPTIONS SECTION */}
       <section id="dfw-studio" className="py-32 bg-[#F5F5F0] text-[#131313] border-t border-[#131313]/5 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
@@ -455,10 +422,6 @@ const LandingPage: React.FC = () => {
           <button onClick={() => navigate('/login')} className="...">
   Join Now
 </button>
-    
-    <div id="prayer">
-      <PrayerWall />
-    </div>
 
   </div>
 </section>
