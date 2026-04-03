@@ -444,11 +444,15 @@ const App: React.FC = () => {
             rel="noopener noreferrer"
             className="bg-[#131313] text-[#F5F5F0] px-12 py-6 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-black transition-all shadow-2xl inline-block"
           >
-            Fill out the quick form
-          </a>
-          <PrayerWall />
-        </div>
-      </section>
+           Fill out the quick form
+    </a>
+    
+    <div id="prayer">
+      <PrayerWall />
+    </div>
+
+  </div>
+</section>
 
       {/* FOOTER / CTA */}
       <footer className="py-12 bg-[#131313] border-t border-[#F5F5F0]/5 relative overflow-hidden">
