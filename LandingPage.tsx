@@ -55,13 +55,15 @@ const LandingPage: React.FC = () => {
       <FluidBackground />
       <AIChat />
 
-     {/* HEADER / NAVBAR */}
+{/* HEADER / NAVBAR */}
       <div className="fixed top-0 left-0 w-full z-50 bg-[#131313]/90 backdrop-blur-md border-b border-[#F5F5F0]/5 px-6 py-4 flex justify-between items-center">
+        
+        {/* Logo */}
         <div className="flex items-center gap-3">
           <BrandLogo className="h-14 md:h-16 w-auto" />
         </div>
 
-        {/* 1. DESKTOP MENU */}
+        {/* Desktop Menu */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
           <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
@@ -69,52 +71,36 @@ const LandingPage: React.FC = () => {
           <button onClick={() => scrollToSection('prayer')} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
         </nav>
 
-        {/* 2. MOBILE HAMBURGER BUTTON */}
-        <button 
-          className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Right Side: Join Button & Mobile Toggle */}
+        <div className="flex items-center gap-4">
+          <a 
+            href={TALLY_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#ff4d00] text-[#131313] text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg shadow-orange-900/20 hover:scale-105 transition-transform"
+          >
+            Join
+          </a>
+
+          <button 
+            className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
-      {/* 3. MOBILE DROPDOWN MENU */}
+      {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-[76px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-50">
+        <div className="md:hidden fixed top-[72px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-40">
           <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => { scrollToSection('resources'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => { scrollToSection('dfw-studio'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
           <button onClick={() => { scrollToSection('prayer'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
         </div>
       )}
-
-    {/* 3. ADD THIS: The actual mobile dropdown menu that appears when clicked */}
-    {isMobileMenuOpen && (
-      <div className="md:hidden absolute top-full left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-50">
-        <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
-        <button onClick={() => { scrollToSection('resources'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Resources</button>
-        <button onClick={() => { scrollToSection('dfw-studio'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
-        <button onClick={() => { scrollToSection('prayer'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
-      </div>
-    )}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
-          <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
-          <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
-          <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
-          <button onClick={() => scrollToSection('prayer')} className="hover:text-[#ff4d00] transition-colors">Prayer</button>
-        </nav>
       
-        <a 
-          href={TALLY_FORM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#ff4d00] text-[#131313] text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg shadow-orange-900/20 hover:scale-105 transition-all"
-        >
-          Join
-        </a>
-      </div>
-    )}
-
       {/* HERO SECTION */}
       <section className="relative pt-48 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
         <motion.div
