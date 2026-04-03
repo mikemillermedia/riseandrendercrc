@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, Heart, Quote, } from 'lucide-react';
+import { Send, Heart, Quote } from 'lucide-react';
 
-// Replace these with your actual Supabase credentials
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function PrayerWall() {
@@ -14,14 +12,12 @@ export default function PrayerWall() {
   const [formData, setFormData] = useState({ author_name: '', request_text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Fetch Requests
   const fetchRequests = async () => {
     try {
       const { data, error } = await supabase
         .from('prayer_requests')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setRequests(data);
     } catch (error) {
@@ -35,118 +31,124 @@ export default function PrayerWall() {
     fetchRequests();
   }, []);
 
-  // 2. Handle Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.author_name || !formData.request_text) return;
 
     setIsSubmitting(true);
     try {
-      // Inserting data MUST match your table columns:
-const { error } = await supabase
-  .from('prayer_requests')
-  .insert([{ author_name: myNameVariable, request_text: myRequestVariable }]);
+      const { error } = await supabase
+        .from('prayer_requests')
+        .insert([{ 
+            author_name: formData.author_name, 
+            request_text: formData.request_text 
+        }]);
 
       if (error) throw error;
-      
       setFormData({ author_name: '', request_text: '' });
-      fetchRequests(); // Refresh list
+      fetchRequests();
     } catch (error) {
-      alert('Error sharing prayer request. Please try again.');
+      alert('Error sharing prayer request.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-serif font-medium text-slate-800 mb-2">Prayer Wall</h1>
-          <p className="text-slate-500 italic">"Bear one another's burdens, and so fulfill the law of Christ."</p>
-        </div>
+    <div className="min-h-screen bg-white font-sans antialiased text-[#0D0D0D]">
+      
+      {/* --- SECTION 1: DARK FORM CARD --- */}
+      <section className="px-4 py-12">
+        <div className="max-w-4xl mx-auto bg-[#0D0D0D] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 shadow-2xl">
+          <div className="text-center mb-10">
+            <h2 className="text-white text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4 leading-none">
+              PRAYER <span className="text-[#FF5106]">WALL</span>
+            </h2>
+            <p className="text-zinc-400 text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
+              Need us to come to you? Share your heart and join our community of prayer.
+            </p>
+          </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-16 transition-all hover:shadow-md">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Your Name</label>
-              <input
-                type="text"
-                required
-                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                placeholder="John D."
-                value={formData.author_name}
-                onChange={(e) => setFormData({...formData, author_name: e.target.value})}
-              />
+          <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+            <input
+              type="text"
+              required
+              placeholder="YOUR NAME"
+              className="w-full bg-[#1A1A1A] text-white border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#FF5106] outline-none uppercase font-bold tracking-widest text-sm placeholder:text-zinc-600"
+              value={formData.author_name}
+              onChange={(e) => setFormData({...formData, author_name: e.target.value})}
+            />
+            <textarea
+              required
+              rows="4"
+              placeholder="HOW CAN WE PRAY FOR YOU?"
+              className="w-full bg-[#1A1A1A] text-white border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#FF5106] outline-none font-medium text-lg placeholder:text-zinc-600"
+              value={formData.request_text}
+              onChange={(e) => setFormData({...formData, request_text: e.target.value})}
+            />
+            <div className="text-center">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-[#FF5106] hover:bg-[#e64a05] text-white font-black uppercase tracking-widest px-10 py-5 rounded-2xl transition-all active:scale-95 shadow-lg shadow-[#FF5106]/20 disabled:opacity-50"
+              >
+                {isSubmitting ? 'SENDING...' : 'REQUEST PRAYER'}
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">How can we pray for you?</label>
-              <textarea
-                required
-                rows="3"
-                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                placeholder="Share your heart..."
-                value={formData.request_text}
-                onChange={(e) => setFormData({...formData, request_text: e.target.value})}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center justify-center w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-full transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Sharing...' : (
-                <>
-                  Share Request <Send className="ml-2 w-4 h-4" />
-                </>
-              )}
-            </button>
           </form>
         </div>
+      </section>
 
-        {/* Prayers Feed */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {loading ? (
-            <div className="col-span-full text-center text-slate-400 py-10 text-lg">Loading prayers...</div>
-          ) : requests.length > 0 ? (
-            requests.map((prayer) => (
-              <div 
-                key={prayer.id} 
-                className="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-all duration-300 relative overflow-hidden"
-              >
-                {/* Decorative Quote Icon */}
-                <Quote className="absolute -top-2 -right-2 w-12 h-12 text-slate-50 group-hover:text-indigo-50 transition-colors" />
-                
-                <div className="relative">
-                  <p className="text-slate-700 leading-relaxed mb-6 font-light text-lg italic">
+      {/* --- SECTION 2: LIGHT PRAYER FEED --- */}
+      <section className="px-4 py-12">
+        <div className="max-w-4xl mx-auto bg-[#F3F4F6] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 border border-zinc-100">
+          <div className="text-center mb-12">
+            <h2 className="text-[#0D0D0D] text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+              COMMUNITY <span className="text-[#FF5106]">FEED</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {loading ? (
+              <p className="text-center py-10 font-bold uppercase tracking-widest text-zinc-400">Loading Prayers...</p>
+            ) : requests.length > 0 ? (
+              requests.map((prayer) => (
+                <div 
+                  key={prayer.id} 
+                  className="bg-white rounded-[2rem] p-8 shadow-sm border border-zinc-200/50 hover:shadow-md transition-shadow relative overflow-hidden group"
+                >
+                  {/* Subtle Accent Line */}
+                  <div className="absolute top-0 left-0 w-2 h-full bg-[#FF5106] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="bg-[#0D0D0D] text-white px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
+                      {prayer.author_name}
+                    </div>
+                    <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                      {new Date(prayer.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <p className="text-zinc-800 text-xl md:text-2xl font-bold leading-tight tracking-tight mb-8 italic">
                     "{prayer.request_text}"
                   </p>
                   
-                  <div className="flex items-center justify-between border-t border-slate-50 pt-4">
-                    <div>
-                      <p className="font-semibold text-slate-800">{prayer.author_name}</p>
-                      <p className="text-xs text-slate-400 uppercase tracking-widest">
-                        {new Date(prayer.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </p>
-                    </div>
-                    <button className="flex items-center space-x-1 text-slate-300 hover:text-rose-400 transition-colors">
-                      <Heart className="w-4 h-4" />
-                      <span className="text-xs">Praying</span>
+                  <div className="pt-6 border-t border-zinc-50 flex justify-end">
+                    <button className="flex items-center gap-2 text-zinc-300 hover:text-[#FF5106] transition-colors font-black uppercase tracking-tighter text-xs">
+                      <Heart className="w-5 h-5 fill-current" />
+                      I'M PRAYING
                     </button>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-20 bg-white/50 rounded-[2rem] border border-dashed border-zinc-300">
+                <p className="text-zinc-400 font-bold uppercase tracking-widest">No requests yet.</p>
               </div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-10 bg-white rounded-xl border border-dashed border-slate-200">
-              <p className="text-slate-400">No prayer requests shared yet. Be the first!</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
