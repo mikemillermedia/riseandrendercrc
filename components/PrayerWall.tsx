@@ -1,25 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Heart, Send } from 'lucide-react';
+import { Heart, Send, AlertCircle } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export default function PrayerWall() {
+export default function PrayerWall({ user }: { user: any }) {
   const [requests, setRequests] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState('');
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState(''); // NEW: Holds error text
 
   useEffect(() => {
-    // Get the logged-in user so we know who is posting/clicking
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) setCurrentUser(session.user);
-    };
-    getUser();
     fetchRequests();
   }, []);
 
@@ -35,14 +29,18 @@ export default function PrayerWall() {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRequest.trim() || !currentUser) return;
+    setErrorMessage(''); // Clear old errors
+    if (!newRequest.trim() || !user) return;
     setPosting(true);
 
     const { error } = await supabase.from('prayer_requests').insert([
-      { user_id: currentUser.id, content: newRequest.trim() }
+      { user_id: user.id, content: newRequest.trim() }
     ]);
 
-    if (!error) {
+    if (error) {
+      console.error(error);
+      setErrorMessage(error.message); // Show the error on screen!
+    } else {
       setNewRequest('');
       fetchRequests();
     }
@@ -50,22 +48,18 @@ export default function PrayerWall() {
   };
 
   const togglePraying = async (requestId: string, currentPrayedBy: string[]) => {
-    if (!currentUser) return;
+    if (!user) return;
     
-    // Check if the user already clicked "Praying"
-    const hasPrayed = currentPrayedBy.includes(currentUser.id);
+    const hasPrayed = currentPrayedBy.includes(user.id);
     
-    // Add or remove them from the list
     const newPrayedBy = hasPrayed 
-      ? currentPrayedBy.filter(id => id !== currentUser.id)
-      : [...currentPrayedBy, currentUser.id];
+      ? currentPrayedBy.filter(id => id !== user.id)
+      : [...currentPrayedBy, user.id];
 
-    // Optimistically update the UI instantly so it feels fast
     setRequests(requests.map(req => 
       req.id === requestId ? { ...req, prayed_by: newPrayedBy } : req
     ));
 
-    // Update the database in the background
     await supabase
       .from('prayer_requests')
       .update({ prayed_by: newPrayedBy })
@@ -90,6 +84,15 @@ export default function PrayerWall() {
             className="w-full bg-[#131313] border border-[#F5F5F0]/10 rounded-xl px-4 py-3 text-[#F5F5F0] placeholder:text-[#F5F5F0]/40 focus:outline-none focus:border-[#ff4d00] transition-colors resize-none h-24"
             required
           />
+          
+          {/* NEW: Error Display Box */}
+          {errorMessage && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
+              <AlertCircle size={16} />
+              {errorMessage}
+            </div>
+          )}
+
           <div className="flex justify-end">
             <button 
               type="submit" 
@@ -108,7 +111,7 @@ export default function PrayerWall() {
           <div className="text-[#F5F5F0]/60 animate-pulse text-center py-8">Loading requests...</div>
         ) : requests.length > 0 ? (
           requests.map((request) => {
-            const hasPrayed = request.prayed_by?.includes(currentUser?.id);
+            const hasPrayed = request.prayed_by?.includes(user?.id);
             const prayCount = request.prayed_by?.length || 0;
 
             return (
