@@ -44,27 +44,26 @@ export default function PrayerWall() {
   };
 
   return (
-    /* w-screen + relative + left-1/2 -translate-x-1/2 forces it to break out of any parent container to be full screen width */
-    <section className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-[#F3F3F1] py-24 md:py-40 px-4 md:px-10">
+    /* mt-24 md:mt-40 adds the requested space at the top */
+    <section className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-[#F3F3F1] mt-24 md:mt-40 py-24 md:py-40 px-4 md:px-10">
       
-      {/* HEADER SECTION: Extreme Bold Typography */}
+      {/* HEADER SECTION */}
       <div className="w-full text-center mb-20">
         <h2 className="text-[12vw] md:text-[9vw] font-[1000] uppercase tracking-[-0.05em] leading-[0.8] text-[#111111] mb-12">
           COMMUNITY<br />PRAYER WALL
         </h2>
         <div className="max-w-4xl mx-auto px-6">
           <p className="text-[#333333] text-xl md:text-3xl font-medium leading-tight tracking-tight">
-            We Want to pray for you. <br className="hidden md:block" />
-            <span className="opacity-60 text-lg md:text-xl font-normal italic">This will be posted anonymously.</span>
+            We Want to pray for you.
           </p>
         </div>
       </div>
 
-      {/* TOGGLE: The Black Action Button */}
+      {/* TOGGLE BUTTON */}
       <div className="flex justify-center mb-24">
         <button 
           onClick={() => setIsWallOpen(!isWallOpen)}
-          className="group flex items-center justify-center gap-6 bg-[#111111] hover:bg-black text-white px-16 py-7 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.3em] transition-all shadow-2xl active:scale-95"
+          className="group flex items-center justify-center gap-6 bg-[#111111] hover:bg-black text-white px-16 py-7 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.3em] transition-all shadow-2xl active:scale-95 border border-white/5"
         >
           {isWallOpen ? 'CLOSE WALL' : 'VIEW COMMUNITY PRAYERS'}
           {isWallOpen ? <X className="w-5 h-5 text-[#FF5106]" /> : <Plus className="w-5 h-5 text-[#FF5106]" />}
@@ -74,9 +73,9 @@ export default function PrayerWall() {
       {/* ACCORDION CONTENT */}
       <div className={`w-full overflow-hidden transition-all duration-1000 ease-in-out ${isWallOpen ? 'max-h-[20000px] opacity-100' : 'max-h-0 opacity-0'}`}>
         
-        {/* SUBMISSION FORM: Clean & Minimal */}
+        {/* SUBMISSION FORM */}
         <div className="max-w-3xl mx-auto px-6 mb-32">
-          <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-sm">
+          <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-sm border border-zinc-200/20">
             <form onSubmit={handleSubmit} className="space-y-6">
               <input
                 type="text"
@@ -89,7 +88,7 @@ export default function PrayerWall() {
                 required
                 rows="4"
                 placeholder="HOW CAN THE COMMUNITY PRAY FOR YOU?"
-                className="w-full bg-[#F3F3F1] border-none rounded-2xl py-6 px-8 focus:ring-2 focus:ring-[#FF5106] outline-none font-bold text-lg placeholder:text-zinc-400 text-[#111111] resize-none"
+                className="w-full bg-[#F3F3F1] border-none rounded-2xl py-6 px-8 focus:ring-2 focus:ring-[#FF5106] outline-none font-bold text-lg placeholder:text-zinc-400 text-[#111111] resize-none leading-relaxed"
                 value={formData.request_text}
                 onChange={(e) => setFormData({...formData, request_text: e.target.value})}
               />
@@ -122,8 +121,8 @@ export default function PrayerWall() {
                       {new Date(prayer.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {/* Subtle, authentic font size for the message */}
-                  <p className="text-[#444444] text-sm md:text-[15px] font-medium leading-relaxed tracking-tight mb-8">
+                  {/* Subtle, smaller font size for authentic message feel */}
+                  <p className="text-[#444444] text-sm md:text-[15px] font-medium leading-relaxed tracking-tight mb-8 italic">
                     "{prayer.request_text}"
                   </p>
                 </div>
@@ -137,8 +136,8 @@ export default function PrayerWall() {
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center py-20 border border-dashed border-zinc-200 rounded-[3rem]">
-              <p className="text-zinc-300 font-black uppercase tracking-[0.3em] text-[10px] italic">Wall is silent</p>
+            <div className="col-span-full text-center py-20">
+              <p className="text-zinc-300 font-black uppercase tracking-[0.3em] text-[10px] italic">The wall is silent</p>
             </div>
           )}
         </div>
