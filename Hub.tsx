@@ -1,7 +1,7 @@
 import ProfileTab from './ProfileTab';
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';  
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X } from 'lucide-react';
@@ -16,6 +16,10 @@ export default function Hub() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('prayer');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('prayer');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [setups, setSetups] = useState<any[]>([]);
+  const [loadingSetups, setLoadingSetups] = useState(false);
 
   // Security Check: Make sure they are logged in!
   useEffect(() => {
@@ -29,6 +33,23 @@ export default function Hub() {
     };
     checkUser();
   }, [navigate]);
+  // Fetch community setups when the Setup Showcase tab is active
+useEffect(() => {
+  if (activeTab === 'setups') {
+    const fetchSetups = async () => {
+      setLoadingSetups(true);
+      // Grab all profiles that have an uploaded image
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .not('setup_image_url', 'is', null);
+
+      if (data) setSetups(data);
+      setLoadingSetups(false);
+    };
+    fetchSetups();
+  }
+}, [activeTab]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -139,7 +160,44 @@ export default function Hub() {
             </div>
 
             {/* The Showcase Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loadingSetups ? (
+              <div className="text-[#F5F5F0]/60 animate-pulse text-center py-12">Loading community setups...</div>
+            ) : setups.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {setups.map((profile, index) => (
+                  <div key={index} className="bg-[#131313] border border-[#F5F5F0]/10 rounded-2xl overflow-hidden hover:border-[#ff4d00]/30 transition-all hover:-translate-y-1 shadow-xl group">
+                    <div className="h-48 bg-[#1a1a1a] relative overflow-hidden flex items-center justify-center border-b border-[#F5F5F0]/5">
+                      <img 
+                        src={profile.setup_image_url} 
+                        alt={`${profile.first_name}'s setup`} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                    </div>
+                    <div className="p-5 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-bold text-white mb-1 uppercase tracking-wider text-sm">
+                          {profile.first_name} {profile.last_name}
+                        </h3>
+                        {profile.instagram_url && (
+                          <a 
+                            href={profile.instagram_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-xs text-[#ff4d00] font-medium hover:underline inline-block mt-1"
+                          >
+                            @{profile.instagram_url.split('/').filter(Boolean).pop()}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[#F5F5F0]/60 border border-dashed border-[#F5F5F0]/20 p-12 rounded-2xl text-center">
+                No setups shared yet. Be the first to share yours!
+              </div>
+            )}
               
               {/* Example Card 1 */}
               <div className="bg-[#131313] border border-[#F5F5F0]/10 rounded-2xl overflow-hidden hover:border-[#ff4d00]/30 transition-all hover:-translate-y-1 shadow-xl group cursor-pointer">
