@@ -1,5 +1,5 @@
 import freeKitImage from './The Content Creator Studio Kit.jpg';
-import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera } from 'lucide-react';
+import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
