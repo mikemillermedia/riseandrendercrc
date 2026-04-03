@@ -1,5 +1,5 @@
 import freeKitImage from './The Content Creator Studio Kit.jpg';
-import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, } from 'lucide-react';
+import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
@@ -125,7 +125,56 @@ export default function Hub() {
         )}
         
         {activeTab === 'chat' && <div><h1 className="text-3xl font-black uppercase tracking-widest mb-4">Community Chat</h1><p className="text-[#F5F5F0]/60">Live chat coming soon...</p></div>}
-        {activeTab === 'setups' && <div><h1 className="text-3xl font-black uppercase tracking-widest mb-4">Setup Showcase</h1><p className="text-[#F5F5F0]/60">Workspace inspiration coming soon...</p></div>}
+        {activeTab === 'setups' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Setup Showcase</h1>
+                <p className="text-[#F5F5F0]/60">Get inspiration from other Christian creatives' workspaces.</p>
+              </div>
+              <button onClick={() => setActiveTab('profile')} className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-2.5 px-6 rounded-xl transition-colors flex items-center gap-2 shadow-lg shadow-orange-900/20">
+                <Camera size={18} /> Share Your Setup
+              </button>
+            </div>
+
+            {/* The Showcase Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              
+              {/* Example Card 1 */}
+              <div className="bg-[#131313] border border-[#F5F5F0]/10 rounded-2xl overflow-hidden hover:border-[#ff4d00]/30 transition-all hover:-translate-y-1 shadow-xl group cursor-pointer">
+                <div className="h-48 bg-[#1a1a1a] relative overflow-hidden flex items-center justify-center">
+                  <Camera size={32} className="text-[#F5F5F0]/10 group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] to-transparent opacity-60"></div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-white mb-1 uppercase tracking-wider text-sm">Sunday Broadcast</h3>
+                  <p className="text-xs text-[#ff4d00] font-medium mb-3">@mikemiller</p>
+                  <div className="flex gap-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded text-[#F5F5F0]/60">Blackmagic</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded text-[#F5F5F0]/60">Live Stream</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Example Card 2 */}
+              <div className="bg-[#131313] border border-[#F5F5F0]/10 rounded-2xl overflow-hidden hover:border-[#ff4d00]/30 transition-all hover:-translate-y-1 shadow-xl group cursor-pointer">
+                <div className="h-48 bg-[#1a1a1a] relative overflow-hidden flex items-center justify-center">
+                  <Camera size={32} className="text-[#F5F5F0]/10 group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] to-transparent opacity-60"></div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-white mb-1 uppercase tracking-wider text-sm">Edit Bay</h3>
+                  <p className="text-xs text-[#ff4d00] font-medium mb-3">@crc_member</p>
+                  <div className="flex gap-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded text-[#F5F5F0]/60">Mac Studio</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded text-[#F5F5F0]/60">Premiere</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
         {activeTab === 'profile' && <div><h1 className="text-3xl font-black uppercase tracking-widest mb-4">My Profile</h1><p className="text-[#F5F5F0]/60">Profile editor coming soon...</p></div>}
       </div>
 
