@@ -284,7 +284,7 @@ const LandingPage: React.FC = () => {
               Book Your <span className="text-[#ff4d00]">Studio Session</span>
             </h3>
             <p className="text-xl text-[#F5F5F0]/70 max-w-3xl mx-auto mb-10 leading-relaxed">
-              This is where you can book a studio request at our private studio. Exclusive pricing is available for members. If you haven't yet, fill out the form and join our waitlist to take advantage of special pricing.
+              This is where you can book a studio request at our private studio. Exclusive pricing is available for members. If you haven't yet, join our Creatives Representing Christ (CRC) community to take advantage of special pricing.
             </p>
             <a 
               href="https://tally.so/r/dWxaOy"
@@ -302,7 +302,7 @@ const LandingPage: React.FC = () => {
               Mobile Studio & <span className="text-[#ff4d00]">Remote Consulting</span>
             </h3>
             <p className="text-xl text-[#131313]/70 max-w-3xl mx-auto mb-10 leading-relaxed">
-              Need us to come to you or want to build your authority remotely? Book a free consultation today. Special pricing is available for members in the Creatives Representing Christ (CRC) community.
+              Need us to come to you or want to build your authority remotely? Book a free consultation today.
             </p>
             <a 
               href="https://calendar.app.google/yHaHjKPJyDSnfNw97"
