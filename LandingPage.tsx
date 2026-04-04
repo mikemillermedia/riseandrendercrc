@@ -63,13 +63,6 @@ const LandingPage: React.FC = () => {
 
         {/* Desktop Menu */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
-          <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-[#ff4d00]/90 text-[#131313] font-black uppercase tracking-widest py-2 px-6 rounded-full transition-all hover:scale-105 shadow-[0_0_15px_rgba(255,77,0,0.3)]">
-  Login/Join
-</button>
-        </nav>
-
-        {/* Right Side: Join Button & Mobile Toggle */}
-        <div className="flex items-center gap-4">
          <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
