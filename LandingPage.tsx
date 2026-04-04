@@ -112,7 +112,7 @@ const LandingPage: React.FC = () => {
         </p>
 
         <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-[#ff4d00]/90 text-[#131313] font-black uppercase tracking-widest py-3.5 px-10 rounded-full transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,77,0,0.4)] text-lg md:text-xl">
-  Join Now
+  Enter The Hub
 </button>
       </section>
 
@@ -399,22 +399,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* FOOTER / CTA */}
-      <section className="py-32 bg-[#ff4d00] text-[#131313]">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-5xl md:text-8xl font-black mb-8 leading-none tracking-tighter uppercase">
-            We're in the <br/>Building Phase.
-          </h2>
-          <p className="text-xl md:text-2xl font-medium mb-12 max-w-2xl mx-auto opacity-90">
-            Have a say in how this community takes shape. Be the first to know when doors open.
-          </p>
-          
-          <button onClick={() => navigate('/login')} className="...">
-  Join Now
-</button>
-
-  </div>
-</section>
 
       {/* FOOTER / CTA */}
       <footer className="py-12 bg-[#131313] border-t border-[#F5F5F0]/5 relative overflow-hidden">
