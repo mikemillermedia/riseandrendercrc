@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder, Users } from 'lucide-react';
+import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder, Activity } from 'lucide-react';
 
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
@@ -16,9 +16,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export default function Hub() {
   const navigate = useNavigate();
   
-  // --- NEW: URL-based Tab Tracking ---
+  // --- URL-based Tab Tracking ---
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'prayer';
+  // Changed default fallback from 'prayer' to 'activity'
+  const activeTab = searchParams.get('tab') || 'activity';
   
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab });
@@ -67,6 +68,9 @@ export default function Hub() {
 
   const NavLinks = () => (
     <>
+      <button onClick={() => { setActiveTab('activity'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'activity' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <Activity size={20} /> Latest Activity
+      </button>
       <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Folder size={20} /> The Vault
       </button>
@@ -78,9 +82,6 @@ export default function Hub() {
       </button>
       <button onClick={() => { setActiveTab('setups'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'setups' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Monitor size={20} /> Setup Showcase
-      </button>
-      <button onClick={() => { setActiveTab('members'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'members' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Users size={20} /> Members
       </button>
       <button onClick={() => { setActiveTab('profile'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <User size={20} /> My Profile
@@ -125,6 +126,9 @@ export default function Hub() {
       {/* Main Content Area */}
       <div className="flex-grow p-6 md:p-12 max-w-5xl mx-auto w-full">
         
+        {/* Render Members Component for 'activity' tab */}
+        {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
+
         {activeTab === 'vault' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">The Vault</h1>
@@ -150,9 +154,7 @@ export default function Hub() {
           </div>
         )}
         
-      {activeTab === 'chat' && <CommunityChat user={user} />}
-
-      {activeTab === 'members' && <Members setActiveTab={setActiveTab} />}
+        {activeTab === 'chat' && <CommunityChat user={user} />}
         
         {activeTab === 'setups' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
