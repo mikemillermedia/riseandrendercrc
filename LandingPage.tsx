@@ -70,12 +70,9 @@ const LandingPage: React.FC = () => {
 
         {/* Right Side: Join Button & Mobile Toggle */}
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/login')}
-            className="bg-[#ff4d00] text-[#131313] text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg shadow-orange-900/20 hover:scale-105 transition-transform"
-          >
-            Join
-          </button>
+         <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
+          <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
+          <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
 
           <button 
             className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
