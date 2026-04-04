@@ -15,14 +15,13 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   // States for viewing a specific member's public profile
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [memberSetup, setMemberSetup] = useState<string | null>(null);
-  const [memberPosts, setMemberPosts] = useState<any[]>([]); // New state for their posts
+  const [memberPosts, setMemberPosts] = useState<any[]>([]); 
 
   useEffect(() => {
     fetchCommunityData();
   }, []);
 
   const fetchCommunityData = async () => {
-    // Fetch all members (even if they haven't filled out their profile yet)
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('*')
@@ -49,7 +48,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setMemberSetup(null); 
     setMemberPosts([]); 
 
-    // 1. Fetch their latest setup photo
     const { data: setupData } = await supabase
       .from('posts')
       .select('media_url')
@@ -61,7 +59,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
       
     if (setupData) setMemberSetup(setupData.media_url);
 
-    // 2. Fetch all of their Community Chat posts
     const { data: postsData } = await supabase
       .from('posts')
       .select('*, post_likes(user_id), comments(*)')
@@ -99,4 +96,92 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
             </div>
 
             <h1 className="text-3xl md:text-4xl font-black text-white">
-              {selectedMember.first_name ? `${selectedMember.first_name} ${selectedMember.last_name}
+              {selectedMember.first_name ? `${selectedMember.first_name} ${selectedMember.last_name}` : 'CRC Member'}
+            </h1>
+            
+            {selectedMember.instagram_url && (
+              <a href={selectedMember.instagram_url} target="_blank" rel="noreferrer" className="text-[#ff4d00] hover:text-orange-400 transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
+                <Instagram size={16} /> @{selectedMember.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
+              </a>
+            )}
+          </div>
+
+          <div className="w-full space-y-8 bg-[#1A1A1A] border border-white/5 p-8 rounded-[2rem] shadow-xl">
+            <div>
+              <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Bio</h3>
+              <p className="text-white/90 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+                {selectedMember.bio || "Creative Representing Christ."}
+              </p>
+            </div>
+
+            {selectedMember.website_url && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Links</h3>
+                <a href={selectedMember.website_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium text-sm md:text-base">
+                  <LinkIcon size={16} /> {selectedMember.website_url.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
+
+            {memberSetup && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Showcase Setup</h3>
+                <img src={memberSetup} alt="Setup Showcase" className="w-full rounded-xl object-cover border border-white/5" />
+              </div>
+            )}
+
+            {memberPosts.length > 0 && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-4">Recent Activity</h3>
+                <div className="space-y-4">
+                  {memberPosts.map(post => (
+                    <div key={post.id} className="bg-black/20 p-5 rounded-2xl border border-white/5">
+                      <p className="text-xs text-white/30 mb-2 font-medium uppercase tracking-wider">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-white/90 text-sm md:text-base mb-4 whitespace-pre-wrap leading-relaxed">
+                        {post.content}
+                      </p>
+                      {post.media_url && (
+                        <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
+                      )}
+                      <div className="flex gap-4 text-white/40">
+                        <div className="flex items-center gap-1.5">
+                          <Heart size={16} className={post.post_likes?.length > 0 ? "text-[#ff4d00]" : ""} /> 
+                          <span className="text-xs font-bold">{post.post_likes?.length || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MessageCircle size={16} /> 
+                          <span className="text-xs font-bold">{post.comments?.length || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // --- BENTO BOX DIRECTORY VIEW (Default) ---
+  // ==========================================
+  return (
+    <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-black text-white">The Hub</h1>
+          <p className="text-white/50 mt-1">Updates and member directory.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-min mb-12">
+        
+        <div 
+          onClick={() => setActiveTab('chat')}
+          className="cursor-pointer md:col-span-2 md:row-span-2 bg-[#1A1A1A] rounded-3xl p-8 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-[#ff4d00]/50 hover:shadow-[0_0_30px_rgba(255,77,0,0.1)] transition-all relative overflow-hidden"
+        >
