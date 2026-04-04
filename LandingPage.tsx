@@ -74,7 +74,6 @@ const LandingPage: React.FC = () => {
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-      </div>
 
       {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
