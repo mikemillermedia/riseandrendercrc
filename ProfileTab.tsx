@@ -8,6 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Profile({ user }: { user: any }) {
   const [profile, setProfile] = useState<any>(null);
+  const [latestSetup, setLatestSetup] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,7 +23,10 @@ export default function Profile({ user }: { user: any }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) fetchProfile();
+    if (user) {
+      fetchProfile();
+      fetchLatestSetup();
+    }
   }, [user]);
 
   const fetchProfile = async () => {
@@ -39,11 +43,24 @@ export default function Profile({ user }: { user: any }) {
     setLoading(false);
   };
 
+  const fetchLatestSetup = async () => {
+    // Grabs the user's most recent post that includes an image
+    const { data } = await supabase
+      .from('posts')
+      .select('media_url')
+      .eq('user_id', user.id)
+      .not('media_url', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+      
+    if (data) setLatestSetup(data.media_url);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     let newAvatarUrl = profile?.avatar_url;
 
-    // Upload new avatar if selected
     if (avatarFile) {
       const fileName = `${user.id}/${Math.random()}`;
       const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, avatarFile);
@@ -64,58 +81,90 @@ export default function Profile({ user }: { user: any }) {
       updated_at: new Date()
     };
 
-    await supabase.from('profiles').upsert(updates);
-    await fetchProfile();
-    setIsEditing(false);
+    const { error } = await supabase.from('profiles').upsert(updates);
+    
+    if (!error) {
+      await fetchProfile();
+      setIsEditing(false);
+    } else {
+      console.error("Failed to save:", error);
+      alert("Failed to save profile. Please ensure you are logged in correctly.");
+    }
     setSaving(false);
   };
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading profile...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto pb-20 animate-in fade-in duration-500">
+    <div className="max-w-2xl mx-auto pb-20 animate-in fade-in duration-500">
       
       {/* --- VIEW MODE --- */}
       {!isEditing ? (
-        <div className="flex flex-col items-center mt-10">
-          {/* Avatar */}
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#ff4d00] p-1 overflow-hidden shadow-[0_0_30px_rgba(255,77,0,0.2)] mb-6">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center">
-                <User size={48} className="text-white/20" />
-              </div>
+        <div className="flex flex-col mt-10">
+          
+          {/* Centered Top Section */}
+          <div className="flex flex-col items-center mb-12">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#C5A880] p-1 overflow-hidden shadow-[0_0_30px_rgba(197,168,128,0.15)] mb-4 bg-[#131313]">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center">
+                  <User size={48} className="text-white/20" />
+                </div>
+              )}
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-black text-white">{profile?.first_name} {profile?.last_name}</h1>
+            
+            {profile?.instagram_url && (
+              <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/50 hover:text-white transition-colors mt-1 text-sm underline underline-offset-4">
+                @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
+              </a>
             )}
+
+            <button onClick={() => setIsEditing(true)} className="mt-6 bg-[#2A2A2A] hover:bg-[#333] text-white px-6 py-2 rounded-full font-semibold transition-all text-sm border border-white/5">
+              Edit Profile
+            </button>
           </div>
 
-          {/* Name & Handle */}
-          <h1 className="text-3xl md:text-4xl font-black text-white">{profile?.first_name} {profile?.last_name}</h1>
-          {profile?.instagram_url && (
-            <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-[#ff4d00] hover:text-white transition-colors mt-2 flex items-center gap-1.5 font-medium">
-              <Instagram size={16} />
-              @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
-            </a>
-          )}
-
-          {/* Edit Button */}
-          <button onClick={() => setIsEditing(true)} className="mt-6 bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-full font-bold transition-all border border-white/5">
-            Edit Profile
-          </button>
-
-          {/* Bio & Links */}
-          <div className="w-full max-w-lg mt-12 bg-[#131313] border border-white/5 rounded-[2rem] p-8 shadow-xl">
-            <h3 className="text-white/40 text-sm font-bold uppercase tracking-widest mb-4">Bio</h3>
-            <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{profile?.bio || "No bio added yet."}</p>
+          {/* Left Aligned Bottom Section */}
+          <div className="w-full space-y-8">
             
-            {profile?.website_url && (
-              <div className="mt-6 pt-6 border-t border-white/5">
-                <h3 className="text-white/40 text-sm font-bold uppercase tracking-widest mb-4">Links</h3>
-                <a href={profile.website_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium">
-                  <LinkIcon size={16} /> {profile.website_url.replace(/^https?:\/\//, '')}
-                </a>
+            {/* Bio */}
+            <div>
+              <h3 className="text-white font-bold mb-2">Bio:</h3>
+              <p className="text-white/80 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+                {profile?.bio || "No bio added yet. Click Edit Profile to add one!"}
+              </p>
+            </div>
+
+            {/* Links */}
+            {(profile?.website_url || profile?.instagram_url) && (
+              <div>
+                <h3 className="text-white font-bold mb-2">Links:</h3>
+                <div className="flex flex-col gap-2">
+                  {profile?.website_url && (
+                    <a href={profile.website_url} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors text-sm md:text-base underline underline-offset-4">
+                      {profile.website_url.replace(/^https?:\/\//, '')}
+                    </a>
+                  )}
+                  {profile?.instagram_url && (
+                    <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors text-sm md:text-base underline underline-offset-4">
+                      Instagram
+                    </a>
+                  )}
+                </div>
               </div>
             )}
+
+            {/* Setup Showcase */}
+            {latestSetup && (
+              <div className="pt-8">
+                <img src={latestSetup} alt="Setup Showcase" className="w-full max-w-sm rounded-xl object-cover border border-white/5" />
+                <p className="text-white/80 mt-3 text-sm md:text-base">Your Showcase Setup (CRC)</p>
+              </div>
+            )}
+
           </div>
         </div>
       ) : (
@@ -128,9 +177,8 @@ export default function Profile({ user }: { user: any }) {
           </div>
 
           <div className="space-y-6">
-            {/* Avatar Upload */}
             <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-full border-2 border-[#ff4d00] p-0.5 overflow-hidden">
+              <div className="w-20 h-20 rounded-full border-2 border-[#C5A880] p-0.5 overflow-hidden bg-black">
                 {avatarPreview ? <img src={avatarPreview} className="w-full h-full rounded-full object-cover" /> : <User size={32} className="m-auto mt-4 text-white/20" />}
               </div>
               <label className="cursor-pointer bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full text-sm font-bold transition-colors flex items-center gap-2 border border-white/10">
@@ -157,7 +205,12 @@ export default function Profile({ user }: { user: any }) {
 
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Bio</label>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="Tell the community about yourself..." />
+              <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="Tell the community about yourself..." />
+            </div>
+
+            <div>
+              <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Website URL (Optional)</label>
+              <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="https://..." />
             </div>
 
             <div>
