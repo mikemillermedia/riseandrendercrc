@@ -36,7 +36,7 @@ export default function CommunityChat({ user }: { user: any }) {
         .from('posts')
         .select(`
           *,
-          profiles:user_id (first_name, last_name, avatar_url),
+          profiles:user_id (first_name, last_name, avatar_url, instagram_url),
           post_likes (user_id),
           comments (*, profiles:user_id (first_name, last_name, avatar_url))
         `)
@@ -83,7 +83,6 @@ export default function CommunityChat({ user }: { user: any }) {
     setPosting(false);
   };
 
-  // FULLY RESTORED: Like Toggle Logic
   const toggleLike = async (postId: string, currentLikes: any[] = []) => {
     if (!user) return;
     const isLiked = currentLikes.some(like => like.user_id === user.id);
@@ -98,15 +97,14 @@ export default function CommunityChat({ user }: { user: any }) {
     } catch (e) { console.error(e); }
   };
 
-  // FULLY RESTORED: Comment Submission Logic
   const submitComment = async (postId: string) => {
     if (!commentText.trim() || !user) return;
     try {
       await supabase.from('comments').insert([
         { post_id: postId, user_id: user.id, content: commentText.trim() }
       ]);
-      setCommentText(''); // Clear the input box
-      fetchPosts(); // Refresh the feed to show the new comment
+      setCommentText('');
+      fetchPosts();
     } catch (e) { console.error(e); }
   };
 
@@ -161,14 +159,17 @@ export default function CommunityChat({ user }: { user: any }) {
           const isLiked = postLikes.some((l: any) => l.user_id === user?.id);
 
           return (
-            <div className="flex gap-4 px-2">
+            <div key={post.id} className="py-6 border-b border-white/5">
+              <div className="flex gap-4 px-2">
+                
                 {/* Clickable Avatar */}
                 <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border-2 border-[#ff4d00]/50 hover:border-[#ff4d00] transition-colors flex items-center justify-center cursor-pointer">
                   {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                 </a>
-                
+
                 <div className="flex-grow min-w-0">
                   <div className="flex justify-between items-center">
+                    
                     {/* Clickable Name & Handle */}
                     <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="group flex items-center gap-2 cursor-pointer">
                       <h3 className="font-bold text-sm text-white group-hover:text-[#ff4d00] transition-colors">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
@@ -178,16 +179,12 @@ export default function CommunityChat({ user }: { user: any }) {
                          </span>
                       )}
                     </a>
-                <div className="flex-grow min-w-0">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-sm">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
-                <div className="flex-grow min-w-0">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-sm">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
+
                     <span className="text-xs text-white/30">
                       {new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
+                  
                   <p className="text-[#F5F5F0]/90 mt-1 whitespace-pre-wrap">{post.content}</p>
                   {post.media_url && <img src={post.media_url} className="mt-3 rounded-xl border border-white/5 max-h-96 w-full object-contain bg-black/20" />}
                   
