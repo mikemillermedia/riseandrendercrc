@@ -161,11 +161,26 @@ export default function CommunityChat({ user }: { user: any }) {
           const isLiked = postLikes.some((l: any) => l.user_id === user?.id);
 
           return (
-            <div key={post.id} className="py-6 border-b border-white/5">
-              <div className="flex gap-4 px-2">
-                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+            <div className="flex gap-4 px-2">
+                {/* Clickable Avatar */}
+                <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border-2 border-[#ff4d00]/50 hover:border-[#ff4d00] transition-colors flex items-center justify-center cursor-pointer">
                   {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
-                </div>
+                </a>
+                
+                <div className="flex-grow min-w-0">
+                  <div className="flex justify-between items-center">
+                    {/* Clickable Name & Handle */}
+                    <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="group flex items-center gap-2 cursor-pointer">
+                      <h3 className="font-bold text-sm text-white group-hover:text-[#ff4d00] transition-colors">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
+                      {post.profiles?.instagram_url && (
+                         <span className="text-xs text-white/30 group-hover:text-[#ff4d00]/70 transition-colors">
+                           @{post.profiles.instagram_url.split('.com/')[1]?.replace('/', '')}
+                         </span>
+                      )}
+                    </a>
+                <div className="flex-grow min-w-0">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-sm">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
                 <div className="flex-grow min-w-0">
                   <div className="flex justify-between items-center">
                     <h3 className="font-bold text-sm">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
