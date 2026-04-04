@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { User, Camera, Link as LinkIcon, Instagram } from 'lucide-react';
+import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export default function Profile({ user }: { user: any }) {
+export default function ProfileTab({ user }: { user: any }) {
   const [profile, setProfile] = useState<any>(null);
   const [latestSetup, setLatestSetup] = useState<string | null>(null);
+  const [myPosts, setMyPosts] = useState<any[]>([]); // NEW: State for your chat history
+  
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,6 +28,7 @@ export default function Profile({ user }: { user: any }) {
     if (user) {
       fetchProfile();
       fetchLatestSetup();
+      fetchUserPosts();
     }
   }, [user]);
 
@@ -44,7 +47,6 @@ export default function Profile({ user }: { user: any }) {
   };
 
   const fetchLatestSetup = async () => {
-    // Grabs the user's most recent post that includes an image
     const { data } = await supabase
       .from('posts')
       .select('media_url')
@@ -55,6 +57,17 @@ export default function Profile({ user }: { user: any }) {
       .single();
       
     if (data) setLatestSetup(data.media_url);
+  };
+
+  // NEW: Fetch all of your community chat posts
+  const fetchUserPosts = async () => {
+    const { data } = await supabase
+      .from('posts')
+      .select('*, post_likes(user_id), comments(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+      
+    if (data) setMyPosts(data);
   };
 
   const handleSave = async () => {
@@ -104,7 +117,7 @@ export default function Profile({ user }: { user: any }) {
           
           {/* Centered Top Section */}
           <div className="flex flex-col items-center mb-12">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#C5A880] p-1 overflow-hidden shadow-[0_0_30px_rgba(197,168,128,0.15)] mb-4 bg-[#131313]">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#ff4d00]/80 p-1 overflow-hidden shadow-[0_0_30px_rgba(255,77,0,0.15)] mb-4 bg-[#131313]">
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} className="w-full h-full rounded-full object-cover" />
               ) : (
@@ -117,12 +130,12 @@ export default function Profile({ user }: { user: any }) {
             <h1 className="text-3xl md:text-4xl font-black text-white">{profile?.first_name} {profile?.last_name}</h1>
             
             {profile?.instagram_url && (
-              <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/50 hover:text-white transition-colors mt-1 text-sm underline underline-offset-4">
-                @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
+              <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/50 hover:text-[#ff4d00] transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
+                <Instagram size={16} /> @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
               </a>
             )}
 
-            <button onClick={() => setIsEditing(true)} className="mt-6 bg-[#2A2A2A] hover:bg-[#333] text-white px-6 py-2 rounded-full font-semibold transition-all text-sm border border-white/5">
+            <button onClick={() => setIsEditing(true)} className="mt-6 bg-[#1A1A1A] hover:bg-white/10 text-white px-6 py-2 rounded-full font-semibold transition-all text-sm border border-white/5">
               Edit Profile
             </button>
           </div>
@@ -142,15 +155,10 @@ export default function Profile({ user }: { user: any }) {
             {(profile?.website_url || profile?.instagram_url) && (
               <div>
                 <h3 className="text-white font-bold mb-2">Links:</h3>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   {profile?.website_url && (
-                    <a href={profile.website_url} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors text-sm md:text-base underline underline-offset-4">
-                      {profile.website_url.replace(/^https?:\/\//, '')}
-                    </a>
-                  )}
-                  {profile?.instagram_url && (
-                    <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors text-sm md:text-base underline underline-offset-4">
-                      Instagram
+                    <a href={profile.website_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm md:text-base font-medium">
+                      <LinkIcon size={16} /> {profile.website_url.replace(/^https?:\/\//, '')}
                     </a>
                   )}
                 </div>
@@ -159,9 +167,43 @@ export default function Profile({ user }: { user: any }) {
 
             {/* Setup Showcase */}
             {latestSetup && (
-              <div className="pt-8">
+              <div className="pt-8 border-t border-white/5">
+                <h3 className="text-white font-bold mb-4">Your Showcase Setup</h3>
                 <img src={latestSetup} alt="Setup Showcase" className="w-full max-w-sm rounded-xl object-cover border border-white/5" />
-                <p className="text-white/80 mt-3 text-sm md:text-base">Your Showcase Setup (CRC)</p>
+              </div>
+            )}
+
+            {/* NEW: Recent Activity (Your Chat Posts) */}
+            {myPosts.length > 0 && (
+              <div className="pt-8 border-t border-white/5">
+                <h3 className="text-white font-bold mb-4">Your Recent Activity</h3>
+                <div className="space-y-4">
+                  {myPosts.map(post => (
+                    <div key={post.id} className="bg-black/20 p-5 rounded-2xl border border-white/5">
+                      <p className="text-xs text-white/30 mb-2 font-medium uppercase tracking-wider">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-white/90 text-sm md:text-base mb-4 whitespace-pre-wrap leading-relaxed">
+                        {post.content}
+                      </p>
+                      {post.media_url && (
+                        <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
+                      )}
+                      
+                      {/* Interaction Counts */}
+                      <div className="flex gap-4 text-white/40">
+                        <div className="flex items-center gap-1.5">
+                          <Heart size={16} className={post.post_likes?.length > 0 ? "text-[#ff4d00]" : ""} /> 
+                          <span className="text-xs font-bold">{post.post_likes?.length || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MessageCircle size={16} /> 
+                          <span className="text-xs font-bold">{post.comments?.length || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -178,7 +220,7 @@ export default function Profile({ user }: { user: any }) {
 
           <div className="space-y-6">
             <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-full border-2 border-[#C5A880] p-0.5 overflow-hidden bg-black">
+              <div className="w-20 h-20 rounded-full border-2 border-[#ff4d00] p-0.5 overflow-hidden bg-black">
                 {avatarPreview ? <img src={avatarPreview} className="w-full h-full rounded-full object-cover" /> : <User size={32} className="m-auto mt-4 text-white/20" />}
               </div>
               <label className="cursor-pointer bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full text-sm font-bold transition-colors flex items-center gap-2 border border-white/10">
