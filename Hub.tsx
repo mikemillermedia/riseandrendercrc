@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder } from 'lucide-react';
+import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder, Users } from 'lucide-react';
+
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
 import CommunityChat from './CommunityChat';
+import Members from './Members';
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -67,6 +69,9 @@ export default function Hub() {
       </button>
       <button onClick={() => { setActiveTab('setups'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'setups' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Monitor size={20} /> Setup Showcase
+      </button>
+      <button onClick={() => { setActiveTab('members'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'members' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <Users size={20} /> Members
       </button>
       <button onClick={() => { setActiveTab('profile'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <User size={20} /> My Profile
@@ -137,6 +142,8 @@ export default function Hub() {
         )}
         
       {activeTab === 'chat' && <CommunityChat user={user} />}
+
+      {activeTab === 'members' && <Members />}
         
         {activeTab === 'setups' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
