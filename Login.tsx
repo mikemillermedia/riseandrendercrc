@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(false); // Defaulting to Sign Up mode since it's a new community
+  const [isLogin, setIsLogin] = useState(true); // Defaulting to Sign Up mode since it's a new community
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
