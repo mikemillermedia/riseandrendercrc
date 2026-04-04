@@ -139,7 +139,7 @@ export default function Hub() {
               </div>
               <h3 className="text-xl font-bold mb-2 text-white uppercase tracking-wider">Content Creator Kit</h3>
               <p className="text-sm text-[#F5F5F0]/60 mb-6">The ultimate starter kit for your church's media ministry. Includes templates, assets, and guides.</p>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-3 px-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
+              <a href="https://checkout.mailerlite.com/checkout/13297" target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-3 px-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
                 <Download size={18} /> Download Kit
               </a>
             </div>
