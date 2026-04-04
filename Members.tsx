@@ -185,3 +185,141 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
           onClick={() => setActiveTab('chat')}
           className="cursor-pointer md:col-span-2 md:row-span-2 bg-[#1A1A1A] rounded-3xl p-8 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-[#ff4d00]/50 hover:shadow-[0_0_30px_rgba(255,77,0,0.1)] transition-all relative overflow-hidden"
         >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[100px] opacity-[0.05] group-hover:opacity-10 transition-opacity" />
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#ff4d00]/10 p-3 rounded-2xl text-[#ff4d00]">
+                  <MessageCircle size={24} />
+                </div>
+                <h2 className="text-xl font-black text-white">Latest in Chat</h2>
+              </div>
+              <ArrowRight className="text-white/20 group-hover:text-[#ff4d00] transition-colors" />
+            </div>
+            
+            {latestPost ? (
+              <>
+                <p className="text-white/90 text-lg md:text-2xl leading-relaxed font-medium mb-6 line-clamp-3">
+                  "{latestPost.content}"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5">
+                    {latestPost.profiles?.avatar_url ? (
+                      <img src={latestPost.profiles.avatar_url} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="m-auto mt-2 text-white/40" size={20} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{latestPost.profiles?.first_name} {latestPost.profiles?.last_name}</p>
+                    <p className="text-xs text-white/40">Join the conversation</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-white/40">No posts yet. Go start a thread!</p>
+            )}
+          </div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab('prayer')}
+          className="cursor-pointer md:col-span-1 md:row-span-1 bg-[#1A1A1A] rounded-3xl p-6 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-white/20 transition-all"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/5 p-2.5 rounded-xl text-white">
+                <Heart size={20} />
+              </div>
+              <h3 className="font-bold text-white">Prayer Wall</h3>
+            </div>
+            <ArrowRight size={18} className="text-white/20 group-hover:text-white transition-colors" />
+          </div>
+          <div>
+            <p className="text-white/80 text-sm line-clamp-2 mb-3">
+              Check the prayer wall to support and uplift fellow creatives in the CRC community this week.
+            </p>
+            <span className="text-[#ff4d00] text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
+              View Requests
+            </span>
+          </div>
+        </div>
+
+        {newestMember && (
+          <div 
+            onClick={() => handleMemberClick(newestMember)}
+            className="cursor-pointer md:col-span-1 md:row-span-1 bg-[#1A1A1A] rounded-3xl p-6 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-[#ff4d00]/30 transition-all"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#ff4d00]/10 p-2.5 rounded-xl text-[#ff4d00]">
+                  <UserPlus size={20} />
+                </div>
+                <h3 className="font-bold text-white">Newest Member</h3>
+              </div>
+              <ArrowRight size={18} className="text-white/20 group-hover:text-[#ff4d00] transition-colors" />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full border-2 border-[#ff4d00]/30 overflow-hidden bg-white/5 flex-shrink-0">
+                {newestMember.avatar_url ? (
+                  <img src={newestMember.avatar_url} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="m-auto mt-3 text-white/40" size={20} />
+                )}
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm group-hover:text-[#ff4d00] transition-colors">
+                  {newestMember.first_name ? `${newestMember.first_name} ${newestMember.last_name}` : 'New Member'}
+                </p>
+                <p className="text-xs text-white/40">View profile</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="pt-8 border-t border-white/10">
+        <h2 className="text-2xl font-black text-white mb-6">Member Directory</h2>
+        
+        {members.length === 0 ? (
+          <div className="text-white/40 italic">No members found yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {members.map((member) => (
+              <div 
+                key={member.id} 
+                onClick={() => handleMemberClick(member)}
+                className="cursor-pointer bg-[#1A1A1A] rounded-3xl p-6 border border-white/5 shadow-lg hover:border-white/20 transition-all flex flex-col group hover:-translate-y-1"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                   <div className="w-14 h-14 rounded-full border border-white/10 overflow-hidden bg-black flex-shrink-0">
+                     {member.avatar_url ? (
+                       <img src={member.avatar_url} className="w-full h-full object-cover" />
+                     ) : (
+                       <User className="m-auto mt-3.5 text-white/40" size={24} />
+                     )}
+                   </div>
+                   <div className="overflow-hidden">
+                     <h3 className="font-bold text-white truncate group-hover:text-[#ff4d00] transition-colors">
+                       {member.first_name ? `${member.first_name} ${member.last_name}` : 'CRC Member'}
+                     </h3>
+                     {member.instagram_url && (
+                        <span className="text-xs text-white/40 truncate block">
+                          @{member.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
+                        </span>
+                     )}
+                   </div>
+                </div>
+                
+                <p className="text-sm text-white/60 line-clamp-3 leading-relaxed flex-grow">
+                  {member.bio || "Creative Representing Christ."}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
