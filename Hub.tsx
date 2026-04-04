@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LogOut, HeartHandshake, MessageSquare, Monitor, User, Menu, X, Download, Camera, Folder, Users } from 'lucide-react';
 
 import PrayerWall from './components/PrayerWall';
@@ -15,8 +15,17 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Hub() {
   const navigate = useNavigate();
+  
+  // --- NEW: URL-based Tab Tracking ---
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'prayer';
+  
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
+  // -----------------------------------
+
   const [user, setUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('prayer');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [setups, setSetups] = useState<any[]>([]);
   const [loadingSetups, setLoadingSetups] = useState(false);
