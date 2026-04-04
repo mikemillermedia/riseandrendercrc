@@ -143,7 +143,7 @@ export default function Hub() {
         
       {activeTab === 'chat' && <CommunityChat user={user} />}
 
-      {activeTab === 'members' && <Members />}
+      {activeTab === 'members' && <Members setActiveTab={setActiveTab} />}
         
         {activeTab === 'setups' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
