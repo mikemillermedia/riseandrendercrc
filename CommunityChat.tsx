@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -24,10 +25,16 @@ export default function CommunityChat({ user }: { user: any }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [repostTarget, setRepostTarget] = useState<any>(null);
 
+  // NEW: Mention Engine States
+  const [allMembers, setAllMembers] = useState<any[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionTarget, setMentionTarget] = useState<'post' | 'comment' | null>(null);
+
   useEffect(() => {
     if (user) {
       fetchPosts();
       fetchCurrentUserAvatar();
+      fetchAllMembers(); // Pre-load the directory for the mention engine
     }
   }, [user]);
 
@@ -41,6 +48,12 @@ export default function CommunityChat({ user }: { user: any }) {
       }, 300);
     }
   }, [loading, targetPostId]);
+
+  // NEW: Fetch all members so we can search them when typing @
+  const fetchAllMembers = async () => {
+    const { data } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url');
+    if (data) setAllMembers(data);
+  };
 
   const fetchCurrentUserAvatar = async () => {
     const { data } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single();
@@ -157,7 +170,6 @@ export default function CommunityChat({ user }: { user: any }) {
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
-  // NEW: Delete Post
   const deletePost = async (postId: string) => {
     if (!window.confirm("Are you sure you want to delete this post?")) return;
     try {
@@ -166,8 +178,6 @@ export default function CommunityChat({ user }: { user: any }) {
     } catch (e) { console.error(e); }
   };
 
-  // NEW: Mention Highlighter
-  // Breaks text apart and wraps anything starting with @ in a colored span
   const renderContentWithMentions = (text: string) => {
     if (!text) return null;
     return text.split(/(@\w+)/g).map((part, index) => {
@@ -176,6 +186,75 @@ export default function CommunityChat({ user }: { user: any }) {
       }
       return part;
     });
+  };
+
+  // NEW: The Input Tracker
+  // This watches everything you type and checks if you just typed an "@" symbol followed by some letters
+  const handleTextInput = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, target: 'post' | 'comment') => {
+    const val = e.target.value;
+    if (target === 'post') setNewPost(val);
+    if (target === 'comment') setCommentText(val);
+
+    const cursorPosition = e.target.selectionStart || 0;
+    const textBeforeCursor = val.slice(0, cursorPosition);
+    
+    // Regex: Look for "@" preceded by a space or start of line, followed by letters/numbers
+    const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
+
+    if (match) {
+      setMentionQuery(match[1].toLowerCase());
+      setMentionTarget(target);
+    } else {
+      setMentionQuery(null);
+      setMentionTarget(null);
+    }
+  };
+
+  // NEW: Insert Mention
+  // Takes the clicked user and perfectly snaps their name into the text box
+  const insertMention = (member: any) => {
+    const mentionName = `@${member.first_name || ''}${member.last_name || ''}`.replace(/\s+/g, '');
+    
+    if (mentionTarget === 'post') {
+      const newText = newPost.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1${mentionName} `);
+      setNewPost(newText);
+    } else if (mentionTarget === 'comment') {
+      const newText = commentText.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1${mentionName} `);
+      setCommentText(newText);
+    }
+    
+    setMentionQuery(null);
+    setMentionTarget(null);
+  };
+
+  // NEW: Filter the member list based on what they are currently typing after the @
+  const filteredMentions = mentionQuery !== null
+    ? allMembers.filter(m => {
+        const fullName = `${m.first_name || ''}${m.last_name || ''}`.toLowerCase();
+        return fullName.includes(mentionQuery);
+      }).slice(0, 5) // Only show top 5 results so it doesn't get huge
+    : [];
+
+  // NEW: The Mention Dropdown Component (Reused for Post and Comment boxes)
+  const MentionDropdown = () => {
+    if (mentionQuery === null || filteredMentions.length === 0) return null;
+    return (
+      <div className="absolute bottom-[calc(100%+8px)] left-0 w-64 bg-[#1A1A1A]/95 backdrop-blur-xl border border-[#ff4d00]/30 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-50">
+        <div className="p-2 text-xs font-bold text-[#ff4d00] uppercase tracking-widest border-b border-white/5 bg-[#ff4d00]/5">Mentions</div>
+        {filteredMentions.map(m => (
+          <div 
+            key={m.id} 
+            onClick={() => insertMention(m)} 
+            className="flex items-center gap-3 p-3 hover:bg-white/10 cursor-pointer transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+              {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
+            </div>
+            <span className="text-sm font-bold text-white truncate">{m.first_name} {m.last_name}</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading threads...</div>;
@@ -187,7 +266,10 @@ export default function CommunityChat({ user }: { user: any }) {
       )}
 
       {/* COMPOSER BOX */}
-      <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-xl mb-8">
+      <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-xl mb-8 relative">
+        {/* Render the dropdown here if typing in the main post box */}
+        {mentionTarget === 'post' && <MentionDropdown />}
+        
         <form onSubmit={handlePost} className="flex gap-4">
           <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center mt-1">
             {currentUserAvatar ? <img src={currentUserAvatar} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
@@ -195,7 +277,7 @@ export default function CommunityChat({ user }: { user: any }) {
           <div className="flex-grow">
             <textarea 
               value={newPost} 
-              onChange={e => setNewPost(e.target.value)} 
+              onChange={e => handleTextInput(e, 'post')} 
               placeholder={repostTarget ? "Add your thoughts to this repost..." : "Start a thread... Try typing @name!"} 
               className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-lg placeholder:text-white/20 resize-none h-12" 
             />
@@ -268,7 +350,6 @@ export default function CommunityChat({ user }: { user: any }) {
                     
                     <div className="flex items-center gap-4">
                       <span className="text-xs text-white/30">{new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                      {/* NEW: Delete Button */}
                       {isMyPost && (
                         <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors">
                           <Trash2 size={14} />
@@ -277,7 +358,6 @@ export default function CommunityChat({ user }: { user: any }) {
                     </div>
                   </div>
                   
-                  {/* UPDATED: Pass content through the mention renderer */}
                   {post.content && <p className="text-[#F5F5F0]/90 mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>}
                   
                   {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/5 max-h-96 w-full object-contain bg-black/20" />}
@@ -319,7 +399,10 @@ export default function CommunityChat({ user }: { user: any }) {
 
                   {/* COMMENTS SECTION */}
                   {openCommentId === post.id && (
-                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 relative">
+                      {/* Render the dropdown here if typing in a specific comment box */}
+                      {mentionTarget === 'comment' && <MentionDropdown />}
+                      
                       {postComments.map((c: any) => (
                         <div key={c.id} className="flex gap-3 items-start">
                           <div className="w-6 h-6 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
@@ -327,14 +410,19 @@ export default function CommunityChat({ user }: { user: any }) {
                           </div>
                           <div className="bg-white/5 px-4 py-2 rounded-2xl flex-grow">
                             <p className="text-[10px] font-bold text-[#ff4d00] uppercase">{c.profiles?.first_name || 'Member'}</p>
-                            {/* UPDATED: Pass comment content through the mention renderer too! */}
                             <p className="text-sm text-white/80">{renderContentWithMentions(c.content)}</p>
                           </div>
                         </div>
                       ))}
                       
                       <div className="flex gap-2 pt-2">
-                        <input value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitComment(post.id)} placeholder="Reply... Try @name" className="flex-grow bg-white/5 border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-[#ff4d00] text-white" />
+                        <input 
+                          value={commentText} 
+                          onChange={e => handleTextInput(e as any, 'comment')} 
+                          onKeyDown={e => e.key === 'Enter' && submitComment(post.id)} 
+                          placeholder="Reply... Try @name" 
+                          className="flex-grow bg-white/5 border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-[#ff4d00] text-white" 
+                        />
                         <button onClick={() => submitComment(post.id)} className="text-[#ff4d00] font-bold text-sm px-4 hover:text-white transition-colors">Reply</button>
                       </div>
                     </div>
