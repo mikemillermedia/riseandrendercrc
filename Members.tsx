@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon, X } from 'lucide-react';
+import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon, X, BookOpen } from 'lucide-react'; // Added BookOpen
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -30,7 +30,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   const [modalUsers, setModalUsers] = useState<any[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // NEW: Deep Link Catcher
   const viewUserId = searchParams.get('viewUser');
 
   useEffect(() => {
@@ -42,12 +41,11 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     fetchCommunityData();
   }, []);
 
-  // NEW: Effect to catch URL profile requests and load them automatically
   useEffect(() => {
     if (viewUserId) {
       loadMemberProfile(viewUserId);
     } else {
-      setSelectedMember(null); // Clear it if they remove the url param
+      setSelectedMember(null); 
     }
   }, [viewUserId, currentUser]);
 
@@ -62,7 +60,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setLoading(false);
   };
 
-  // NEW: Refactored logic to easily load any user by ID
   const loadMemberProfile = async (userId: string) => {
     const { data: member } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (!member) return;
@@ -90,7 +87,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   };
 
   const handleMemberClick = (member: any) => {
-    // Instead of setting state manually, we just update the URL and let the deep-link catcher handle it!
     setSearchParams({ tab: 'activity', viewUser: member.id });
   };
 
@@ -148,7 +144,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     return (
       <div className="max-w-2xl mx-auto pb-20 animate-in fade-in slide-in-from-right-4 duration-300 relative">
         
-        {/* GLASS MODAL POP-OUT */}
         {showFollowModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
             <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
@@ -167,14 +162,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                   <div className="text-center text-white/40 text-sm py-8">No users found.</div>
                 ) : (
                   modalUsers.map((u, i) => (
-                    <div 
-                      key={i} 
-                      className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" 
-                      onClick={() => { 
-                        setShowFollowModal(false); 
-                        handleMemberClick(u); 
-                      }}
-                    >
+                    <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => { setShowFollowModal(false); handleMemberClick(u); }}>
                       <div className="w-12 h-12 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
                         {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                       </div>
@@ -204,8 +192,13 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
             <h1 className="text-3xl md:text-4xl font-black text-white">{selectedMember.first_name ? `${selectedMember.first_name} ${selectedMember.last_name}` : 'CRC Member'}</h1>
             
             {selectedMember.instagram_url && (
-              <a href={selectedMember.instagram_url} target="_blank" rel="noreferrer" className="text-[#ff4d00] hover:text-orange-400 transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
-                <Instagram size={16} /> @{selectedMember.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
+              <a 
+                href={selectedMember.instagram_url.startsWith('http') ? selectedMember.instagram_url : `https://${selectedMember.instagram_url}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="text-[#ff4d00] hover:text-orange-400 transition-colors mt-2 text-sm font-medium flex items-center gap-1.5"
+              >
+                <Instagram size={16} /> @{selectedMember.instagram_url.split('.com/')[1]?.replace('/', '') || selectedMember.instagram_url.replace(/^https?:\/\//, '')}
               </a>
             )}
 
@@ -243,7 +236,32 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
           
           <div className="w-full space-y-8 bg-[#1A1A1A] border border-white/5 p-8 rounded-[2rem] shadow-xl">
             <div><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Bio</h3><p className="text-white/90 leading-relaxed whitespace-pre-wrap text-sm md:text-base">{selectedMember.bio || "Creative Representing Christ."}</p></div>
-            {selectedMember.website_url && (<div className="pt-6 border-t border-white/5"><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Links</h3><a href={selectedMember.website_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium text-sm md:text-base"><LinkIcon size={16} /> {selectedMember.website_url.replace(/^https?:\/\//, '')}</a></div>)}
+            
+            {/* NEW: Display Bible Verse */}
+            {selectedMember.bible_verse && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
+                  <BookOpen size={14} className="text-[#ff4d00]" /> Favorite Verse / Current Reading
+                </h3>
+                <p className="text-white/90 leading-relaxed whitespace-pre-wrap text-sm md:text-base italic border-l-2 border-[#ff4d00] pl-4 py-1 bg-white/5 rounded-r-lg">
+                  "{selectedMember.bible_verse}"
+                </p>
+              </div>
+            )}
+
+            {selectedMember.website_url && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Links</h3>
+                <a 
+                  href={selectedMember.website_url.startsWith('http') ? selectedMember.website_url : `https://${selectedMember.website_url}`} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium text-sm md:text-base"
+                >
+                  <LinkIcon size={16} /> {selectedMember.website_url.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
             {memberSetup && (<div className="pt-6 border-t border-white/5"><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Showcase Setup</h3><img src={memberSetup} alt="Setup Showcase" className="w-full rounded-xl object-cover border border-white/5" /></div>)}
             
             {memberPosts.length > 0 && (
