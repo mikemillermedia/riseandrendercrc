@@ -13,6 +13,10 @@ export default function ProfileTab({ user }: { user: any }) {
   const [latestSetup, setLatestSetup] = useState<string | null>(null);
   const [myPosts, setMyPosts] = useState<any[]>([]); 
   
+  // NEW: State for follow counts
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,29 +48,24 @@ export default function ProfileTab({ user }: { user: any }) {
       setWebsiteUrl(data.website_url || '');
       setAvatarPreview(data.avatar_url || null);
     }
+
+    // Fetch Follow Counts
+    const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id);
+    const { count: following } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', user.id);
+    
+    setFollowersCount(followers || 0);
+    setFollowingCount(following || 0);
+
     setLoading(false);
   };
 
   const fetchLatestSetup = async () => {
-    const { data } = await supabase
-      .from('posts')
-      .select('media_url')
-      .eq('user_id', user.id)
-      .not('media_url', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-      
+    const { data } = await supabase.from('posts').select('media_url').eq('user_id', user.id).not('media_url', 'is', null).order('created_at', { ascending: false }).limit(1).single();
     if (data) setLatestSetup(data.media_url);
   };
 
   const fetchUserPosts = async () => {
-    const { data } = await supabase
-      .from('posts')
-      .select('*, post_likes(user_id), comments(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-      
+    const { data } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', user.id).order('created_at', { ascending: false });
     if (data) setMyPosts(data);
   };
 
@@ -122,11 +121,19 @@ export default function ProfileTab({ user }: { user: any }) {
               )}
             </div>
             <h1 className="text-3xl md:text-4xl font-black text-white">{profile?.first_name} {profile?.last_name}</h1>
+            
             {profile?.instagram_url && (
               <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/50 hover:text-[#ff4d00] transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
                 <Instagram size={16} /> @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
               </a>
             )}
+
+            {/* NEW: Follower Stats */}
+            <div className="flex items-center gap-4 mt-3 text-sm text-white/60">
+              <p><span className="font-bold text-white">{followingCount}</span> Following</p>
+              <p><span className="font-bold text-white">{followersCount}</span> Followers</p>
+            </div>
+
             <button onClick={() => setIsEditing(true)} className="mt-6 bg-[#1A1A1A] hover:bg-white/10 text-white px-6 py-2 rounded-full font-semibold transition-all text-sm border border-white/5">
               Edit Profile
             </button>
