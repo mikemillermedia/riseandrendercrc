@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, MessageCircle, Heart, UserPlus, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon } from 'lucide-react';
+import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -9,16 +9,27 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Members({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
   const [members, setMembers] = useState<any[]>([]);
   const [latestPost, setLatestPost] = useState<any>(null);
   const [newestMember, setNewestMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // States for viewing a specific member's public profile
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [memberSetup, setMemberSetup] = useState<string | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]); 
+  const [isFollowing, setIsFollowing] = useState(false); // NEW: Tracks if you follow them
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
+    // Get the currently logged-in user so we know who is doing the following
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setCurrentUser(session.user);
+    };
+    getUser();
     fetchCommunityData();
   }, []);
 
@@ -37,16 +48,67 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setSelectedMember(member);
     setMemberSetup(null); 
     setMemberPosts([]); 
+    setIsFollowing(false);
 
+    // 1. Fetch their setup
     const { data: setupData } = await supabase.from('posts').select('media_url').eq('user_id', member.id).not('media_url', 'is', null).order('created_at', { ascending: false }).limit(1).single();
     if (setupData) setMemberSetup(setupData.media_url);
 
+    // 2. Fetch their posts
     const { data: postsData } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', member.id).order('created_at', { ascending: false });
     if (postsData) setMemberPosts(postsData);
+
+    // 3. Check if the current user is already following this member
+    if (currentUser) {
+      const { data: followData } = await supabase.from('follows')
+        .select('*')
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', member.id)
+        .single();
+      
+      if (followData) setIsFollowing(true);
+    }
+  };
+
+  // NEW: The Follow / Unfollow Logic
+  const toggleFollow = async () => {
+    if (!currentUser || !selectedMember) return;
+    setFollowLoading(true);
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await supabase.from('follows').delete()
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', selectedMember.id);
+        setIsFollowing(false);
+      } else {
+        // Follow
+        await supabase.from('follows').insert([{ 
+          follower_id: currentUser.id, 
+          following_id: selectedMember.id 
+        }]);
+        
+        // Send them a notification!
+        await supabase.from('notifications').insert([{
+          user_id: selectedMember.id,
+          actor_id: currentUser.id,
+          type: 'new_follower'
+        }]);
+        
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+    }
+    setFollowLoading(false);
   };
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading community...</div>;
 
+  // ==========================================
+  // --- PUBLIC PROFILE VIEW (When Clicked) ---
+  // ==========================================
   if (selectedMember) {
     return (
       <div className="max-w-2xl mx-auto pb-20 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -58,17 +120,41 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#ff4d00]/80 p-1 overflow-hidden shadow-[0_0_30px_rgba(255,77,0,0.15)] mb-4 bg-[#131313]">
               {selectedMember.avatar_url ? <img src={selectedMember.avatar_url} className="w-full h-full rounded-full object-cover" /> : <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center"><User size={48} className="text-white/20" /></div>}
             </div>
+            
             <h1 className="text-3xl md:text-4xl font-black text-white">{selectedMember.first_name ? `${selectedMember.first_name} ${selectedMember.last_name}` : 'CRC Member'}</h1>
+            
             {selectedMember.instagram_url && (
               <a href={selectedMember.instagram_url} target="_blank" rel="noreferrer" className="text-[#ff4d00] hover:text-orange-400 transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
                 <Instagram size={16} /> @{selectedMember.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
               </a>
             )}
+
+            {/* NEW: Follow Button (Only show if looking at someone else's profile) */}
+            {currentUser && currentUser.id !== selectedMember.id && (
+              <button 
+                onClick={toggleFollow}
+                disabled={followLoading}
+                className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg ${
+                  isFollowing 
+                    ? 'bg-white/10 text-white hover:bg-white/20 border border-white/5' 
+                    : 'bg-[#ff4d00] text-black hover:bg-orange-500 shadow-orange-900/20'
+                }`}
+              >
+                {isFollowing ? (
+                  <><UserCheck size={18} /> Following</>
+                ) : (
+                  <><UserPlus size={18} /> Follow</>
+                )}
+              </button>
+            )}
+
           </div>
+          
           <div className="w-full space-y-8 bg-[#1A1A1A] border border-white/5 p-8 rounded-[2rem] shadow-xl">
             <div><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Bio</h3><p className="text-white/90 leading-relaxed whitespace-pre-wrap text-sm md:text-base">{selectedMember.bio || "Creative Representing Christ."}</p></div>
             {selectedMember.website_url && (<div className="pt-6 border-t border-white/5"><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Links</h3><a href={selectedMember.website_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium text-sm md:text-base"><LinkIcon size={16} /> {selectedMember.website_url.replace(/^https?:\/\//, '')}</a></div>)}
             {memberSetup && (<div className="pt-6 border-t border-white/5"><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Showcase Setup</h3><img src={memberSetup} alt="Setup Showcase" className="w-full rounded-xl object-cover border border-white/5" /></div>)}
+            
             {memberPosts.length > 0 && (
               <div className="pt-6 border-t border-white/5">
                 <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-4">Recent Activity</h3>
@@ -93,6 +179,9 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     );
   }
 
+  // ==========================================
+  // --- BENTO BOX DIRECTORY VIEW (Default) ---
+  // ==========================================
   return (
     <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
       <div className="mb-8 flex justify-between items-end"><div><h1 className="text-3xl font-black text-white">The Hub</h1><p className="text-white/50 mt-1">Updates and member directory.</p></div></div>
