@@ -16,7 +16,6 @@ export default function ProfileTab({ user }: { user: any }) {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   
-  // NEW: Modal States
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'following'>('followers');
   const [modalUsers, setModalUsers] = useState<any[]>([]);
@@ -108,7 +107,6 @@ export default function ProfileTab({ user }: { user: any }) {
     setSaving(false);
   };
 
-  // NEW: Fetch users for the glass modal
   const openFollowModal = async (type: 'followers' | 'following') => {
     setModalType(type);
     setShowFollowModal(true);
@@ -136,7 +134,6 @@ export default function ProfileTab({ user }: { user: any }) {
   return (
     <div className="max-w-2xl mx-auto pb-20 animate-in fade-in duration-500">
       
-      {/* GLASS MODAL POP-OUT */}
       {showFollowModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
@@ -160,7 +157,10 @@ export default function ProfileTab({ user }: { user: any }) {
                       {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                     </div>
                     <div className="flex-grow min-w-0">
-                      <p className="text-sm font-bold text-white truncate">{u?.first_name} {u?.last_name}</p>
+                      {/* FIX: Add fallback if first/last name are completely blank */}
+                      <p className="text-sm font-bold text-white truncate">
+                        {u?.first_name || u?.last_name ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : 'CRC Member'}
+                      </p>
                       {u?.instagram_url && <p className="text-xs text-[#ff4d00] truncate">@{u.instagram_url.split('.com/')[1]?.replace('/', '')}</p>}
                     </div>
                   </div>
@@ -191,7 +191,6 @@ export default function ProfileTab({ user }: { user: any }) {
               </a>
             )}
 
-            {/* UPDATED: Clickable Follower Stats */}
             <div className="flex items-center gap-6 mt-4 text-sm text-white/60">
               <button onClick={() => openFollowModal('following')} className="hover:text-[#ff4d00] transition-colors flex flex-col items-center group">
                 <span className="font-black text-white text-lg group-hover:text-[#ff4d00] transition-colors">{followingCount}</span> 
