@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle } from 'lucide-react';
+import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2 } from 'lucide-react'; // Added Share2
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -20,9 +20,8 @@ export default function CommunityChat({ user }: { user: any }) {
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  // Automatically open the comment section of the targeted post
   const [openCommentId, setOpenCommentId] = useState<string | null>(targetPostId);
+  const [copiedId, setCopiedId] = useState<string | null>(null); // State for share feedback
 
   useEffect(() => {
     if (user) {
@@ -31,7 +30,6 @@ export default function CommunityChat({ user }: { user: any }) {
     }
   }, [user]);
 
-  // Scroll to the post smoothly once loaded
   useEffect(() => {
     if (!loading && targetPostId) {
       setTimeout(() => {
@@ -114,6 +112,18 @@ export default function CommunityChat({ user }: { user: any }) {
     } catch (e) { console.error(e); }
   };
 
+  // NEW: Share Logic
+  const handleShare = async (postId: string) => {
+    const url = `${window.location.origin}/hub?tab=chat&postId=${postId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(postId);
+      setTimeout(() => setCopiedId(null), 2000); // Reset the "Copied!" message after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
+  };
+
   if (loading) return <div className="text-center py-20 text-white/40">Loading threads...</div>;
 
   return (
@@ -172,6 +182,7 @@ export default function CommunityChat({ user }: { user: any }) {
                   <p className="text-[#F5F5F0]/90 mt-1 whitespace-pre-wrap">{post.content}</p>
                   {post.media_url && <img src={post.media_url} className="mt-3 rounded-xl border border-white/5 max-h-96 w-full object-contain bg-black/20" />}
                   
+                  {/* INTERACTION ROW */}
                   <div className="flex gap-6 mt-4 text-white/40">
                     <button onClick={() => toggleLike(post.id, postLikes)} className={`flex items-center gap-1.5 hover:text-red-500 transition-colors ${isLiked ? 'text-red-500' : ''}`}>
                       <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
@@ -180,6 +191,12 @@ export default function CommunityChat({ user }: { user: any }) {
                     <button onClick={() => setOpenCommentId(openCommentId === post.id ? null : post.id)} className={`flex items-center gap-1.5 hover:text-white transition-colors ${openCommentId === post.id ? 'text-white' : ''}`}>
                       <MessageCircle size={20} />
                       <span className="text-xs font-medium">{postComments.length}</span>
+                    </button>
+                    <button onClick={() => handleShare(post.id)} className="flex items-center gap-1.5 hover:text-blue-400 transition-colors relative">
+                      <Share2 size={18} />
+                      {copiedId === post.id && (
+                        <span className="absolute -top-8 -left-4 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-md">Copied!</span>
+                      )}
                     </button>
                   </div>
 
