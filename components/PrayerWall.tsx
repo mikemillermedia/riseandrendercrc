@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Heart, Send, User } from 'lucide-react';
+import { Heart, Send, User, AlertCircle } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -11,19 +11,26 @@ export default function PrayerWall({ user }: { user: any }) {
   const [newRequest, setNewRequest] = useState('');
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null); // NEW: Error state
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
   const fetchRequests = async () => {
-    // Make sure we fetch the avatar_url from the profiles table
-    const { data } = await supabase
+    // We simplified the join syntax here to be more reliable
+    const { data, error } = await supabase
       .from('prayer_requests')
-      .select('*, profiles:user_id(first_name, last_name, avatar_url), prayer_likes(user_id)')
+      .select('*, profiles(first_name, last_name, avatar_url), prayer_likes(user_id)')
       .order('created_at', { ascending: false });
       
-    if (data) setRequests(data);
+    if (error) {
+      console.error("Supabase Error:", error);
+      setErrorMsg(error.message);
+    } else if (data) {
+      setRequests(data);
+      setErrorMsg(null);
+    }
     setLoading(false);
   };
 
@@ -39,6 +46,8 @@ export default function PrayerWall({ user }: { user: any }) {
     if (!error) {
       setNewRequest('');
       fetchRequests();
+    } else {
+      setErrorMsg(error.message);
     }
     setPosting(false);
   };
@@ -60,6 +69,14 @@ export default function PrayerWall({ user }: { user: any }) {
   return (
     <div className="max-w-3xl space-y-6">
       
+      {/* Error Banner */}
+      {errorMsg && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3">
+          <AlertCircle size={20} />
+          <p className="text-sm">Error: {errorMsg}</p>
+        </div>
+      )}
+
       {/* Input Box */}
       <div className="bg-[#1A1A1A] border border-white/5 p-6 rounded-2xl shadow-xl">
         <form onSubmit={handlePost}>
@@ -94,7 +111,6 @@ export default function PrayerWall({ user }: { user: any }) {
             <div key={request.id} className="bg-[#1A1A1A] border border-white/5 p-6 rounded-2xl shadow-xl">
               <div className="flex justify-between items-start mb-4">
                 
-                {/* NEW: Avatar & Name Layout */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center flex-shrink-0">
                     {avatarUrl ? (
