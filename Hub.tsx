@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle } from 'lucide-react';
+import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail } from 'lucide-react'; // Added Mail icon
 
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
 import CommunityChat from './CommunityChat';
 import Members from './Members';
-import AIChat from './components/AIChat'; // Brought in the AI Chat!
+import DirectMessages from './components/DirectMessages'; // NEW INBOX IMPORT
+import AIChat from './components/AIChat'; 
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -106,6 +107,11 @@ export default function Hub() {
         )}
       </button>
 
+      {/* NEW: INBOX TAB */}
+      <button onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <Mail size={20} /> Inbox
+      </button>
+
       <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Folder size={20} /> The Vault
       </button>
@@ -119,7 +125,6 @@ export default function Hub() {
         <User size={20} /> My Profile
       </button>
 
-      {/* NEW: Subtle Guide Section Divider */}
       <div className="mt-8 mb-2 px-4 text-[10px] font-bold text-white/20 uppercase tracking-widest">Support</div>
       <button onClick={() => { setActiveTab('guide'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm ${activeTab === 'guide' ? 'bg-white/10 text-white' : 'text-[#F5F5F0]/40 hover:text-white hover:bg-white/5'}`}>
         <HelpCircle size={18} /> App Guide & FAQ
@@ -130,7 +135,6 @@ export default function Hub() {
   return (
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
-      {/* Floating AI Chatbot component */}
       <div className="z-50"><AIChat /></div>
 
       {/* Mobile Header */}
@@ -169,7 +173,9 @@ export default function Hub() {
         
         {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
 
-        {/* NOTIFICATIONS SCREEN */}
+        {/* NEW: MESSAGES SCREEN */}
+        {activeTab === 'messages' && <DirectMessages user={user} />}
+
         {activeTab === 'notifications' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Notifications</h1>
@@ -191,9 +197,11 @@ export default function Hub() {
                           setSearchParams({ tab: 'chat', postId: notif.post_id });
                         } else if (notif.type === 'new_follower') {
                            setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
+                        } else if (notif.type === 'new_dm') { // Route to DM if it's a message!
+                           setSearchParams({ tab: 'messages', userId: notif.actor_id });
                         }
                       }}
-                      className={`bg-[#1A1A1A] border ${notif.is_read ? 'border-white/5' : 'border-[#ff4d00]/30'} p-5 rounded-2xl shadow-xl flex items-center gap-4 transition-colors ${notif.post_id || notif.type === 'new_follower' ? 'cursor-pointer hover:border-[#ff4d00]/50' : ''}`}
+                      className={`bg-[#1A1A1A] border ${notif.is_read ? 'border-white/5' : 'border-[#ff4d00]/30'} p-5 rounded-2xl shadow-xl flex items-center gap-4 transition-colors cursor-pointer hover:border-[#ff4d00]/50`}
                     >
                        <div className="w-12 h-12 rounded-full border border-white/10 overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
                          {notif.actor?.avatar_url ? (
@@ -207,6 +215,7 @@ export default function Hub() {
                            <span className="font-bold">{notif.actor?.first_name || 'Someone'} {notif.actor?.last_name || ''}</span> 
                            {notif.type === 'new_follower' && ' started following you!'}
                            {notif.type === 'new_post' && ' published a new post.'}
+                           {notif.type === 'new_dm' && ' sent you a direct message.'}
                          </p>
                          <p className="text-xs text-white/40 mt-1">
                            {new Date(notif.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
@@ -219,7 +228,6 @@ export default function Hub() {
           </div>
         )}
 
-        {/* NEW: GUIDE & FAQ SCREEN */}
         {activeTab === 'guide' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">App Guide & FAQ</h1>
@@ -239,6 +247,10 @@ export default function Hub() {
                   <div>
                     <h4 className="font-bold text-[#ff4d00] mb-1">Latest Activity & Directory</h4>
                     <p className="text-white/70 text-sm leading-relaxed">See the most recent posts and browse the member directory. Click on any member to view their setup, follow them, and get notified when they post.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ff4d00] mb-1">Direct Messages (Inbox)</h4>
+                    <p className="text-white/70 text-sm leading-relaxed">Chat privately 1-on-1 with other members. You can start a conversation by visiting someone's profile and clicking the "Message" button.</p>
                   </div>
                   <div>
                     <h4 className="font-bold text-[#ff4d00] mb-1">Community Chat</h4>
