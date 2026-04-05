@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell } from 'lucide-react';
+import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle } from 'lucide-react';
 
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
 import CommunityChat from './CommunityChat';
 import Members from './Members';
+import AIChat from './components/AIChat'; // Brought in the AI Chat!
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -117,12 +118,21 @@ export default function Hub() {
       <button onClick={() => { setActiveTab('profile'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <User size={20} /> My Profile
       </button>
+
+      {/* NEW: Subtle Guide Section Divider */}
+      <div className="mt-8 mb-2 px-4 text-[10px] font-bold text-white/20 uppercase tracking-widest">Support</div>
+      <button onClick={() => { setActiveTab('guide'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm ${activeTab === 'guide' ? 'bg-white/10 text-white' : 'text-[#F5F5F0]/40 hover:text-white hover:bg-white/5'}`}>
+        <HelpCircle size={18} /> App Guide & FAQ
+      </button>
     </>
   );
 
   return (
-    <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
+      {/* Floating AI Chatbot component */}
+      <div className="z-50"><AIChat /></div>
+
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-[#F5F5F0]/10 bg-[#131313] sticky top-0 z-50">
         <h2 className="font-black uppercase tracking-widest text-lg">CRC <span className="text-[#ff4d00]">Hub</span></h2>
@@ -142,14 +152,14 @@ export default function Hub() {
       )}
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex flex-col w-64 border-r border-[#F5F5F0]/10 p-6 sticky top-0 h-screen">
+      <div className="hidden md:flex flex-col w-64 border-r border-[#F5F5F0]/10 p-6 sticky top-0 h-screen overflow-y-auto">
         <h2 className="font-black uppercase tracking-widest text-2xl mb-12 cursor-pointer" onClick={() => navigate('/')}>
           CRC <span className="text-[#ff4d00]">Hub</span>
         </h2>
         <div className="flex flex-col gap-2 flex-grow">
           <NavLinks />
         </div>
-        <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors">
+        <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors mt-8">
           <LogOut size={20} /> Sign Out
         </button>
       </div>
@@ -176,7 +186,6 @@ export default function Hub() {
                  {notifications.map(notif => (
                     <div 
                       key={notif.id} 
-                      // NEW: We make the notification clickable if it's attached to a specific post!
                       onClick={() => {
                         if (notif.post_id) {
                           setSearchParams({ tab: 'chat', postId: notif.post_id });
@@ -207,6 +216,53 @@ export default function Hub() {
                  ))}
                </div>
             )}
+          </div>
+        )}
+
+        {/* NEW: GUIDE & FAQ SCREEN */}
+        {activeTab === 'guide' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">App Guide & FAQ</h1>
+            <p className="text-[#F5F5F0]/60 mb-8">Everything you need to know to navigate the CRC Hub.</p>
+            
+            <div className="space-y-6">
+              <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
+                <h3 className="text-xl font-black text-[#ff4d00] mb-4">Welcome to the Community</h3>
+                <p className="text-white/80 leading-relaxed text-sm md:text-base">
+                  Creatives Representing Christ (CRC) is a dedicated space to help you master your craft and connect with like-minded believers. Update your profile with your setup, bio, and favorite Bible reading so others can get to know you!
+                </p>
+              </div>
+
+              <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
+                <h3 className="text-xl font-black text-white mb-4">Navigating the Hub</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-bold text-[#ff4d00] mb-1">Latest Activity & Directory</h4>
+                    <p className="text-white/70 text-sm leading-relaxed">See the most recent posts and browse the member directory. Click on any member to view their setup, follow them, and get notified when they post.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ff4d00] mb-1">Community Chat</h4>
+                    <p className="text-white/70 text-sm leading-relaxed">The main feed for tech advice, gear reviews, and networking. Type <strong>@</strong> followed by a name to mention someone, and use the repeat icon to <strong>Repost</strong> someone's content with your own thoughts.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ff4d00] mb-1">Prayer Wall</h4>
+                    <p className="text-white/70 text-sm leading-relaxed">A safe, private space to bear one another's burdens. Click 'Praying' to show support, or leave a threaded reply to offer encouragement.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-[#ff4d00]/10 to-transparent border border-[#ff4d00]/20 p-6 md:p-8 rounded-3xl shadow-xl">
+                <h3 className="text-xl font-black text-white mb-4">Special Member Pricing</h3>
+                <p className="text-white/80 leading-relaxed text-sm md:text-base mb-4">
+                  As an official member of the CRC Hub, you receive exclusive, discounted pricing on all services through <strong>Rise & Render</strong>.
+                </p>
+                <ul className="list-disc pl-5 space-y-2 text-sm text-white/70">
+                  <li><strong>DFW In-Studio:</strong> Book high-end podcast and video sessions in our Duncanville studio.</li>
+                  <li><strong>Mobile Studio:</strong> We dispatch our cameras, lighting, and audio gear directly to your home/office.</li>
+                  <li><strong>Remote Consulting:</strong> Strategic 1-on-1 guidance to architect your perfect content engine, anywhere in the world.</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
