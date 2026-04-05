@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X } from 'lucide-react';
+import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, Bell, BellOff } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -32,6 +32,9 @@ export default function ProfileTab({ user }: { user: any }) {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  
+  // NEW: Push Notification State
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -51,6 +54,7 @@ export default function ProfileTab({ user }: { user: any }) {
       setInstagramUrl(data.instagram_url || '');
       setWebsiteUrl(data.website_url || '');
       setAvatarPreview(data.avatar_url || null);
+      setPushEnabled(data.push_notifications_enabled || false); // Load their preference
     }
 
     const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id);
@@ -70,6 +74,27 @@ export default function ProfileTab({ user }: { user: any }) {
   const fetchUserPosts = async () => {
     const { data } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', user.id).order('created_at', { ascending: false });
     if (data) setMyPosts(data);
+  };
+
+  // NEW: Handle the OS-level Permission Request
+  const handlePushToggle = async () => {
+    if (!pushEnabled) {
+      // If they are turning it ON, ask the browser/device for permission
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          setPushEnabled(true);
+        } else {
+          alert('You must allow notifications in your browser or device settings to enable this feature.');
+          setPushEnabled(false);
+        }
+      } else {
+        alert('Your current browser or device does not support push notifications.');
+      }
+    } else {
+      // If they are turning it OFF, just flip the switch
+      setPushEnabled(false);
+    }
   };
 
   const handleSave = async () => {
@@ -93,6 +118,7 @@ export default function ProfileTab({ user }: { user: any }) {
       instagram_url: instagramUrl,
       website_url: websiteUrl,
       avatar_url: newAvatarUrl,
+      push_notifications_enabled: pushEnabled, // Save their preference to the DB
       updated_at: new Date()
     };
 
@@ -155,7 +181,6 @@ export default function ProfileTab({ user }: { user: any }) {
                   <div 
                     key={i} 
                     className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
-                    // FIXED: This tells the app to switch tabs and load their profile!
                     onClick={() => { 
                       setShowFollowModal(false); 
                       setSearchParams({ tab: 'activity', viewUser: u.id }); 
@@ -320,6 +345,24 @@ export default function ProfileTab({ user }: { user: any }) {
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Instagram URL</label>
               <input value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="https://instagram.com/..." />
             </div>
+            
+            {/* NEW: Notification Preferences */}
+            <div className="pt-6 border-t border-white/10 mt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold mb-1">Push Notifications</h3>
+                  <p className="text-xs text-white/50">Get alerts on this device when someone follows you or posts.</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={handlePushToggle}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${pushEnabled ? 'bg-[#ff4d00]' : 'bg-white/10'}`}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${pushEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+
             <button onClick={handleSave} disabled={saving} className="w-full bg-[#ff4d00] text-black font-black uppercase tracking-widest py-4 rounded-xl hover:bg-orange-500 transition-colors mt-8">
               {saving ? 'Saving...' : 'Save Profile'}
             </button>
