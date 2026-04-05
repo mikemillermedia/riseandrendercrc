@@ -1,23 +1,34 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
 
-
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Cpu } from 'lucide-react';
+import { X, Send, Cpu, Mic, MicOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sendMessageToGemini } from '../services/geminiService';
 import { ChatMessage } from '../types';
 
+// Extend the window object to support the experimental Speech Recognition API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 const AIChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: "Welcome to Rise & Render. I'm your Community Assistant. How can I help you with your gear, setup, or creative journey today?" }
+    { role: 'model', text: "Welcome to the CRC Hub. I'm your Rise & Render Assistant. How can I help you navigate the platform, recommend gear, or support your creative journey today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Voice states
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -30,8 +41,51 @@ const AIChat: React.FC = () => {
     scrollToBottom();
   }, [messages, isOpen]);
 
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0])
+          .map((result: any) => result.transcript)
+          .join('');
+        setInput(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      setInput(''); // Clear input when starting to speak
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
 
     const userMessage: ChatMessage = { role: 'user', text: input };
     setMessages(prev => [...prev, userMessage]);
@@ -45,7 +99,7 @@ const AIChat: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -61,7 +115,7 @@ const AIChat: React.FC = () => {
                 </div>
                 <h3 className="font-heading font-bold text-white text-sm">Rise & Render Assistant</h3>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white">
+              <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -76,7 +130,7 @@ const AIChat: React.FC = () => {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                    className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                       msg.role === 'user'
                         ? 'bg-[#ff4d00] text-white rounded-tr-none'
                         : 'bg-white/5 text-slate-200 rounded-tl-none border border-white/10'
@@ -97,22 +151,36 @@ const AIChat: React.FC = () => {
               )}
             </div>
 
-            <div className="p-4 border-t border-white/5">
-              <div className="flex gap-2">
+            <div className="p-4 border-t border-white/5 bg-[#1A1A1A]">
+              <div className="flex gap-2 items-center">
+                
+                {/* Microphone Button */}
+                {recognitionRef.current && (
+                  <button
+                    onClick={toggleListening}
+                    className={`p-2.5 rounded-xl transition-colors flex-shrink-0 ${
+                      isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  </button>
+                )}
+
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask about your studio..."
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#ff4d00]/50 transition-all"
+                  placeholder={isListening ? "Listening..." : "Ask about your studio..."}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#ff4d00]/50 transition-all"
                 />
+                
                 <button
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                  className="bg-[#ff4d00] p-2.5 rounded-xl hover:bg-orange-500 transition-colors disabled:opacity-50"
+                  className="bg-[#ff4d00] p-2.5 rounded-xl hover:bg-orange-500 transition-colors disabled:opacity-50 flex-shrink-0"
                 >
-                  <Send className="w-4 h-4 text-white" />
+                  <Send className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
