@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Heart, Send, User, AlertCircle } from 'lucide-react';
+import { Send, User, AlertCircle } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// The emojis available for users to click
+const PRAYER_REACTIONS = ['🙏', '❤️', '🙌', '🫂'];
 
 export default function PrayerWall({ user }: { user: any }) {
   const [requests, setRequests] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState('');
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // NEW: Error state
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
   const fetchRequests = async () => {
-    // We simplified the join syntax here to be more reliable
     const { data, error } = await supabase
       .from('prayer_requests')
-      .select('*, profiles(first_name, last_name, avatar_url), prayer_likes(user_id)')
+      .select('*, profiles(first_name, last_name, avatar_url), prayer_likes(id, user_id, emoji)')
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -52,15 +54,21 @@ export default function PrayerWall({ user }: { user: any }) {
     setPosting(false);
   };
 
-  const togglePraying = async (requestId: string, currentLikes: any[]) => {
+  const toggleReaction = async (requestId: string, emoji: string, currentLikes: any[]) => {
     if (!user) return;
-    const isPraying = currentLikes.some(like => like.user_id === user.id);
     
-    if (isPraying) {
-      await supabase.from('prayer_likes').delete().match({ request_id: requestId, user_id: user.id });
+    // Check if the user already clicked THIS specific emoji
+    const existingLike = currentLikes.find(like => like.user_id === user.id && like.emoji === emoji);
+    
+    if (existingLike) {
+      // If they already clicked it, remove it (unlike)
+      await supabase.from('prayer_likes').delete().match({ id: existingLike.id });
     } else {
-      await supabase.from('prayer_likes').insert([{ request_id: requestId, user_id: user.id }]);
+      // If they haven't clicked it, add it
+      await supabase.from('prayer_likes').insert([{ request_id: requestId, user_id: user.id, emoji: emoji }]);
     }
+    
+    // Refresh the feed to show the updated counts
     fetchRequests();
   };
 
@@ -102,7 +110,6 @@ export default function PrayerWall({ user }: { user: any }) {
       <div className="space-y-4">
         {requests.map((request) => {
           const likes = request.prayer_likes || [];
-          const isPraying = likes.some((like: any) => like.user_id === user?.id);
           const firstName = request.profiles?.first_name || 'CRC';
           const lastName = request.profiles?.last_name || 'Member';
           const avatarUrl = request.profiles?.avatar_url;
@@ -133,19 +140,29 @@ export default function PrayerWall({ user }: { user: any }) {
                 {request.content}
               </p>
               
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => togglePraying(request.id, likes)}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all border ${
-                    isPraying 
-                      ? 'bg-[#ff4d00]/10 border-[#ff4d00]/30 text-[#ff4d00]' 
-                      : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Heart size={16} fill={isPraying ? "currentColor" : "none"} /> 
-                  Praying ({likes.length})
-                </button>
+              {/* EMOJI REACTION BAR */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {PRAYER_REACTIONS.map((emoji) => {
+                  const reactionCount = likes.filter((l: any) => l.emoji === emoji).length;
+                  const hasReacted = likes.some((l: any) => l.user_id === user?.id && l.emoji === emoji);
+
+                  return (
+                    <button 
+                      key={emoji}
+                      onClick={() => toggleReaction(request.id, emoji, likes)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                        hasReacted 
+                          ? 'bg-[#ff4d00]/10 border-[#ff4d00]/30 text-[#ff4d00]' 
+                          : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="text-lg leading-none">{emoji}</span>
+                      {reactionCount > 0 && <span>{reactionCount}</span>}
+                    </button>
+                  );
+                })}
               </div>
+
             </div>
           );
         })}
