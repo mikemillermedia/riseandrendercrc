@@ -16,19 +16,16 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export default function Hub() {
   const navigate = useNavigate();
   
-  // --- URL-based Tab Tracking ---
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'activity';
   
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab });
   };
-  // -----------------------------------
 
   const [user, setUser] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // --- NOTIFICATION STATES ---
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
@@ -45,7 +42,6 @@ export default function Hub() {
     checkUser();
   }, [navigate]);
 
-  // Fetch unread notification count so we can show the red badge
   useEffect(() => {
     if (user) {
       const fetchUnread = async () => {
@@ -58,9 +54,8 @@ export default function Hub() {
       };
       fetchUnread();
     }
-  }, [user, activeTab]); // Re-checks whenever you change tabs
+  }, [user, activeTab]); 
 
-  // Fetch all notifications when the user opens the Notifications tab
   useEffect(() => {
     if (activeTab === 'notifications' && user) {
       const fetchAndMarkRead = async () => {
@@ -74,14 +69,13 @@ export default function Hub() {
         if (data) setNotifications(data);
         setLoadingNotifs(false);
 
-        // Instantly mark them all as read in the database
         await supabase
           .from('notifications')
           .update({ is_read: true })
           .eq('user_id', user.id)
           .eq('is_read', false);
           
-        setUnreadCount(0); // Clear the red badge
+        setUnreadCount(0); 
       };
       fetchAndMarkRead();
     }
@@ -100,7 +94,6 @@ export default function Hub() {
         <Activity size={20} /> Latest Activity
       </button>
       
-      {/* NEW: Notifications Tab */}
       <button onClick={() => { setActiveTab('notifications'); setIsMobileMenuOpen(false); }} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'notifications' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <div className="flex items-center gap-3">
           <Bell size={20} /> Notifications
@@ -166,7 +159,7 @@ export default function Hub() {
         
         {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
 
-        {/* NEW: NOTIFICATIONS SCREEN */}
+        {/* NOTIFICATIONS SCREEN */}
         {activeTab === 'notifications' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Notifications</h1>
@@ -183,7 +176,15 @@ export default function Hub() {
                  {notifications.map(notif => (
                     <div 
                       key={notif.id} 
-                      className={`bg-[#1A1A1A] border ${notif.is_read ? 'border-white/5' : 'border-[#ff4d00]/30'} p-5 rounded-2xl shadow-xl flex items-center gap-4 transition-colors`}
+                      // NEW: We make the notification clickable if it's attached to a specific post!
+                      onClick={() => {
+                        if (notif.post_id) {
+                          setSearchParams({ tab: 'chat', postId: notif.post_id });
+                        } else if (notif.type === 'new_follower') {
+                           setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
+                        }
+                      }}
+                      className={`bg-[#1A1A1A] border ${notif.is_read ? 'border-white/5' : 'border-[#ff4d00]/30'} p-5 rounded-2xl shadow-xl flex items-center gap-4 transition-colors ${notif.post_id || notif.type === 'new_follower' ? 'cursor-pointer hover:border-[#ff4d00]/50' : ''}`}
                     >
                        <div className="w-12 h-12 rounded-full border border-white/10 overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
                          {notif.actor?.avatar_url ? (
@@ -195,7 +196,8 @@ export default function Hub() {
                        <div>
                          <p className="text-white text-sm md:text-base">
                            <span className="font-bold">{notif.actor?.first_name || 'Someone'} {notif.actor?.last_name || ''}</span> 
-                           {notif.type === 'new_follower' ? ' started following you!' : ' interacted with your content.'}
+                           {notif.type === 'new_follower' && ' started following you!'}
+                           {notif.type === 'new_post' && ' published a new post.'}
                          </p>
                          <p className="text-xs text-white/40 mt-1">
                            {new Date(notif.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
