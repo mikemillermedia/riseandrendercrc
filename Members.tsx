@@ -16,22 +16,22 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   const [newestMember, setNewestMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // States for viewing a specific member's public profile
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [memberSetup, setMemberSetup] = useState<string | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]); 
   const [isFollowing, setIsFollowing] = useState(false); 
   const [followLoading, setFollowLoading] = useState(false);
 
-  // Stats
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
-  // Modal States
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'following'>('followers');
   const [modalUsers, setModalUsers] = useState<any[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // NEW: Deep Link Catcher
+  const viewUserId = searchParams.get('viewUser');
 
   useEffect(() => {
     const getUser = async () => {
@@ -41,6 +41,15 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     getUser();
     fetchCommunityData();
   }, []);
+
+  // NEW: Effect to catch URL profile requests and load them automatically
+  useEffect(() => {
+    if (viewUserId) {
+      loadMemberProfile(viewUserId);
+    } else {
+      setSelectedMember(null); // Clear it if they remove the url param
+    }
+  }, [viewUserId, currentUser]);
 
   const fetchCommunityData = async () => {
     const { data: profilesData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
@@ -53,7 +62,11 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setLoading(false);
   };
 
-  const handleMemberClick = async (member: any) => {
+  // NEW: Refactored logic to easily load any user by ID
+  const loadMemberProfile = async (userId: string) => {
+    const { data: member } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (!member) return;
+
     setSelectedMember(member);
     setMemberSetup(null); 
     setMemberPosts([]); 
@@ -71,14 +84,18 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setFollowingCount(following);
 
     if (currentUser) {
-      const { data: followData } = await supabase.from('follows')
-        .select('*')
-        .eq('follower_id', currentUser.id)
-        .eq('following_id', member.id)
-        .single();
-      
+      const { data: followData } = await supabase.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', member.id).single();
       if (followData) setIsFollowing(true);
     }
+  };
+
+  const handleMemberClick = (member: any) => {
+    // Instead of setting state manually, we just update the URL and let the deep-link catcher handle it!
+    setSearchParams({ tab: 'activity', viewUser: member.id });
+  };
+
+  const handleBackClick = () => {
+    setSearchParams({ tab: 'activity' });
   };
 
   const toggleFollow = async () => {
@@ -102,7 +119,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setFollowLoading(false);
   };
 
-  // Fetch users for the glass modal
   const openFollowModal = async (type: 'followers' | 'following') => {
     if (!selectedMember) return;
     setModalType(type);
@@ -151,13 +167,21 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                   <div className="text-center text-white/40 text-sm py-8">No users found.</div>
                 ) : (
                   modalUsers.map((u, i) => (
-                    // FIX: Add onClick handler to close modal and navigate to profile
-                    <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => { setShowFollowModal(false); handleMemberClick(u); }}>
+                    <div 
+                      key={i} 
+                      className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" 
+                      onClick={() => { 
+                        setShowFollowModal(false); 
+                        handleMemberClick(u); 
+                      }}
+                    >
                       <div className="w-12 h-12 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
                         {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                       </div>
                       <div className="flex-grow min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{u?.first_name} {u?.last_name}</p>
+                        <p className="text-sm font-bold text-white truncate">
+                           {u?.first_name || u?.last_name ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : 'CRC Member'}
+                        </p>
                         {u?.instagram_url && <p className="text-xs text-[#ff4d00] truncate">@{u.instagram_url.split('.com/')[1]?.replace('/', '')}</p>}
                       </div>
                     </div>
@@ -168,7 +192,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
           </div>
         )}
 
-        <button onClick={() => setSelectedMember(null)} className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8">
+        <button onClick={handleBackClick} className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8">
           <ArrowLeft size={20} /> Back to Directory
         </button>
         <div className="flex flex-col mt-4">
@@ -185,7 +209,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               </a>
             )}
 
-            {/* UPDATED: Clickable Follower Stats */}
             <div className="flex items-center gap-6 mt-4 text-sm text-white/60">
               <button onClick={() => openFollowModal('following')} className="hover:text-[#ff4d00] transition-colors flex flex-col items-center group">
                 <span className="font-black text-white text-lg group-hover:text-[#ff4d00] transition-colors">{followingCount}</span> 
@@ -249,46 +272,9 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
 
   return (
     <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500 relative">
-        
-        {/* GLASS MODAL POP-OUT */}
-        {showFollowModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
-              <div className="flex justify-between items-center p-5 border-b border-white/10 bg-white/5">
-                <h3 className="text-white font-black uppercase tracking-widest text-sm">
-                  {modalType === 'followers' ? 'Followers' : 'Following'}
-                </h3>
-                <button onClick={() => setShowFollowModal(false)} className="text-white/40 hover:text-[#ff4d00] transition-colors p-1">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="overflow-y-auto p-2 space-y-1">
-                {modalLoading ? (
-                  <div className="text-center text-white/40 text-sm py-8">Loading...</div>
-                ) : modalUsers.length === 0 ? (
-                  <div className="text-center text-white/40 text-sm py-8">No users found.</div>
-                ) : (
-                  modalUsers.map((u, i) => (
-                    // FIX: Add onClick handler to close modal and navigate to profile
-                    <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => { setShowFollowModal(false); handleMemberClick(u); }}>
-                      <div className="w-12 h-12 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
-                        {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{u?.first_name} {u?.last_name}</p>
-                        {u?.instagram_url && <p className="text-xs text-[#ff4d00] truncate">@{u.instagram_url.split('.com/')[1]?.replace('/', '')}</p>}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
       <div className="mb-8 flex justify-between items-end"><div><h1 className="text-3xl font-black text-white">The Hub</h1><p className="text-white/50 mt-1">Updates and member directory.</p></div></div>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-min mb-12">
-        <div onClick={() => setActiveTab('chat')} className="cursor-pointer md:col-span-2 md:row-span-2 bg-[#1A1A1A] rounded-3xl p-8 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-[#ff4d00]/50 hover:shadow-[0_0_30px_rgba(255,77,0,0.1)] transition-all relative overflow-hidden">
+        <div onClick={() => setSearchParams({ tab: 'chat' })} className="cursor-pointer md:col-span-2 md:row-span-2 bg-[#1A1A1A] rounded-3xl p-8 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-[#ff4d00]/50 hover:shadow-[0_0_30px_rgba(255,77,0,0.1)] transition-all relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[100px] opacity-[0.05] group-hover:opacity-10 transition-opacity" />
           <div>
             <div className="flex items-center justify-between mb-6"><div className="flex items-center gap-3"><div className="bg-[#ff4d00]/10 p-3 rounded-2xl text-[#ff4d00]"><MessageCircle size={24} /></div><h2 className="text-xl font-black text-white">Latest in Chat</h2></div><ArrowRight className="text-white/20 group-hover:text-[#ff4d00] transition-colors" /></div>
@@ -297,7 +283,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
             ) : <p className="text-white/40">No posts yet. Go start a thread!</p>}
           </div>
         </div>
-        <div onClick={() => setActiveTab('prayer')} className="cursor-pointer md:col-span-1 md:row-span-1 bg-[#1A1A1A] rounded-3xl p-6 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-white/20 transition-all">
+        <div onClick={() => setSearchParams({ tab: 'prayer' })} className="cursor-pointer md:col-span-1 md:row-span-1 bg-[#1A1A1A] rounded-3xl p-6 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-white/20 transition-all">
           <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="bg-white/5 p-2.5 rounded-xl text-white"><Heart size={20} /></div><h3 className="font-bold text-white">Prayer Wall</h3></div><ArrowRight size={18} className="text-white/20 group-hover:text-white transition-colors" /></div>
           <div><p className="text-white/80 text-sm line-clamp-2 mb-3">Check the prayer wall to support and uplift fellow creatives in the CRC community this week.</p><span className="text-[#ff4d00] text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">View Requests</span></div>
         </div>
