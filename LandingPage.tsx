@@ -4,9 +4,9 @@
 */
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe, ArrowUp, Check
+  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe 
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -52,13 +52,10 @@ const LandingPage: React.FC = () => {
 
       {/* HEADER / NAVBAR */}
       <div className="fixed top-0 left-0 w-full z-50 bg-[#131313]/90 backdrop-blur-md border-b border-[#F5F5F0]/5 px-6 py-4 flex justify-between items-center">
-
-        {/* Logo */}
         <div className="flex items-center gap-3">
           <BrandLogo className="h-14 md:h-16 w-auto" />
         </div>
 
-        {/* Desktop Menu */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
           <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
@@ -66,7 +63,6 @@ const LandingPage: React.FC = () => {
           <button onClick={() => navigate('/login')} className="hover:text-[#ff4d00] transition-colors font-bold text-white">Join/Login</button>
         </nav>
 
-        {/* Mobile Menu Toggle Button */}
         <button 
           className="md:hidden text-[#F5F5F0]/80 hover:text-[#ff4d00] transition-colors"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -75,7 +71,6 @@ const LandingPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed top-[72px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-40">
           <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
@@ -132,3 +127,45 @@ const LandingPage: React.FC = () => {
               <div className="w-16 h-16 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center mb-8">
                 <Wrench className="w-8 h-8 text-[#ff4d00]" />
               </div>
+              <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Tech & Gear Mastery</h3>
+              <p className="text-[#131313]/70 leading-relaxed">
+                Master the tools of the trade, from software setups and editing workflows to camera and audio recommendations.
+              </p>
+            </motion.div>
+
+            <motion.div whileHover={{ y: -5 }} className="p-10 rounded-[2rem] bg-white border border-black/5 shadow-xl shadow-black/5">
+              <div className="w-16 h-16 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center mb-8">
+                <MapPin className="w-8 h-8 text-[#ff4d00]" />
+              </div>
+              <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">DFW Podcast Studio</h3>
+              <p className="text-[#131313]/70 leading-relaxed">
+                Local to Dallas-Fort Worth? Get access to our fully equipped, professional recording space designed for high-end production.
+              </p>
+            </motion.div>
+
+            <motion.div whileHover={{ y: -5 }} className="p-10 rounded-[2rem] bg-white border border-black/5 shadow-xl shadow-black/5">
+              <div className="w-16 h-16 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center mb-8">
+                <HeartHandshake className="w-8 h-8 text-[#ff4d00]" />
+              </div>
+              <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Faith & Community</h3>
+              <p className="text-[#131313]/70 leading-relaxed">
+                Connect, share, and pray with like-minded believers in the digital space. Grow your craft alongside your faith.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOUNDER STORY SECTION */}
+      <section className="py-32 bg-[#131313] text-[#F5F5F0] border-t border-[#F5F5F0]/5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[200px] opacity-[0.03] pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl md:text-6xl font-black mb-8 uppercase tracking-tighter">The Vision <span className="text-[#ff4d00]">Behind It</span></h2>
+              <div className="space-y-6 text-lg md:text-xl text-[#F5F5F0]/80 leading-relaxed">
+                <p>
+                  For years, our founder Mike Miller has helped brands and small businesses with equipment, gear setups, recommendations, and full-cycle media production as a creative director through his business, <a href="https://mikemillermedia.com" target="_blank" rel="noopener noreferrer" className="text-[#ff4d00] hover:underline font-bold">Mike Miller Media</a>.
+                </p>
+                <p>
+                  But after helping many people build their platforms, Mike realized a deep need to build within the Kingdom of God.
