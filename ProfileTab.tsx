@@ -33,7 +33,6 @@ export default function ProfileTab({ user }: { user: any }) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
-  // NEW: Push Notification State
   const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
@@ -54,7 +53,7 @@ export default function ProfileTab({ user }: { user: any }) {
       setInstagramUrl(data.instagram_url || '');
       setWebsiteUrl(data.website_url || '');
       setAvatarPreview(data.avatar_url || null);
-      setPushEnabled(data.push_notifications_enabled || false); // Load their preference
+      setPushEnabled(data.push_notifications_enabled || false); 
     }
 
     const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id);
@@ -76,10 +75,8 @@ export default function ProfileTab({ user }: { user: any }) {
     if (data) setMyPosts(data);
   };
 
-  // NEW: Handle the OS-level Permission Request
   const handlePushToggle = async () => {
     if (!pushEnabled) {
-      // If they are turning it ON, ask the browser/device for permission
       if ('Notification' in window) {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
@@ -92,9 +89,15 @@ export default function ProfileTab({ user }: { user: any }) {
         alert('Your current browser or device does not support push notifications.');
       }
     } else {
-      // If they are turning it OFF, just flip the switch
       setPushEnabled(false);
     }
+  };
+
+  // NEW: The URL Cleaner Function!
+  const formatUrl = (url: string) => {
+    if (!url || !url.trim()) return '';
+    // If it doesn't start with http:// or https://, add it!
+    return /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
   };
 
   const handleSave = async () => {
@@ -115,10 +118,10 @@ export default function ProfileTab({ user }: { user: any }) {
       first_name: firstName,
       last_name: lastName,
       bio,
-      instagram_url: instagramUrl,
-      website_url: websiteUrl,
+      instagram_url: formatUrl(instagramUrl), // Passes through the cleaner
+      website_url: formatUrl(websiteUrl),     // Passes through the cleaner
       avatar_url: newAvatarUrl,
-      push_notifications_enabled: pushEnabled, // Save their preference to the DB
+      push_notifications_enabled: pushEnabled, 
       updated_at: new Date()
     };
 
@@ -218,8 +221,13 @@ export default function ProfileTab({ user }: { user: any }) {
             <h1 className="text-3xl md:text-4xl font-black text-white">{profile?.first_name} {profile?.last_name}</h1>
             
             {profile?.instagram_url && (
-              <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/50 hover:text-[#ff4d00] transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
-                <Instagram size={16} /> @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
+              <a 
+                href={profile.instagram_url} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="text-white/50 hover:text-[#ff4d00] transition-colors mt-2 text-sm font-medium flex items-center gap-1.5"
+              >
+                <Instagram size={16} /> @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || profile.instagram_url.replace(/^https?:\/\//, '')}
               </a>
             )}
 
@@ -252,7 +260,12 @@ export default function ProfileTab({ user }: { user: any }) {
                 <h3 className="text-white font-bold mb-2">Links:</h3>
                 <div className="flex flex-col gap-3">
                   {profile?.website_url && (
-                    <a href={profile.website_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm md:text-base font-medium">
+                    <a 
+                      href={profile.website_url} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm md:text-base font-medium"
+                    >
                       <LinkIcon size={16} /> {profile.website_url.replace(/^https?:\/\//, '')}
                     </a>
                   )}
@@ -339,14 +352,13 @@ export default function ProfileTab({ user }: { user: any }) {
             </div>
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Website URL (Optional)</label>
-              <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="https://..." />
+              <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="mikemillermedia.com" />
             </div>
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Instagram URL</label>
-              <input value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="https://instagram.com/..." />
+              <input value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="instagram.com/mikemiller" />
             </div>
             
-            {/* NEW: Notification Preferences */}
             <div className="pt-6 border-t border-white/10 mt-6">
               <div className="flex items-center justify-between">
                 <div>
