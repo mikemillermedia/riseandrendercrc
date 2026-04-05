@@ -16,15 +16,18 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   const [newestMember, setNewestMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // States for viewing a specific member's public profile
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [memberSetup, setMemberSetup] = useState<string | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]); 
   const [isFollowing, setIsFollowing] = useState(false); 
   const [followLoading, setFollowLoading] = useState(false);
 
+  // Stats
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
+  // Modal States
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'following'>('followers');
   const [modalUsers, setModalUsers] = useState<any[]>([]);
@@ -59,13 +62,13 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     const { data: setupData } = await supabase.from('posts').select('media_url').eq('user_id', member.id).not('media_url', 'is', null).order('created_at', { ascending: false }).limit(1).single();
     if (setupData) setMemberSetup(setupData.media_url);
 
-    const { data: postsData } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', member.id).order('created_at', { ascending: false });
+    const { data: postsData = [] } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', member.id).order('created_at', { ascending: false });
     if (postsData) setMemberPosts(postsData);
 
-    const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', member.id);
-    const { count: following } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', member.id);
-    setFollowersCount(followers || 0);
-    setFollowingCount(following || 0);
+    const { count: followers = 0 } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', member.id);
+    const { count: following = 0 } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', member.id);
+    setFollowersCount(followers);
+    setFollowingCount(following);
 
     if (currentUser) {
       const { data: followData } = await supabase.from('follows')
@@ -99,6 +102,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setFollowLoading(false);
   };
 
+  // Fetch users for the glass modal
   const openFollowModal = async (type: 'followers' | 'following') => {
     if (!selectedMember) return;
     setModalType(type);
@@ -107,13 +111,13 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setModalUsers([]);
 
     if (type === 'followers') {
-      const { data } = await supabase
+      const { data = [] } = await supabase
         .from('follows')
         .select('follower:follower_id(id, first_name, last_name, avatar_url, instagram_url)')
         .eq('following_id', selectedMember.id);
       if (data) setModalUsers(data.map((d: any) => d.follower).filter(Boolean));
     } else {
-      const { data } = await supabase
+      const { data = [] } = await supabase
         .from('follows')
         .select('following:following_id(id, first_name, last_name, avatar_url, instagram_url)')
         .eq('follower_id', selectedMember.id);
@@ -128,6 +132,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     return (
       <div className="max-w-2xl mx-auto pb-20 animate-in fade-in slide-in-from-right-4 duration-300 relative">
         
+        {/* GLASS MODAL POP-OUT */}
         {showFollowModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
             <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
@@ -146,15 +151,13 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                   <div className="text-center text-white/40 text-sm py-8">No users found.</div>
                 ) : (
                   modalUsers.map((u, i) => (
+                    // FIX: Add onClick handler to close modal and navigate to profile
                     <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => { setShowFollowModal(false); handleMemberClick(u); }}>
                       <div className="w-12 h-12 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
                         {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                       </div>
                       <div className="flex-grow min-w-0">
-                        {/* FIX: Add fallback if first/last name are completely blank */}
-                        <p className="text-sm font-bold text-white truncate">
-                           {u?.first_name || u?.last_name ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : 'CRC Member'}
-                        </p>
+                        <p className="text-sm font-bold text-white truncate">{u?.first_name} {u?.last_name}</p>
                         {u?.instagram_url && <p className="text-xs text-[#ff4d00] truncate">@{u.instagram_url.split('.com/')[1]?.replace('/', '')}</p>}
                       </div>
                     </div>
@@ -182,6 +185,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               </a>
             )}
 
+            {/* UPDATED: Clickable Follower Stats */}
             <div className="flex items-center gap-6 mt-4 text-sm text-white/60">
               <button onClick={() => openFollowModal('following')} className="hover:text-[#ff4d00] transition-colors flex flex-col items-center group">
                 <span className="font-black text-white text-lg group-hover:text-[#ff4d00] transition-colors">{followingCount}</span> 
@@ -244,7 +248,44 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500 relative">
+        
+        {/* GLASS MODAL POP-OUT */}
+        {showFollowModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center p-5 border-b border-white/10 bg-white/5">
+                <h3 className="text-white font-black uppercase tracking-widest text-sm">
+                  {modalType === 'followers' ? 'Followers' : 'Following'}
+                </h3>
+                <button onClick={() => setShowFollowModal(false)} className="text-white/40 hover:text-[#ff4d00] transition-colors p-1">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="overflow-y-auto p-2 space-y-1">
+                {modalLoading ? (
+                  <div className="text-center text-white/40 text-sm py-8">Loading...</div>
+                ) : modalUsers.length === 0 ? (
+                  <div className="text-center text-white/40 text-sm py-8">No users found.</div>
+                ) : (
+                  modalUsers.map((u, i) => (
+                    // FIX: Add onClick handler to close modal and navigate to profile
+                    <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer" onClick={() => { setShowFollowModal(false); handleMemberClick(u); }}>
+                      <div className="w-12 h-12 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+                        {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{u?.first_name} {u?.last_name}</p>
+                        {u?.instagram_url && <p className="text-xs text-[#ff4d00] truncate">@{u.instagram_url.split('.com/')[1]?.replace('/', '')}</p>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       <div className="mb-8 flex justify-between items-end"><div><h1 className="text-3xl font-black text-white">The Hub</h1><p className="text-white/50 mt-1">Updates and member directory.</p></div></div>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-min mb-12">
         <div onClick={() => setActiveTab('chat')} className="cursor-pointer md:col-span-2 md:row-span-2 bg-[#1A1A1A] rounded-3xl p-8 border border-white/5 shadow-lg flex flex-col justify-between group hover:border-[#ff4d00]/50 hover:shadow-[0_0_30px_rgba(255,77,0,0.1)] transition-all relative overflow-hidden">
