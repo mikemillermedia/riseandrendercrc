@@ -104,6 +104,7 @@ export default function Hub() {
       {/* Main Content Area */}
       <div className="flex-grow p-6 md:p-12 max-w-5xl mx-auto w-full">
         
+        {/* Render Members Component for 'activity' tab */}
         {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
 
         {activeTab === 'vault' && (
@@ -114,8 +115,20 @@ export default function Hub() {
               <div className="bg-black h-40 rounded-xl mb-6 overflow-hidden flex items-center justify-center border border-[#F5F5F0]/5">
                 <img src={freeKitImage} alt="Content Creator Kit" className="w-full h-full object-cover rounded-xl" />
               </div>
-              <h3 className="text-xl font-bold mb-2 text-white uppercase tracking-wider">Content Creator Kit</h3>
-              <p className="text-sm text-[#F5F5F0]/60 mb-6">The ultimate starter kit for your church's media ministry. Includes templates, assets, and guides.</p>
+              <h3 className="text-xl font-bold mb-4 text-white uppercase tracking-wider">Content Creator Kit</h3>
+              
+              {/* NEW UPDATED TEXT SECTION */}
+              <div className="text-sm text-[#F5F5F0]/70 mb-8 space-y-3 leading-relaxed">
+                <p>Too many options. Too much gear. No clear system.</p>
+                <p>This kit removes the guesswork. Every item is here because it:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Works reliably in small home spaces</li>
+                  <li>Is forgiving for non-technical users</li>
+                  <li>Delivers professional results without overbuilding</li>
+                </ul>
+                <p>This is the setup I recommend to the majority of serious business owners.</p>
+              </div>
+
               <a href="https://checkout.mailerlite.com/checkout/13297" target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-3 px-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
                 <Download size={18} /> Download Kit
               </a>
