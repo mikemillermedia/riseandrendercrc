@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat } from 'lucide-react'; // Added Repeat icon
+import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -22,8 +22,6 @@ export default function CommunityChat({ user }: { user: any }) {
   const [error, setError] = useState<string | null>(null);
   const [openCommentId, setOpenCommentId] = useState<string | null>(targetPostId);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
-  // NEW: State to hold the post you are currently trying to repost
   const [repostTarget, setRepostTarget] = useState<any>(null);
 
   useEffect(() => {
@@ -75,7 +73,6 @@ export default function CommunityChat({ user }: { user: any }) {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Allow posting if there is text, media, OR a repost target!
     if (!newPost.trim() && !mediaFile && !repostTarget) return; 
     setPosting(true);
     setError(null);
@@ -90,17 +87,29 @@ export default function CommunityChat({ user }: { user: any }) {
         media_url = publicUrl;
       }
 
-      // Insert the new post, attaching the original_post_id if we are reposting
-      const { error: postError } = await supabase.from('posts').insert([{ 
+      // 1. Insert the post and return the new ID
+      const { data: newPostData, error: postError } = await supabase.from('posts').insert([{ 
         user_id: user.id, 
         content: newPost.trim(), 
         media_url,
         original_post_id: repostTarget?.id || null 
-      }]);
+      }]).select().single();
       
       if (postError) throw postError;
 
-      // Reset the form
+      // 2. NEW: Find everyone following the user and send them a notification!
+      const { data: followers } = await supabase.from('follows').select('follower_id').eq('following_id', user.id);
+      
+      if (followers && followers.length > 0) {
+        const notifications = followers.map(f => ({
+          user_id: f.follower_id, 
+          actor_id: user.id,      
+          type: 'new_post',
+          post_id: newPostData.id // Attach the post ID so they can click it!
+        }));
+        await supabase.from('notifications').insert(notifications);
+      }
+
       setNewPost('');
       setMediaFile(null);
       setMediaPreview(null);
@@ -146,9 +155,8 @@ export default function CommunityChat({ user }: { user: any }) {
   };
 
   const initiateRepost = (post: any) => {
-    // If they are trying to repost a repost, just grab the original source to avoid infinite nesting!
     setRepostTarget(post.original_post || post);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll them up to the text box
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading threads...</div>;
@@ -180,7 +188,6 @@ export default function CommunityChat({ user }: { user: any }) {
               </div>
             )}
 
-            {/* NEW: Repost Preview inside the composer */}
             {repostTarget && (
               <div className="mt-4 p-4 border border-[#ff4d00]/30 bg-[#ff4d00]/5 rounded-xl relative">
                 <button type="button" onClick={() => setRepostTarget(null)} className="absolute top-2 right-2 text-[#ff4d00]/60 hover:text-[#ff4d00] transition-colors"><X size={16}/></button>
@@ -221,7 +228,6 @@ export default function CommunityChat({ user }: { user: any }) {
               className={`py-6 border-b border-white/5 transition-all duration-700 ${isTargeted ? 'bg-white/5 -mx-4 px-4 rounded-2xl border-transparent' : ''}`}
             >
               
-              {/* If this post IS a repost, show a tiny indicator at the top */}
               {post.original_post && (
                 <div className="flex items-center gap-2 text-white/30 text-xs font-bold uppercase tracking-wider mb-3 ml-12">
                   <Repeat size={12} /> {post.profiles?.first_name} Reposted
@@ -245,7 +251,6 @@ export default function CommunityChat({ user }: { user: any }) {
                   {post.content && <p className="text-[#F5F5F0]/90 mb-3 whitespace-pre-wrap">{post.content}</p>}
                   {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/5 max-h-96 w-full object-contain bg-black/20" />}
                   
-                  {/* NEW: Embedded Original Post (If this is a repost) */}
                   {post.original_post && (
                     <div className="mt-2 mb-4 p-4 border border-white/10 bg-white/5 rounded-xl hover:border-white/20 transition-colors">
                       <div className="flex items-center gap-2 mb-2">
@@ -270,7 +275,6 @@ export default function CommunityChat({ user }: { user: any }) {
                       <MessageCircle size={18} />
                       <span className="text-xs font-medium">{postComments.length}</span>
                     </button>
-                    {/* NEW: Repost Button */}
                     <button onClick={() => initiateRepost(post)} className="flex items-center gap-1.5 hover:text-green-400 transition-colors">
                       <Repeat size={18} />
                     </button>
