@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon, X, BookOpen } from 'lucide-react'; // Added BookOpen
+import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon, X, BookOpen, Mail } from 'lucide-react'; // Added Mail
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -214,22 +214,33 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               </button>
             </div>
 
+            {/* NEW: Action Buttons Row (Follow + Message) */}
             {currentUser && currentUser.id !== selectedMember.id && (
-              <button 
-                onClick={toggleFollow}
-                disabled={followLoading}
-                className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg ${
-                  isFollowing 
-                    ? 'bg-white/10 text-white hover:bg-white/20 border border-white/5' 
-                    : 'bg-[#ff4d00] text-black hover:bg-orange-500 shadow-orange-900/20'
-                }`}
-              >
-                {isFollowing ? (
-                  <><UserCheck size={18} /> Following</>
-                ) : (
-                  <><UserPlus size={18} /> Follow</>
-                )}
-              </button>
+              <div className="flex items-center gap-3 mt-6">
+                <button 
+                  onClick={toggleFollow}
+                  disabled={followLoading}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg ${
+                    isFollowing 
+                      ? 'bg-white/10 text-white hover:bg-white/20 border border-white/5' 
+                      : 'bg-[#ff4d00] text-black hover:bg-orange-500 shadow-orange-900/20'
+                  }`}
+                >
+                  {isFollowing ? (
+                    <><UserCheck size={18} /> Following</>
+                  ) : (
+                    <><UserPlus size={18} /> Follow</>
+                  )}
+                </button>
+
+                {/* The NEW Message Button */}
+                <button 
+                  onClick={() => setSearchParams({ tab: 'messages', userId: selectedMember.id })}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg bg-white/10 text-white hover:bg-white/20 border border-white/5"
+                >
+                  <Mail size={18} /> Message
+                </button>
+              </div>
             )}
 
           </div>
@@ -237,7 +248,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
           <div className="w-full space-y-8 bg-[#1A1A1A] border border-white/5 p-8 rounded-[2rem] shadow-xl">
             <div><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Bio</h3><p className="text-white/90 leading-relaxed whitespace-pre-wrap text-sm md:text-base">{selectedMember.bio || "Creative Representing Christ."}</p></div>
             
-            {/* NEW: Display Bible Verse */}
             {selectedMember.bible_verse && (
               <div className="pt-6 border-t border-white/5">
                 <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
