@@ -112,9 +112,12 @@ export default function Hub() {
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">The Vault</h1>
             <p className="text-[#F5F5F0]/60 mb-8">Download your exclusive assets and templates.</p>
             <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl max-w-sm hover:border-[#ff4d00]/50 transition-colors shadow-xl">
-              <div className="bg-black h-40 rounded-xl mb-6 overflow-hidden flex items-center justify-center border border-[#F5F5F0]/5">
+              
+              {/* IMAGE UPDATED TO ASPECT-SQUARE */}
+              <div className="bg-black w-full aspect-square rounded-xl mb-6 overflow-hidden flex items-center justify-center border border-[#F5F5F0]/5">
                 <img src={freeKitImage} alt="Content Creator Kit" className="w-full h-full object-cover rounded-xl" />
               </div>
+              
               <h3 className="text-xl font-bold mb-4 text-white uppercase tracking-wider">Content Creator Kit</h3>
               
               {/* NEW UPDATED TEXT SECTION */}
