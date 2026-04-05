@@ -1,179 +1,224 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import { GoogleGenAI, Chat, GenerateContentResponse, Modality } from "@google/genai";
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Send, Cpu, Mic, MicOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { sendMessageToGemini } from '../services/geminiService';
+import { ChatMessage } from '../types';
 
-let chatSession: Chat | null = null;
-
-export const initializeChat = (): Chat => {
-  if (chatSession) return chatSession;
-
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  chatSession = ai.chats.create({
-    model: 'gemini-3-flash-preview',
-    config: {
-      systemInstruction: `You are the Community Assistant for 'Rise and Render', a community for Creatives Representing Christ.
-      You help Creatives Representing Christ (videographers, podcasters, designers, writers, and makers) navigate the technical side of their journey so they can use their gifts to represent Christ with excellence.
-      
-      Core Focus & Pillars:
-      1. Geek Out & Troubleshoot: Help with tech, gear recommendations, software setups, and production workflows.
-      2. Connect: Meet like-minded creatives sharing faith and passion for high-quality production.
-      3. Share: Showcase projects, get feedback, celebrate wins.
-      4. Pray: Lift each other up through prayer and spiritual support.
-      5. Inspire: Encourage one another to grow creatively and spiritually.
-      
-      Key Information to share when relevant:
-      - Mike Miller: The creator and founder of Rise & Render and Mike Miller Media (https://mikemillermedia.com). He helps enhance digital presence and drive results with engaging content and tailored strategies.
-      - Rise & Render DFW: We are the DFW creative partner for experts & coaches, providing end-to-end video podcasting and content services. We turn your raw expertise into a polished, powerful brand for high-level distribution & tangible conversions.
-      - DFW Studio: We have a fully equipped podcast studio available for local members in Dallas-Fort Worth.
-      - Resources: We provide free technical and creative resources to help members build their platforms. Premium services coming later.
-      - Building Phase: We are currently in the building phase. Encourage users to fill out the form to join the waitlist and shape the community.
-      
-      Tone: Professional, highly practical, tech-focused, encouraging, and faith-based. You are here to help them master the tools of the trade.`,
-    },
-  });
-
-  return chatSession;
-};
-
-export const sendMessageToGemini = async (message: string): Promise<string> => {
-  if (!process.env.API_KEY) return "AI is currently offline.";
-  try {
-    const chat = initializeChat();
-    const response: GenerateContentResponse = await chat.sendMessage({ message });
-    return response.text || "Transmission interrupted.";
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    return "There was a signal error. Please try asking again.";
+// Extend the window object to support the experimental Speech Recognition API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
-};
+}
 
-export const critiqueSetup = async (imageData: string, answers: any): Promise<string> => {
-  if (!process.env.API_KEY) return "Critique engine offline.";
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const AIChat: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: 'model', text: "Welcome to the CRC Hub. I'm your Rise & Render Assistant. How can I help you navigate the platform, recommend gear, or support your creative journey today?" }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
-  const prompt = `
-    Analyze this user's production setup image and their responses:
-    - Frustration: ${answers.frustration}
-    - Setup Time: ${answers.time}
-    - Hated Gear: ${answers.hate}
+  // NEW: Voice states
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isOpen]);
+
+  // NEW: Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0])
+          .map((result: any) => result.transcript)
+          .join('');
+        setInput(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      setInput(''); // Clear input when starting to speak
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
+
+    const userMessage: ChatMessage = { role: 'user', text: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    const responseText = await sendMessageToGemini(input);
     
-    Task: Provide a "Rise & Render" style critique.
-    1. Identify visible issues in the photo (lighting glare, messy cables, poor camera angle, etc).
-    2. Explain why their current "budget" choices are causing the ${answers.frustration} they mentioned.
-    3. Use a tone that is authoritative but helpful. 
-    4. Mention how the Rise & Render optimized system (Sony ZV-E10, native lenses, Shure audio) specifically solves their exact friction point.
-    5. Keep it to 3-4 punchy paragraphs. End with a strong call to action to move toward optimization.
-  `;
+    setMessages(prev => [...prev, { role: 'model', text: responseText }]);
+    setIsLoading(false);
+  };
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: [
-        {
-          parts: [
-            { inlineData: { data: imageData.split(',')[1], mimeType: 'image/jpeg' } },
-            { text: prompt }
-          ]
-        }
-      ]
-    });
-    return response.text || "Critique failed to render.";
-  } catch (error) {
-    console.error("Critique Error:", error);
-    return "The critique engine encountered an error analyzing your space. Ensure your image is clear and try again.";
-  }
+  return (
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="mb-4 w-80 md:w-96 bg-[#131313]/90 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+          >
+            <div className="bg-[#ff4d00] p-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Cpu className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-heading font-bold text-white text-sm">Rise & Render Assistant</h3>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div 
+              ref={chatContainerRef}
+              className="h-80 overflow-y-auto p-4 space-y-4 scroll-smooth"
+            >
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-[#ff4d00] text-white rounded-tr-none'
+                        : 'bg-white/5 text-slate-200 rounded-tl-none border border-white/10'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white/5 p-3 rounded-2xl rounded-tl-none flex gap-1.5 border border-white/10">
+                    <span className="w-1.5 h-1.5 bg-[#ff4d00] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-[#ff4d00] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-[#ff4d00] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-white/5 bg-[#1A1A1A]">
+              <div className="flex gap-2 items-center">
+                
+                {/* NEW: Microphone Button */}
+                {recognitionRef.current && (
+                  <button
+                    onClick={toggleListening}
+                    className={`p-2.5 rounded-xl transition-colors flex-shrink-0 ${
+                      isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  </button>
+                )}
+
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder={isListening ? "Listening..." : "Ask about your studio..."}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#ff4d00]/50 transition-all"
+                />
+                
+                <button
+                  onClick={handleSend}
+                  disabled={isLoading || !input.trim()}
+                  className="bg-[#ff4d00] p-2.5 rounded-xl hover:bg-orange-500 transition-colors disabled:opacity-50 flex-shrink-0"
+                >
+                  <Send className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-14 h-14 rounded-2xl bg-[#ff4d00] flex items-center justify-center shadow-xl shadow-orange-900/40 hover:bg-orange-500 transition-all z-50 group overflow-hidden"
+      >
+        <AnimatePresence mode="wait">
+          {isOpen ? (
+            <motion.div
+              key="close"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+            >
+              <X className="w-6 h-6 text-white" />
+            </motion.div>
+          ) : (
+            <motion.span
+              key="brand"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 1.5, opacity: 0 }}
+              className="text-white font-black text-2xl"
+            >
+              R
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
+    </div>
+  );
 };
 
-export const generateWorkflowDiagram = async (prompt: string): Promise<string | null> => {
-  if (!process.env.API_KEY) return null;
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: prompt }] },
-      config: { imageConfig: { aspectRatio: "16:9" } }
-    });
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-  } catch (error) {
-    console.error("Image Gen Error:", error);
-  }
-  return null;
-};
-
-// TTS Helper Functions
-function decodeBase64(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
-
-export const generatePackageVoiceover = async (packageName: string, details: string): Promise<void> => {
-  if (!process.env.API_KEY) return;
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  const prompt = `Say persuasively, professionally, and with a modern tech founder vibe: "Here is what the ${packageName} offers you. ${details}. This is about moving from overwhelmed to optimized."`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: prompt }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (base64Audio) {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      const audioBuffer = await decodeAudioData(
-        decodeBase64(base64Audio),
-        audioContext,
-        24000,
-        1,
-      );
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-      source.start();
-    }
-  } catch (error) {
-    console.error("TTS Error:", error);
-  }
-};
+export default AIChat;
