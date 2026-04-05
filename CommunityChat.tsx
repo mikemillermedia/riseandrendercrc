@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat } from 'lucide-react';
+import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2 } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -87,7 +87,6 @@ export default function CommunityChat({ user }: { user: any }) {
         media_url = publicUrl;
       }
 
-      // 1. Insert the post and return the new ID
       const { data: newPostData, error: postError } = await supabase.from('posts').insert([{ 
         user_id: user.id, 
         content: newPost.trim(), 
@@ -97,7 +96,6 @@ export default function CommunityChat({ user }: { user: any }) {
       
       if (postError) throw postError;
 
-      // 2. NEW: Find everyone following the user and send them a notification!
       const { data: followers } = await supabase.from('follows').select('follower_id').eq('following_id', user.id);
       
       if (followers && followers.length > 0) {
@@ -105,7 +103,7 @@ export default function CommunityChat({ user }: { user: any }) {
           user_id: f.follower_id, 
           actor_id: user.id,      
           type: 'new_post',
-          post_id: newPostData.id // Attach the post ID so they can click it!
+          post_id: newPostData.id 
         }));
         await supabase.from('notifications').insert(notifications);
       }
@@ -159,6 +157,27 @@ export default function CommunityChat({ user }: { user: any }) {
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
+  // NEW: Delete Post
+  const deletePost = async (postId: string) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    try {
+      await supabase.from('posts').delete().eq('id', postId);
+      fetchPosts();
+    } catch (e) { console.error(e); }
+  };
+
+  // NEW: Mention Highlighter
+  // Breaks text apart and wraps anything starting with @ in a colored span
+  const renderContentWithMentions = (text: string) => {
+    if (!text) return null;
+    return text.split(/(@\w+)/g).map((part, index) => {
+      if (part.startsWith('@')) {
+        return <span key={index} className="text-[#ff4d00] font-bold cursor-pointer hover:underline">{part}</span>;
+      }
+      return part;
+    });
+  };
+
   if (loading) return <div className="text-center py-20 text-white/40">Loading threads...</div>;
 
   return (
@@ -177,7 +196,7 @@ export default function CommunityChat({ user }: { user: any }) {
             <textarea 
               value={newPost} 
               onChange={e => setNewPost(e.target.value)} 
-              placeholder={repostTarget ? "Add your thoughts to this repost..." : "Start a thread..."} 
+              placeholder={repostTarget ? "Add your thoughts to this repost..." : "Start a thread... Try typing @name!"} 
               className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-lg placeholder:text-white/20 resize-none h-12" 
             />
             
@@ -220,6 +239,7 @@ export default function CommunityChat({ user }: { user: any }) {
           const postComments = post.comments || [];
           const isLiked = postLikes.some((l: any) => l.user_id === user?.id);
           const isTargeted = targetPostId === post.id;
+          const isMyPost = user?.id === post.user_id;
 
           return (
             <div 
@@ -245,10 +265,21 @@ export default function CommunityChat({ user }: { user: any }) {
                       <h3 className="font-bold text-sm text-white group-hover:text-[#ff4d00] transition-colors">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
                       {post.profiles?.instagram_url && <span className="text-xs text-white/30 group-hover:text-[#ff4d00]/70 transition-colors">@{post.profiles.instagram_url.split('.com/')[1]?.replace('/', '')}</span>}
                     </a>
-                    <span className="text-xs text-white/30">{new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                    
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-white/30">{new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                      {/* NEW: Delete Button */}
+                      {isMyPost && (
+                        <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   
-                  {post.content && <p className="text-[#F5F5F0]/90 mb-3 whitespace-pre-wrap">{post.content}</p>}
+                  {/* UPDATED: Pass content through the mention renderer */}
+                  {post.content && <p className="text-[#F5F5F0]/90 mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>}
+                  
                   {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/5 max-h-96 w-full object-contain bg-black/20" />}
                   
                   {post.original_post && (
@@ -260,7 +291,7 @@ export default function CommunityChat({ user }: { user: any }) {
                         <span className="text-xs font-bold text-white">{post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}</span>
                         <span className="text-[10px] text-white/30">{new Date(post.original_post.created_at).toLocaleDateString()}</span>
                       </div>
-                      <p className="text-sm text-white/80 whitespace-pre-wrap">{post.original_post.content}</p>
+                      <p className="text-sm text-white/80 whitespace-pre-wrap">{renderContentWithMentions(post.original_post.content)}</p>
                       {post.original_post.media_url && <img src={post.original_post.media_url} className="mt-3 rounded-lg border border-white/5 max-h-64 w-full object-cover" />}
                     </div>
                   )}
@@ -296,13 +327,14 @@ export default function CommunityChat({ user }: { user: any }) {
                           </div>
                           <div className="bg-white/5 px-4 py-2 rounded-2xl flex-grow">
                             <p className="text-[10px] font-bold text-[#ff4d00] uppercase">{c.profiles?.first_name || 'Member'}</p>
-                            <p className="text-sm text-white/80">{c.content}</p>
+                            {/* UPDATED: Pass comment content through the mention renderer too! */}
+                            <p className="text-sm text-white/80">{renderContentWithMentions(c.content)}</p>
                           </div>
                         </div>
                       ))}
                       
                       <div className="flex gap-2 pt-2">
-                        <input value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitComment(post.id)} placeholder="Reply..." className="flex-grow bg-white/5 border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-[#ff4d00] text-white" />
+                        <input value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitComment(post.id)} placeholder="Reply... Try @name" className="flex-grow bg-white/5 border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-[#ff4d00] text-white" />
                         <button onClick={() => submitComment(post.id)} className="text-[#ff4d00] font-bold text-sm px-4 hover:text-white transition-colors">Reply</button>
                       </div>
                     </div>
