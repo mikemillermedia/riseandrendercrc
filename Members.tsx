@@ -20,11 +20,14 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [memberSetup, setMemberSetup] = useState<string | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]); 
-  const [isFollowing, setIsFollowing] = useState(false); // NEW: Tracks if you follow them
+  const [isFollowing, setIsFollowing] = useState(false); 
   const [followLoading, setFollowLoading] = useState(false);
 
+  // NEW: Follow Stats State
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   useEffect(() => {
-    // Get the currently logged-in user so we know who is doing the following
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) setCurrentUser(session.user);
@@ -50,15 +53,18 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setMemberPosts([]); 
     setIsFollowing(false);
 
-    // 1. Fetch their setup
     const { data: setupData } = await supabase.from('posts').select('media_url').eq('user_id', member.id).not('media_url', 'is', null).order('created_at', { ascending: false }).limit(1).single();
     if (setupData) setMemberSetup(setupData.media_url);
 
-    // 2. Fetch their posts
     const { data: postsData } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', member.id).order('created_at', { ascending: false });
     if (postsData) setMemberPosts(postsData);
 
-    // 3. Check if the current user is already following this member
+    // Fetch Follow Counts
+    const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', member.id);
+    const { count: following } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', member.id);
+    setFollowersCount(followers || 0);
+    setFollowingCount(following || 0);
+
     if (currentUser) {
       const { data: followData } = await supabase.from('follows')
         .select('*')
@@ -70,33 +76,20 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     }
   };
 
-  // NEW: The Follow / Unfollow Logic
   const toggleFollow = async () => {
     if (!currentUser || !selectedMember) return;
     setFollowLoading(true);
 
     try {
       if (isFollowing) {
-        // Unfollow
-        await supabase.from('follows').delete()
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', selectedMember.id);
+        await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', selectedMember.id);
         setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1)); // Locally update the count so it feels instant
       } else {
-        // Follow
-        await supabase.from('follows').insert([{ 
-          follower_id: currentUser.id, 
-          following_id: selectedMember.id 
-        }]);
-        
-        // Send them a notification!
-        await supabase.from('notifications').insert([{
-          user_id: selectedMember.id,
-          actor_id: currentUser.id,
-          type: 'new_follower'
-        }]);
-        
+        await supabase.from('follows').insert([{ follower_id: currentUser.id, following_id: selectedMember.id }]);
+        await supabase.from('notifications').insert([{ user_id: selectedMember.id, actor_id: currentUser.id, type: 'new_follower' }]);
         setIsFollowing(true);
+        setFollowersCount(prev => prev + 1); // Locally update the count
       }
     } catch (error) {
       console.error("Error toggling follow:", error);
@@ -106,9 +99,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading community...</div>;
 
-  // ==========================================
-  // --- PUBLIC PROFILE VIEW (When Clicked) ---
-  // ==========================================
   if (selectedMember) {
     return (
       <div className="max-w-2xl mx-auto pb-20 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -129,7 +119,12 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               </a>
             )}
 
-            {/* NEW: Follow Button (Only show if looking at someone else's profile) */}
+            {/* NEW: Follower Stats */}
+            <div className="flex items-center gap-4 mt-3 text-sm text-white/60">
+              <p><span className="font-bold text-white">{followingCount}</span> Following</p>
+              <p><span className="font-bold text-white">{followersCount}</span> Followers</p>
+            </div>
+
             {currentUser && currentUser.id !== selectedMember.id && (
               <button 
                 onClick={toggleFollow}
@@ -179,9 +174,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     );
   }
 
-  // ==========================================
-  // --- BENTO BOX DIRECTORY VIEW (Default) ---
-  // ==========================================
   return (
     <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
       <div className="mb-8 flex justify-between items-end"><div><h1 className="text-3xl font-black text-white">The Hub</h1><p className="text-white/50 mt-1">Updates and member directory.</p></div></div>
