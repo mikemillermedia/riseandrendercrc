@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Heart, Send, AlertCircle } from 'lucide-react';
+import { Heart, Send, User } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -11,93 +11,69 @@ export default function PrayerWall({ user }: { user: any }) {
   const [newRequest, setNewRequest] = useState('');
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(''); // NEW: Holds error text
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
   const fetchRequests = async () => {
+    // Make sure we fetch the avatar_url from the profiles table
     const { data } = await supabase
       .from('prayer_requests')
-      .select(`*, profiles (first_name, last_name)`)
+      .select('*, profiles:user_id(first_name, last_name, avatar_url), prayer_likes(user_id)')
       .order('created_at', { ascending: false });
-    
+      
     if (data) setRequests(data);
     setLoading(false);
   };
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(''); // Clear old errors
-    if (!newRequest.trim() || !user) return;
+    if (!newRequest.trim()) return;
+    
     setPosting(true);
-
-    const { error } = await supabase.from('prayer_requests').insert([
-      { user_id: user.id, content: newRequest.trim() }
-    ]);
-
-    if (error) {
-      console.error(error);
-      setErrorMessage(error.message); // Show the error on screen!
-    } else {
+    const { error } = await supabase
+      .from('prayer_requests')
+      .insert([{ user_id: user.id, content: newRequest.trim() }]);
+      
+    if (!error) {
       setNewRequest('');
       fetchRequests();
     }
     setPosting(false);
   };
 
-  const togglePraying = async (requestId: string, currentPrayedBy: string[]) => {
+  const togglePraying = async (requestId: string, currentLikes: any[]) => {
     if (!user) return;
+    const isPraying = currentLikes.some(like => like.user_id === user.id);
     
-    const hasPrayed = currentPrayedBy.includes(user.id);
-    
-    const newPrayedBy = hasPrayed 
-      ? currentPrayedBy.filter(id => id !== user.id)
-      : [...currentPrayedBy, user.id];
-
-    setRequests(requests.map(req => 
-      req.id === requestId ? { ...req, prayed_by: newPrayedBy } : req
-    ));
-
-    await supabase
-      .from('prayer_requests')
-      .update({ prayed_by: newPrayedBy })
-      .eq('id', requestId);
+    if (isPraying) {
+      await supabase.from('prayer_likes').delete().match({ request_id: requestId, user_id: user.id });
+    } else {
+      await supabase.from('prayer_likes').insert([{ request_id: requestId, user_id: user.id }]);
+    }
+    fetchRequests();
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' · ' + date.toLocaleDateString();
-  };
+  if (loading) return <div className="text-white/40">Loading prayer requests...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl space-y-6">
       
       {/* Input Box */}
-      <div className="bg-[#1a1a1a] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-xl">
-        <form onSubmit={handlePost} className="flex flex-col gap-4">
-          <textarea
-            placeholder="Share a prayer request..."
+      <div className="bg-[#1A1A1A] border border-white/5 p-6 rounded-2xl shadow-xl">
+        <form onSubmit={handlePost}>
+          <textarea 
             value={newRequest}
             onChange={(e) => setNewRequest(e.target.value)}
-            className="w-full bg-[#131313] border border-[#F5F5F0]/10 rounded-xl px-4 py-3 text-[#F5F5F0] placeholder:text-[#F5F5F0]/40 focus:outline-none focus:border-[#ff4d00] transition-colors resize-none h-24"
-            required
+            placeholder="Share a prayer request..." 
+            className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-base placeholder:text-white/20 resize-none h-20"
           />
-          
-          {/* NEW: Error Display Box */}
-          {errorMessage && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
-              <AlertCircle size={16} />
-              {errorMessage}
-            </div>
-          )}
-
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-4 border-t border-white/5 pt-4">
             <button 
               type="submit" 
               disabled={posting || !newRequest.trim()}
-              className="bg-[#ff4d00] disabled:opacity-50 hover:bg-[#ff4d00]/80 text-white font-bold py-2.5 px-6 rounded-xl transition-all hover:scale-105 flex items-center gap-2 shadow-lg shadow-orange-900/20"
+              className="bg-[#ff4d00] hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <Send size={16} /> {posting ? 'Posting...' : 'Post Request'}
             </button>
@@ -105,49 +81,58 @@ export default function PrayerWall({ user }: { user: any }) {
         </form>
       </div>
 
-      {/* Real-time Prayer Feed */}
+      {/* Requests Feed */}
       <div className="space-y-4">
-        {loading ? (
-          <div className="text-[#F5F5F0]/60 animate-pulse text-center py-8">Loading requests...</div>
-        ) : requests.length > 0 ? (
-          requests.map((request) => {
-            const hasPrayed = request.prayed_by?.includes(user?.id);
-            const prayCount = request.prayed_by?.length || 0;
+        {requests.map((request) => {
+          const likes = request.prayer_likes || [];
+          const isPraying = likes.some((like: any) => like.user_id === user?.id);
+          const firstName = request.profiles?.first_name || 'CRC';
+          const lastName = request.profiles?.last_name || 'Member';
+          const avatarUrl = request.profiles?.avatar_url;
 
-            return (
-              <div key={request.id} className="bg-[#1a1a1a] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-md transition-all hover:border-[#F5F5F0]/20">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-bold text-white uppercase tracking-wider text-sm">
-                    {request.profiles?.first_name || 'CRC'} {request.profiles?.last_name || 'Member'}
+          return (
+            <div key={request.id} className="bg-[#1A1A1A] border border-white/5 p-6 rounded-2xl shadow-xl">
+              <div className="flex justify-between items-start mb-4">
+                
+                {/* NEW: Avatar & Name Layout */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center flex-shrink-0">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={`${firstName}'s avatar`} className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={20} className="text-white/20" />
+                    )}
+                  </div>
+                  <h3 className="font-bold text-white uppercase tracking-widest text-sm">
+                    {firstName} {lastName}
                   </h3>
-                  <span className="text-xs text-[#F5F5F0]/40">{formatDate(request.created_at)}</span>
                 </div>
-                
-                <p className="text-[#F5F5F0]/80 mb-4 leading-relaxed whitespace-pre-wrap">
-                  {request.content}
-                </p>
-                
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => togglePraying(request.id, request.prayed_by || [])}
-                    className={`flex items-center gap-2 text-sm transition-colors px-3 py-1.5 rounded-lg border ${
-                      hasPrayed 
-                        ? 'text-[#ff4d00] bg-[#ff4d00]/10 border-[#ff4d00]/20' 
-                        : 'text-[#F5F5F0]/40 bg-white/5 border-transparent hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Heart size={16} className={hasPrayed ? "fill-current" : ""} /> 
-                    Praying {prayCount > 0 && `(${prayCount})`}
-                  </button>
-                </div>
+
+                <span className="text-xs text-white/30 whitespace-nowrap pt-1">
+                  {new Date(request.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(request.created_at).toLocaleDateString()}
+                </span>
               </div>
-            );
-          })
-        ) : (
-          <div className="text-[#F5F5F0]/60 border border-dashed border-[#F5F5F0]/20 p-12 rounded-2xl text-center">
-            No prayer requests yet. Be the first to share one.
-          </div>
-        )}
+              
+              <p className="text-[#F5F5F0]/90 leading-relaxed whitespace-pre-wrap mb-6">
+                {request.content}
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => togglePraying(request.id, likes)}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                    isPraying 
+                      ? 'bg-[#ff4d00]/10 border-[#ff4d00]/30 text-[#ff4d00]' 
+                      : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Heart size={16} fill={isPraying ? "currentColor" : "none"} /> 
+                  Praying ({likes.length})
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
