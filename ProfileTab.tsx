@@ -152,12 +152,19 @@ export default function ProfileTab({ user }: { user: any }) {
                 <div className="text-center text-white/40 text-sm py-8">No users found.</div>
               ) : (
                 modalUsers.map((u, i) => (
-                  <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                    // FIXED: This tells the app to switch tabs and load their profile!
+                    onClick={() => { 
+                      setShowFollowModal(false); 
+                      setSearchParams({ tab: 'activity', viewUser: u.id }); 
+                    }}
+                  >
                     <div className="w-12 h-12 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
                       {u?.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                     </div>
                     <div className="flex-grow min-w-0">
-                      {/* FIX: Add fallback if first/last name are completely blank */}
                       <p className="text-sm font-bold text-white truncate">
                         {u?.first_name || u?.last_name ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : 'CRC Member'}
                       </p>
