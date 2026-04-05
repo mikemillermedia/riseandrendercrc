@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, Bell, BellOff } from 'lucide-react';
+import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, Bell, BellOff, BookOpen } from 'lucide-react'; // Added BookOpen
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -28,6 +28,7 @@ export default function ProfileTab({ user }: { user: any }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
+  const [bibleVerse, setBibleVerse] = useState(''); // NEW: State for Bible Verse
   const [instagramUrl, setInstagramUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -50,6 +51,7 @@ export default function ProfileTab({ user }: { user: any }) {
       setFirstName(data.first_name || '');
       setLastName(data.last_name || '');
       setBio(data.bio || '');
+      setBibleVerse(data.bible_verse || ''); // Load verse from DB
       setInstagramUrl(data.instagram_url || '');
       setWebsiteUrl(data.website_url || '');
       setAvatarPreview(data.avatar_url || null);
@@ -93,10 +95,8 @@ export default function ProfileTab({ user }: { user: any }) {
     }
   };
 
-  // NEW: The URL Cleaner Function!
   const formatUrl = (url: string) => {
     if (!url || !url.trim()) return '';
-    // If it doesn't start with http:// or https://, add it!
     return /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
   };
 
@@ -118,8 +118,9 @@ export default function ProfileTab({ user }: { user: any }) {
       first_name: firstName,
       last_name: lastName,
       bio,
-      instagram_url: formatUrl(instagramUrl), // Passes through the cleaner
-      website_url: formatUrl(websiteUrl),     // Passes through the cleaner
+      bible_verse: bibleVerse, // Save the new verse to the DB
+      instagram_url: formatUrl(instagramUrl), 
+      website_url: formatUrl(websiteUrl),     
       avatar_url: newAvatarUrl,
       push_notifications_enabled: pushEnabled, 
       updated_at: new Date()
@@ -255,9 +256,22 @@ export default function ProfileTab({ user }: { user: any }) {
                 {profile?.bio || "No bio added yet. Click Edit Profile to add one!"}
               </p>
             </div>
+
+            {/* NEW: Display Bible Verse */}
+            {profile?.bible_verse && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
+                  <BookOpen size={14} className="text-[#ff4d00]" /> Favorite Verse / Current Reading
+                </h3>
+                <p className="text-white/90 leading-relaxed whitespace-pre-wrap text-sm md:text-base italic border-l-2 border-[#ff4d00] pl-4 py-1 bg-white/5 rounded-r-lg">
+                  "{profile.bible_verse}"
+                </p>
+              </div>
+            )}
+
             {(profile?.website_url || profile?.instagram_url) && (
-              <div>
-                <h3 className="text-white font-bold mb-2">Links:</h3>
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Links:</h3>
                 <div className="flex flex-col gap-3">
                   {profile?.website_url && (
                     <a 
@@ -272,6 +286,7 @@ export default function ProfileTab({ user }: { user: any }) {
                 </div>
               </div>
             )}
+
             {latestSetup && (
               <div className="pt-8 border-t border-white/5">
                 <h3 className="text-white font-bold mb-4">Your Showcase Setup</h3>
@@ -350,6 +365,15 @@ export default function ProfileTab({ user }: { user: any }) {
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Bio</label>
               <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="Tell the community about yourself..." />
             </div>
+            
+            {/* NEW: Bible Verse Input Box */}
+            <div>
+              <label className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                <BookOpen size={14} /> Favorite Verse or Current Reading
+              </label>
+              <textarea value={bibleVerse} onChange={e => setBibleVerse(e.target.value)} rows={2} className="w-full bg-[#ff4d00]/5 border border-[#ff4d00]/20 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00] placeholder:text-[#ff4d00]/30" placeholder="e.g. Proverbs 3:5-6 or Currently reading through Acts..." />
+            </div>
+
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Website URL (Optional)</label>
               <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="mikemillermedia.com" />
