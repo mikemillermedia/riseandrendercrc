@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Send, User, ArrowLeft, Search } from 'lucide-react';
+import { Send, User, ArrowLeft, MessageSquare } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function DirectMessages({ user }: { user: any }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const targetUserId = searchParams.get('userId'); // If we deep-link from a profile
+  const targetUserId = searchParams.get('userId'); 
 
   const [inboxUsers, setInboxUsers] = useState<any[]>([]);
   const [activeChatUser, setActiveChatUser] = useState<any>(null);
@@ -25,7 +25,6 @@ export default function DirectMessages({ user }: { user: any }) {
     }
   }, [user]);
 
-  // Load specific user if deep-linked from their profile
   useEffect(() => {
     if (targetUserId && user) {
       loadSpecificUser(targetUserId);
@@ -34,17 +33,19 @@ export default function DirectMessages({ user }: { user: any }) {
     }
   }, [targetUserId, user]);
 
-  // Real-time listener for new messages!
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel('realtime_dms')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, payload => {
         const newMsg = payload.new;
-        // If the message belongs to the currently active chat, append it!
-        if (activeChatUser && ((newMsg.sender_id === user.id && newMsg.receiver_id === activeChatUser.id) || (newMsg.sender_id === activeChatUser.id && newMsg.receiver_id === user.id))) {
-          setMessages(prev => [...prev, newMsg]);
+        
+        // Only append if it's for the current chat, AND if it's not a message we just sent ourselves (to prevent duplicates)
+        if (activeChatUser && newMsg.sender_id !== user.id && ((newMsg.sender_id === user.id && newMsg.receiver_id === activeChatUser.id) || (newMsg.sender_id === activeChatUser.id && newMsg.receiver_id === user.id))) {
+          setMessages(prev => {
+            if (prev.find(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
         }
-        // Always refresh inbox to update latest messages/unread status
         fetchInbox();
       })
       .subscribe();
@@ -65,7 +66,6 @@ export default function DirectMessages({ user }: { user: any }) {
   };
 
   const fetchInbox = async () => {
-    // Get all messages where the current user is involved
     const { data } = await supabase
       .from('direct_messages')
       .select('*, sender:sender_id(id, first_name, last_name, avatar_url), receiver:receiver_id(id, first_name, last_name, avatar_url)')
@@ -73,7 +73,6 @@ export default function DirectMessages({ user }: { user: any }) {
       .order('created_at', { ascending: false });
 
     if (data) {
-      // Group by the "other" user to build the inbox list
       const uniqueUsers = new Map();
       data.forEach((msg: any) => {
         const otherUser = msg.sender_id === user.id ? msg.receiver : msg.sender;
@@ -95,7 +94,6 @@ export default function DirectMessages({ user }: { user: any }) {
     
     if (data) setMessages(data);
 
-    // Mark as read
     await supabase.from('direct_messages').update({ is_read: true }).eq('sender_id', otherUserId).eq('receiver_id', user.id).eq('is_read', false);
   };
 
@@ -104,15 +102,21 @@ export default function DirectMessages({ user }: { user: any }) {
     if (!newMessage.trim() || !activeChatUser) return;
 
     const msgContent = newMessage.trim();
-    setNewMessage(''); // Clear instantly for good UX
+    setNewMessage(''); // Clear input box
 
-    await supabase.from('direct_messages').insert([{
+    // FIX: Ask Supabase to return the newly created message right away
+    const { data: insertedMsg, error } = await supabase.from('direct_messages').insert([{
       sender_id: user.id,
       receiver_id: activeChatUser.id,
       content: msgContent
-    }]);
+    }]).select().single();
     
-    // Notification ping
+    // FIX: Instantly put your own message on the screen!
+    if (!error && insertedMsg) {
+      setMessages(prev => [...prev, insertedMsg]);
+      fetchInbox(); // Refresh the left panel so your new message shows as the latest
+    }
+
     await supabase.from('notifications').insert([{
       user_id: activeChatUser.id,
       actor_id: user.id,
