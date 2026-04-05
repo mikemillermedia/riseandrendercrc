@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useSearchParams } from 'react-router-dom';
 import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -7,15 +8,15 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function ProfileTab({ user }: { user: any }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profile, setProfile] = useState<any>(null);
   const [latestSetup, setLatestSetup] = useState<string | null>(null);
-  const [myPosts, setMyPosts] = useState<any[]>([]); // NEW: State for your chat history
+  const [myPosts, setMyPosts] = useState<any[]>([]); 
   
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Form State
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
@@ -33,7 +34,7 @@ export default function ProfileTab({ user }: { user: any }) {
   }, [user]);
 
   const fetchProfile = async () => {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (data) {
       setProfile(data);
       setFirstName(data.first_name || '');
@@ -59,7 +60,6 @@ export default function ProfileTab({ user }: { user: any }) {
     if (data) setLatestSetup(data.media_url);
   };
 
-  // NEW: Fetch all of your community chat posts
   const fetchUserPosts = async () => {
     const { data } = await supabase
       .from('posts')
@@ -100,7 +100,6 @@ export default function ProfileTab({ user }: { user: any }) {
       await fetchProfile();
       setIsEditing(false);
     } else {
-      console.error("Failed to save:", error);
       alert("Failed to save profile. Please ensure you are logged in correctly.");
     }
     setSaving(false);
@@ -110,12 +109,8 @@ export default function ProfileTab({ user }: { user: any }) {
 
   return (
     <div className="max-w-2xl mx-auto pb-20 animate-in fade-in duration-500">
-      
-      {/* --- VIEW MODE --- */}
       {!isEditing ? (
         <div className="flex flex-col mt-10">
-          
-          {/* Centered Top Section */}
           <div className="flex flex-col items-center mb-12">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#ff4d00]/80 p-1 overflow-hidden shadow-[0_0_30px_rgba(255,77,0,0.15)] mb-4 bg-[#131313]">
               {profile?.avatar_url ? (
@@ -126,32 +121,24 @@ export default function ProfileTab({ user }: { user: any }) {
                 </div>
               )}
             </div>
-
             <h1 className="text-3xl md:text-4xl font-black text-white">{profile?.first_name} {profile?.last_name}</h1>
-            
             {profile?.instagram_url && (
               <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="text-white/50 hover:text-[#ff4d00] transition-colors mt-2 text-sm font-medium flex items-center gap-1.5">
                 <Instagram size={16} /> @{profile.instagram_url.split('.com/')[1]?.replace('/', '') || 'instagram'}
               </a>
             )}
-
             <button onClick={() => setIsEditing(true)} className="mt-6 bg-[#1A1A1A] hover:bg-white/10 text-white px-6 py-2 rounded-full font-semibold transition-all text-sm border border-white/5">
               Edit Profile
             </button>
           </div>
 
-          {/* Left Aligned Bottom Section */}
           <div className="w-full space-y-8">
-            
-            {/* Bio */}
             <div>
               <h3 className="text-white font-bold mb-2">Bio:</h3>
               <p className="text-white/80 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
                 {profile?.bio || "No bio added yet. Click Edit Profile to add one!"}
               </p>
             </div>
-
-            {/* Links */}
             {(profile?.website_url || profile?.instagram_url) && (
               <div>
                 <h3 className="text-white font-bold mb-2">Links:</h3>
@@ -164,23 +151,24 @@ export default function ProfileTab({ user }: { user: any }) {
                 </div>
               </div>
             )}
-
-            {/* Setup Showcase */}
             {latestSetup && (
               <div className="pt-8 border-t border-white/5">
                 <h3 className="text-white font-bold mb-4">Your Showcase Setup</h3>
                 <img src={latestSetup} alt="Setup Showcase" className="w-full max-w-sm rounded-xl object-cover border border-white/5" />
               </div>
             )}
-
-            {/* NEW: Recent Activity (Your Chat Posts) */}
+            
             {myPosts.length > 0 && (
               <div className="pt-8 border-t border-white/5">
                 <h3 className="text-white font-bold mb-4">Your Recent Activity</h3>
                 <div className="space-y-4">
                   {myPosts.map(post => (
-                    <div key={post.id} className="bg-black/20 p-5 rounded-2xl border border-white/5">
-                      <p className="text-xs text-white/30 mb-2 font-medium uppercase tracking-wider">
+                    <div 
+                      key={post.id} 
+                      onClick={() => setSearchParams({ tab: 'chat', postId: post.id })}
+                      className="bg-black/20 p-5 rounded-2xl border border-white/5 cursor-pointer hover:border-[#ff4d00]/50 transition-all group"
+                    >
+                      <p className="text-xs text-white/30 mb-2 font-medium uppercase tracking-wider group-hover:text-[#ff4d00]/70 transition-colors">
                         {new Date(post.created_at).toLocaleDateString()}
                       </p>
                       <p className="text-white/90 text-sm md:text-base mb-4 whitespace-pre-wrap leading-relaxed">
@@ -189,8 +177,6 @@ export default function ProfileTab({ user }: { user: any }) {
                       {post.media_url && (
                         <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
                       )}
-                      
-                      {/* Interaction Counts */}
                       <div className="flex gap-4 text-white/40">
                         <div className="flex items-center gap-1.5">
                           <Heart size={16} className={post.post_likes?.length > 0 ? "text-[#ff4d00]" : ""} /> 
@@ -206,18 +192,14 @@ export default function ProfileTab({ user }: { user: any }) {
                 </div>
               </div>
             )}
-
           </div>
         </div>
       ) : (
-
-      /* --- EDIT MODE --- */
         <div className="bg-[#131313] border border-white/5 rounded-[2rem] p-8 mt-10 shadow-xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-black text-white">Edit Profile</h2>
             <button onClick={() => setIsEditing(false)} className="text-white/40 hover:text-white">Cancel</button>
           </div>
-
           <div className="space-y-6">
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 rounded-full border-2 border-[#ff4d00] p-0.5 overflow-hidden bg-black">
@@ -233,7 +215,6 @@ export default function ProfileTab({ user }: { user: any }) {
                 }}/>
               </label>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">First Name</label>
@@ -244,22 +225,18 @@ export default function ProfileTab({ user }: { user: any }) {
                 <input value={lastName} onChange={e => setLastName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" />
               </div>
             </div>
-
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Bio</label>
               <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="Tell the community about yourself..." />
             </div>
-
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Website URL (Optional)</label>
               <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="https://..." />
             </div>
-
             <div>
               <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Instagram URL</label>
               <input value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="https://instagram.com/..." />
             </div>
-
             <button onClick={handleSave} disabled={saving} className="w-full bg-[#ff4d00] text-black font-black uppercase tracking-widest py-4 rounded-xl hover:bg-orange-500 transition-colors mt-8">
               {saving ? 'Saving...' : 'Save Profile'}
             </button>
