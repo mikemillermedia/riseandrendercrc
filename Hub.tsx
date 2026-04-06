@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase } from 'lucide-react'; // Added Briefcase
+import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase, Share2 } from 'lucide-react'; // Added Briefcase
 
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
@@ -32,7 +32,24 @@ export default function Hub() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
+const handleShare = async () => {
+    const shareData = {
+      title: 'CRC Hub | Rise & Render',
+      text: 'Check out this private community for faith-driven creators!',
+      url: window.location.origin,
+    };
 
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.origin);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.log('Share canceled or failed', err);
+    }
+  };
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
