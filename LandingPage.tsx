@@ -382,7 +382,7 @@ const LandingPage: React.FC = () => {
                 "Mike came over to my home and provided me with guidance on how to setup my podcast and best practices to help my video podcast get started. I have since recorded many special episodes!"
               </p>
               <div className="relative z-10">
-                <p className="font-bold text-white">— Client Name</p>
+                <p className="font-bold text-white">— Damon F.</p>
                 <p className="text-sm text-[#ff4d00]">Podcast Host</p>
               </div>
             </motion.div>
@@ -399,7 +399,7 @@ const LandingPage: React.FC = () => {
                 "Rise & Render completely transformed the way we approach content. The remote consulting helped us dial in our lighting and audio without having to buy a whole new studio."
               </p>
               <div className="relative z-10">
-                <p className="font-bold text-white">— Client Name</p>
+                <p className="font-bold text-white">— Richard H.</p>
                 <p className="text-sm text-[#ff4d00]">YouTube Creator</p>
               </div>
             </motion.div>
@@ -416,7 +416,7 @@ const LandingPage: React.FC = () => {
                 "Having access to the DFW studio was a game changer. All I had to do was show up and speak my message. The team handled the rest with absolute excellence."
               </p>
               <div className="relative z-10">
-                <p className="font-bold text-white">— Client Name</p>
+                <p className="font-bold text-white">— Jasmine B.</p>
                 <p className="text-sm text-[#ff4d00]">Author & Speaker</p>
               </div>
             </motion.div>
