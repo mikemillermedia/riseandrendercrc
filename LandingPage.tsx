@@ -357,7 +357,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
+     {/* TESTIMONIALS SECTION */}
       <section id="testimonials" className="py-32 bg-[#0a0a0a] text-[#F5F5F0] border-t border-[#F5F5F0]/5 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-20">
@@ -370,6 +370,7 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Testimonial 1 */}
             <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative overflow-hidden flex flex-col justify-between h-full">
               <div 
                 className="absolute -bottom-16 -right-4 text-[16rem] font-serif leading-none select-none"
@@ -380,10 +381,60 @@ const LandingPage: React.FC = () => {
               <p className="text-lg text-[#F5F5F0]/80 italic leading-relaxed mb-12 relative z-10">
                 "Mike came over to my home and provided me with guidance on how to setup my podcast and best practices to help my video podcast get started. I have since recorded many special episodes!"
               </p>
+              <div className="relative z-10">
+                <p className="font-bold text-white">— Client Name</p>
+                <p className="text-sm text-[#ff4d00]">Podcast Host</p>
+              </div>
             </motion.div>
+
+            {/* Testimonial 2 */}
+            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative overflow-hidden flex flex-col justify-between h-full">
+              <div 
+                className="absolute -bottom-16 -right-4 text-[16rem] font-serif leading-none select-none"
+                style={{ color: 'transparent', WebkitTextStroke: '4px rgba(255, 77, 0, 0.15)' }}
+              >
+                "
+              </div>
+              <p className="text-lg text-[#F5F5F0]/80 italic leading-relaxed mb-12 relative z-10">
+                "Rise & Render completely transformed the way we approach content. The remote consulting helped us dial in our lighting and audio without having to buy a whole new studio."
+              </p>
+              <div className="relative z-10">
+                <p className="font-bold text-white">— Client Name</p>
+                <p className="text-sm text-[#ff4d00]">YouTube Creator</p>
+              </div>
+            </motion.div>
+
+            {/* Testimonial 3 */}
+            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative overflow-hidden flex flex-col justify-between h-full">
+              <div 
+                className="absolute -bottom-16 -right-4 text-[16rem] font-serif leading-none select-none"
+                style={{ color: 'transparent', WebkitTextStroke: '4px rgba(255, 77, 0, 0.15)' }}
+              >
+                "
+              </div>
+              <p className="text-lg text-[#F5F5F0]/80 italic leading-relaxed mb-12 relative z-10">
+                "Having access to the DFW studio was a game changer. All I had to do was show up and speak my message. The team handled the rest with absolute excellence."
+              </p>
+              <div className="relative z-10">
+                <p className="font-bold text-white">— Client Name</p>
+                <p className="text-sm text-[#ff4d00]">Author & Speaker</p>
+              </div>
+            </motion.div>
+
           </div>
         </div>
       </section>
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 left-6 z-40 bg-white/10 hover:bg-[#ff4d00] text-white p-3 rounded-full transition-all shadow-xl backdrop-blur-md border border-white/10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+      )}
+
     </div>
   );
 };
