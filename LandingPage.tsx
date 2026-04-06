@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe 
+  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe, Share2 
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -43,6 +43,26 @@ const LandingPage: React.FC = () => {
       });
     }
   };
+  const handleShare = async () => {
+    const shareData = {
+      title: 'CRC Hub | Rise & Render',
+      text: 'Check out this private community for faith-driven creators!',
+      url: window.location.origin, // Automatically grabs your live URL
+    };
+
+    try {
+      if (navigator.share) {
+        // This opens the native iOS/Android share sheet!
+        await navigator.share(shareData);
+      } else {
+        // Fallback for older desktop browsers: just copy the link
+        await navigator.clipboard.writeText(window.location.origin);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.log('Share canceled or failed', err);
+    }
+  };
 
   return (
     <div className="relative min-h-screen bg-[#131313] text-[#F5F5F0]">
@@ -56,10 +76,17 @@ const LandingPage: React.FC = () => {
           <BrandLogo className="h-14 md:h-16 w-auto" />
         </div>
 
+       {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
           <button onClick={() => scrollToSection('about')} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => scrollToSection('resources')} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => scrollToSection('dfw-studio')} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
+          
+          {/* NEW: Desktop Share Button */}
+          <button onClick={handleShare} className="hover:text-[#ff4d00] transition-colors flex items-center gap-2">
+            <Share2 size={16} /> Share
+          </button>
+          
           <button onClick={() => navigate('/login')} className="hover:text-[#ff4d00] transition-colors font-bold text-white">Join/Login</button>
         </nav>
 
@@ -71,15 +98,21 @@ const LandingPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed top-[72px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-40">
+        <div className="md:hidden fixed top-[72px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 flex flex-col items-center py-6 gap-6 text-sm font-medium text-[#F5F5F0]/80 z-40 shadow-2xl">
           <button onClick={() => { scrollToSection('about'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">About</button>
           <button onClick={() => { scrollToSection('resources'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">Resources</button>
           <button onClick={() => { scrollToSection('dfw-studio'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors">DFW Studio</button>
+          
+          {/* NEW: Mobile Share Button */}
+          <button onClick={() => { handleShare(); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors flex items-center gap-2">
+            <Share2 size={18} /> Share Site
+          </button>
+          
           <button onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }} className="hover:text-[#ff4d00] transition-colors font-bold text-white">Join/Login</button>
         </div>
       )}
-
       {/* HERO SECTION */}
       <section className="relative pt-48 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
         <motion.div
