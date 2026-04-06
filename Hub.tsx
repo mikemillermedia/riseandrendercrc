@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail } from 'lucide-react'; // Added Mail icon
+import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase } from 'lucide-react'; // Added Briefcase
 
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
 import CommunityChat from './CommunityChat';
 import Members from './Members';
-import DirectMessages from './components/DirectMessages'; // NEW INBOX IMPORT
+import DirectMessages from './components/DirectMessages'; 
+import CollabBoard from './components/CollabBoard'; // NEW COLLAB IMPORT
 import AIChat from './components/AIChat'; 
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 
@@ -107,14 +108,14 @@ export default function Hub() {
         )}
       </button>
 
-      {/* NEW: INBOX TAB */}
       <button onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Mail size={20} /> Inbox
       </button>
 
-      <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Folder size={20} /> The Vault
+      <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <Briefcase size={20} /> Kingdom Collabs
       </button>
+
       <button onClick={() => { setActiveTab('prayer'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'prayer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <HeartHandshake size={20} /> Prayer Wall
       </button>
@@ -123,6 +124,9 @@ export default function Hub() {
       </button>
       <button onClick={() => { setActiveTab('profile'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <User size={20} /> My Profile
+      </button>
+      <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <Folder size={20} /> The Vault
       </button>
 
       <div className="mt-8 mb-2 px-4 text-[10px] font-bold text-white/20 uppercase tracking-widest">Support</div>
@@ -137,7 +141,6 @@ export default function Hub() {
       
       <div className="z-50"><AIChat /></div>
 
-      {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-[#F5F5F0]/10 bg-[#131313] sticky top-0 z-50">
         <h2 className="font-black uppercase tracking-widest text-lg">CRC <span className="text-[#ff4d00]">Hub</span></h2>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-[#F5F5F0]/80">
@@ -145,7 +148,6 @@ export default function Hub() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-[65px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 p-4 flex flex-col gap-2 z-40">
           <NavLinks />
@@ -155,7 +157,6 @@ export default function Hub() {
         </div>
       )}
 
-      {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-col w-64 border-r border-[#F5F5F0]/10 p-6 sticky top-0 h-screen overflow-y-auto">
         <h2 className="font-black uppercase tracking-widest text-2xl mb-12 cursor-pointer" onClick={() => navigate('/')}>
           CRC <span className="text-[#ff4d00]">Hub</span>
@@ -168,13 +169,13 @@ export default function Hub() {
         </button>
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-grow p-6 md:p-12 max-w-5xl mx-auto w-full">
         
         {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
-
-        {/* NEW: MESSAGES SCREEN */}
         {activeTab === 'messages' && <DirectMessages user={user} />}
+        
+        {/* NEW: COLLAB BOARD SCREEN */}
+        {activeTab === 'collabs' && <CollabBoard user={user} />}
 
         {activeTab === 'notifications' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
@@ -197,7 +198,7 @@ export default function Hub() {
                           setSearchParams({ tab: 'chat', postId: notif.post_id });
                         } else if (notif.type === 'new_follower') {
                            setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                        } else if (notif.type === 'new_dm') { // Route to DM if it's a message!
+                        } else if (notif.type === 'new_dm') { 
                            setSearchParams({ tab: 'messages', userId: notif.actor_id });
                         }
                       }}
@@ -228,6 +229,7 @@ export default function Hub() {
           </div>
         )}
 
+        {/* UPDATED: GUIDE & FAQ SCREEN */}
         {activeTab === 'guide' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">App Guide & FAQ</h1>
@@ -245,16 +247,16 @@ export default function Hub() {
                 <h3 className="text-xl font-black text-white mb-4">Navigating the Hub</h3>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-bold text-[#ff4d00] mb-1">Latest Activity & Directory</h4>
-                    <p className="text-white/70 text-sm leading-relaxed">See the most recent posts and browse the member directory. Click on any member to view their setup, follow them, and get notified when they post.</p>
-                  </div>
-                  <div>
                     <h4 className="font-bold text-[#ff4d00] mb-1">Direct Messages (Inbox)</h4>
                     <p className="text-white/70 text-sm leading-relaxed">Chat privately 1-on-1 with other members. You can start a conversation by visiting someone's profile and clicking the "Message" button.</p>
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#ff4d00] mb-1">Community Chat</h4>
-                    <p className="text-white/70 text-sm leading-relaxed">The main feed for tech advice, gear reviews, and networking. Type <strong>@</strong> followed by a name to mention someone, and use the repeat icon to <strong>Repost</strong> someone's content with your own thoughts.</p>
+                    <h4 className="font-bold text-[#ff4d00] mb-1">Kingdom Collabs</h4>
+                    <p className="text-white/70 text-sm leading-relaxed">Looking for a video editor, graphic designer, or podcast co-host? Post a collab request to hire or partner with other believers!</p>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ff4d00] mb-1">Community Chat & The /verse Command</h4>
+                    <p className="text-white/70 text-sm leading-relaxed">The main feed for tech advice and networking. Type <strong>@</strong> followed by a name to mention someone. <strong>Bonus:</strong> If you type <strong>/verse John 3:16</strong>, a button will appear that automatically fetches and formats that scripture directly into your post!</p>
                   </div>
                   <div>
                     <h4 className="font-bold text-[#ff4d00] mb-1">Prayer Wall</h4>
