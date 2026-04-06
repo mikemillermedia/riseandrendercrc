@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat } from 'lucide-react';
-import { Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2, BookOpen } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -25,16 +24,19 @@ export default function CommunityChat({ user }: { user: any }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [repostTarget, setRepostTarget] = useState<any>(null);
 
-  // NEW: Mention Engine States
   const [allMembers, setAllMembers] = useState<any[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionTarget, setMentionTarget] = useState<'post' | 'comment' | null>(null);
+
+  // NEW: Verse Fetcher States
+  const [fetchingVerse, setFetchingVerse] = useState(false);
+  const verseMatch = newPost.match(/\/verse\s+([1-3]?\s*[a-zA-Z]+\s+\d+:\d+(?:-\d+)?)/i);
 
   useEffect(() => {
     if (user) {
       fetchPosts();
       fetchCurrentUserAvatar();
-      fetchAllMembers(); // Pre-load the directory for the mention engine
+      fetchAllMembers(); 
     }
   }, [user]);
 
@@ -49,7 +51,6 @@ export default function CommunityChat({ user }: { user: any }) {
     }
   }, [loading, targetPostId]);
 
-  // NEW: Fetch all members so we can search them when typing @
   const fetchAllMembers = async () => {
     const { data } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url');
     if (data) setAllMembers(data);
@@ -82,6 +83,29 @@ export default function CommunityChat({ user }: { user: any }) {
       console.error('Fetch error:', err);
     }
     setLoading(false);
+  };
+
+  // NEW: The API Magic
+  const handleFetchVerse = async () => {
+    if (!verseMatch) return;
+    setFetchingVerse(true);
+    try {
+      const response = await fetch(`https://bible-api.com/${encodeURIComponent(verseMatch[1])}`);
+      const data = await response.json();
+      
+      if (data.text) {
+         // Clean up the text, wrap it in quotes, and replace the /verse command!
+         const cleanText = data.text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+         const replacement = `"${cleanText}" - ${data.reference}`;
+         setNewPost(newPost.replace(verseMatch[0], replacement));
+      } else {
+         setError("Could not find that verse. Please check the spelling!");
+      }
+    } catch (e) {
+      console.error(e);
+      setError("Bible API is currently unavailable.");
+    }
+    setFetchingVerse(false);
   };
 
   const handlePost = async (e: React.FormEvent) => {
@@ -188,8 +212,6 @@ export default function CommunityChat({ user }: { user: any }) {
     });
   };
 
-  // NEW: The Input Tracker
-  // This watches everything you type and checks if you just typed an "@" symbol followed by some letters
   const handleTextInput = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, target: 'post' | 'comment') => {
     const val = e.target.value;
     if (target === 'post') setNewPost(val);
@@ -197,8 +219,6 @@ export default function CommunityChat({ user }: { user: any }) {
 
     const cursorPosition = e.target.selectionStart || 0;
     const textBeforeCursor = val.slice(0, cursorPosition);
-    
-    // Regex: Look for "@" preceded by a space or start of line, followed by letters/numbers
     const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
 
     if (match) {
@@ -210,8 +230,6 @@ export default function CommunityChat({ user }: { user: any }) {
     }
   };
 
-  // NEW: Insert Mention
-  // Takes the clicked user and perfectly snaps their name into the text box
   const insertMention = (member: any) => {
     const mentionName = `@${member.first_name || ''}${member.last_name || ''}`.replace(/\s+/g, '');
     
@@ -227,15 +245,13 @@ export default function CommunityChat({ user }: { user: any }) {
     setMentionTarget(null);
   };
 
-  // NEW: Filter the member list based on what they are currently typing after the @
   const filteredMentions = mentionQuery !== null
     ? allMembers.filter(m => {
         const fullName = `${m.first_name || ''}${m.last_name || ''}`.toLowerCase();
         return fullName.includes(mentionQuery);
-      }).slice(0, 5) // Only show top 5 results so it doesn't get huge
+      }).slice(0, 5) 
     : [];
 
-  // NEW: The Mention Dropdown Component (Reused for Post and Comment boxes)
   const MentionDropdown = () => {
     if (mentionQuery === null || filteredMentions.length === 0) return null;
     return (
@@ -262,12 +278,15 @@ export default function CommunityChat({ user }: { user: any }) {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto pb-20">
       {error && (
-        <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3"><AlertCircle size={20} /><p className="text-sm">{error}</p></div>
+        <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3">
+          <AlertCircle size={20} />
+          <p className="text-sm">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto"><X size={16}/></button>
+        </div>
       )}
 
       {/* COMPOSER BOX */}
       <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-xl mb-8 relative">
-        {/* Render the dropdown here if typing in the main post box */}
         {mentionTarget === 'post' && <MentionDropdown />}
         
         <form onSubmit={handlePost} className="flex gap-4">
@@ -278,8 +297,8 @@ export default function CommunityChat({ user }: { user: any }) {
             <textarea 
               value={newPost} 
               onChange={e => handleTextInput(e, 'post')} 
-              placeholder={repostTarget ? "Add your thoughts to this repost..." : "Start a thread... Try typing @name!"} 
-              className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-lg placeholder:text-white/20 resize-none h-12" 
+              placeholder={repostTarget ? "Add your thoughts to this repost..." : "Start a thread... Try typing @name or /verse John 3:16"} 
+              className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-lg placeholder:text-white/30 resize-none min-h-[48px]" 
             />
             
             {mediaPreview && (
@@ -301,11 +320,26 @@ export default function CommunityChat({ user }: { user: any }) {
             )}
 
             <div className="flex justify-between items-center mt-4">
-               <label className="cursor-pointer text-white/40 hover:text-[#ff4d00] transition-colors p-2 -ml-2">
-                 <ImageIcon size={20} /><input type="file" className="hidden" accept="image/*,video/*" onChange={e => {
-                   if (e.target.files?.[0]) { setMediaFile(e.target.files[0]); setMediaPreview(URL.createObjectURL(e.target.files[0])); }
-                 }} />
-               </label>
+               <div className="flex items-center gap-2">
+                 <label className="cursor-pointer text-white/40 hover:text-[#ff4d00] transition-colors p-2 -ml-2">
+                   <ImageIcon size={20} /><input type="file" className="hidden" accept="image/*,video/*" onChange={e => {
+                     if (e.target.files?.[0]) { setMediaFile(e.target.files[0]); setMediaPreview(URL.createObjectURL(e.target.files[0])); }
+                   }} />
+                 </label>
+                 
+                 {/* NEW: Magic Verse Button! Appears when they type /verse */}
+                 {verseMatch && (
+                   <button 
+                     type="button" 
+                     onClick={handleFetchVerse}
+                     disabled={fetchingVerse}
+                     className="flex items-center gap-1.5 text-xs font-bold bg-[#ff4d00]/20 text-[#ff4d00] px-3 py-1.5 rounded-full hover:bg-[#ff4d00]/30 transition-colors animate-in fade-in zoom-in"
+                   >
+                     <BookOpen size={14} /> {fetchingVerse ? 'Fetching...' : `Fetch ${verseMatch[1]}`}
+                   </button>
+                 )}
+               </div>
+
                <button type="submit" disabled={posting} className="bg-[#F5F5F0] text-black px-6 py-1.5 rounded-full font-bold text-sm hover:bg-white transition-colors disabled:opacity-50">
                  {posting ? 'Posting...' : (repostTarget ? 'Repost' : 'Post')}
                </button>
@@ -400,7 +434,6 @@ export default function CommunityChat({ user }: { user: any }) {
                   {/* COMMENTS SECTION */}
                   {openCommentId === post.id && (
                     <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 relative">
-                      {/* Render the dropdown here if typing in a specific comment box */}
                       {mentionTarget === 'comment' && <MentionDropdown />}
                       
                       {postComments.map((c: any) => (
