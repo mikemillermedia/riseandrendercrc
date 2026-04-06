@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, Bell, BellOff, BookOpen } from 'lucide-react'; // Added BookOpen
+import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, BookOpen } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Tell TypeScript that window.OneSignalDeferred exists
+declare global {
+  interface Window {
+    OneSignalDeferred: any[];
+  }
+}
 
 export default function ProfileTab({ user }: { user: any }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,13 +35,14 @@ export default function ProfileTab({ user }: { user: any }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
-  const [bibleVerse, setBibleVerse] = useState(''); // NEW: State for Bible Verse
+  const [bibleVerse, setBibleVerse] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [oneSignalId, setOneSignalId] = useState<string | null>(null); // NEW: Track the device ID
 
   useEffect(() => {
     if (user) {
@@ -51,11 +59,12 @@ export default function ProfileTab({ user }: { user: any }) {
       setFirstName(data.first_name || '');
       setLastName(data.last_name || '');
       setBio(data.bio || '');
-      setBibleVerse(data.bible_verse || ''); // Load verse from DB
+      setBibleVerse(data.bible_verse || '');
       setInstagramUrl(data.instagram_url || '');
       setWebsiteUrl(data.website_url || '');
       setAvatarPreview(data.avatar_url || null);
       setPushEnabled(data.push_notifications_enabled || false); 
+      setOneSignalId(data.onesignal_id || null);
     }
 
     const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id);
@@ -77,21 +86,34 @@ export default function ProfileTab({ user }: { user: any }) {
     if (data) setMyPosts(data);
   };
 
+  // UPDATED: OneSignal Toggle Logic
   const handlePushToggle = async () => {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    
     if (!pushEnabled) {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          setPushEnabled(true);
-        } else {
-          alert('You must allow notifications in your browser or device settings to enable this feature.');
-          setPushEnabled(false);
-        }
-      } else {
-        alert('Your current browser or device does not support push notifications.');
-      }
+      window.OneSignalDeferred.push(async function(OneSignal: any) {
+        await OneSignal.Slidedown.promptPush(); // Show the official browser prompt
+        
+        // Wait a brief moment for user to click Allow
+        setTimeout(async () => {
+          const isOptedIn = OneSignal.User.PushSubscription.optedIn;
+          if (isOptedIn) {
+            const subId = OneSignal.User.PushSubscription.id;
+            setPushEnabled(true);
+            setOneSignalId(subId);
+          } else {
+            alert('Push permissions were denied or dismissed.');
+            setPushEnabled(false);
+          }
+        }, 1500);
+      });
     } else {
-      setPushEnabled(false);
+      // Opt out of notifications
+      window.OneSignalDeferred.push(async function(OneSignal: any) {
+        await OneSignal.User.PushSubscription.optOut();
+        setPushEnabled(false);
+        setOneSignalId(null);
+      });
     }
   };
 
@@ -118,11 +140,12 @@ export default function ProfileTab({ user }: { user: any }) {
       first_name: firstName,
       last_name: lastName,
       bio,
-      bible_verse: bibleVerse, // Save the new verse to the DB
+      bible_verse: bibleVerse, 
       instagram_url: formatUrl(instagramUrl), 
       website_url: formatUrl(websiteUrl),     
       avatar_url: newAvatarUrl,
       push_notifications_enabled: pushEnabled, 
+      onesignal_id: oneSignalId, // NEW: Save their device ID to the database!
       updated_at: new Date()
     };
 
@@ -257,7 +280,6 @@ export default function ProfileTab({ user }: { user: any }) {
               </p>
             </div>
 
-            {/* NEW: Display Bible Verse */}
             {profile?.bible_verse && (
               <div className="pt-6 border-t border-white/5">
                 <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
@@ -366,7 +388,6 @@ export default function ProfileTab({ user }: { user: any }) {
               <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="Tell the community about yourself..." />
             </div>
             
-            {/* NEW: Bible Verse Input Box */}
             <div>
               <label className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                 <BookOpen size={14} /> Favorite Verse or Current Reading
