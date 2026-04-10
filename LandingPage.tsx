@@ -130,7 +130,7 @@ const LandingPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-[#131313]/50 to-transparent" />
         </motion.div>
 
-        <h1 className="text-5xl md:text-8xl font-black max-w-5xl mb-8 leading-[0.95] text-[#F5F5F0] tracking-tighter">
+        <h1 className="text-5xl md:text-6xl font-black max-w-5xl mb-8 leading-[0.95] text-[#F5F5F0] tracking-tighter">
           RISE IN YOUR PURPOSE. <br/>
           <span className="text-[#ff4d00]">RENDER YOUR CALLING.</span>
         </h1>
