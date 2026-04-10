@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase, Share2 } from 'lucide-react'; // Added Briefcase
-
+import { motion, AnimatePresence } from 'framer-motion';
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
 import CommunityChat from './CommunityChat';
@@ -25,7 +25,22 @@ export default function Hub() {
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab });
   };
+// NEW: Onboarding Tooltip State
+  const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
 
+  useEffect(() => {
+    // Check if they have already seen the popup
+    const hasSeenTooltip = localStorage.getItem('hasSeenHubTooltip');
+    if (!hasSeenTooltip) {
+      // Wait 1 second after page load, then show the popup
+      setTimeout(() => setShowWelcomeTooltip(true), 1000);
+    }
+  }, []);
+
+  const dismissTooltip = () => {
+    setShowWelcomeTooltip(false);
+    localStorage.setItem('hasSeenHubTooltip', 'true'); // Save to phone memory
+  };
   const [user, setUser] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -162,11 +177,54 @@ const handleShare = async () => {
       
       <div className="z-50"><AIChat /></div>
 
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-[#F5F5F0]/10 bg-[#131313] sticky top-0 z-50">
-        <h2 className="font-black uppercase tracking-widest text-lg">Rise & Render <span className="text-[#ff4d00]">Community</span></h2>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-[#F5F5F0]/80">
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+      {/* Mobile Header & Onboarding Tooltip */}
+      <div className="md:hidden flex items-center justify-between px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50">
+        <div className="flex items-center">
+          <BrandLogo className="w-8 h-8" />
+        </div>
+        
+        {/* We added a relative wrapper and conditional 'animate-pulse' here */}
+        <div className="relative">
+          <button 
+            onClick={() => {
+              setIsMobileMenuOpen(true);
+              if (showWelcomeTooltip) dismissTooltip(); // Dismiss if they click the menu directly
+            }} 
+            className={`text-white p-2 rounded-xl transition-all ${showWelcomeTooltip ? 'bg-[#ff4d00]/20 text-[#ff4d00] animate-pulse' : ''}`}
+          >
+            <Menu />
+          </button>
+
+          {/* THE WELCOME POP-UP */}
+          <AnimatePresence>
+            {showWelcomeTooltip && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="absolute top-14 right-0 w-64 bg-[#ff4d00] p-5 rounded-2xl shadow-[0_10px_40px_rgba(255,77,0,0.4)] border border-orange-400/50 origin-top-right"
+              >
+                {/* The Little Triangle Pointing Up */}
+                <div className="absolute -top-3 right-3 text-[#ff4d00]">
+                  <svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor">
+                    <path d="M10 0L20 12H0L10 0Z" />
+                  </svg>
+                </div>
+                
+                <h4 className="font-black text-white text-lg mb-2">Welcome to the Hub! 🎉</h4>
+                <p className="text-white/90 text-sm mb-4 leading-relaxed font-medium">
+                  Tap this menu to update your profile, check the App Guide, and explore the community.
+                </p>
+                <button 
+                  onClick={dismissTooltip}
+                  className="w-full bg-[#131313] text-white font-bold py-2.5 rounded-xl text-sm hover:bg-black transition-colors shadow-lg"
+                >
+                  Got it!
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {isMobileMenuOpen && (
