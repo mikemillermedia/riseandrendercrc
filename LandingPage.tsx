@@ -15,7 +15,7 @@ import BrandLogo from './components/BrandLogo';
 import mikeMillerImage from './mike-miller.png';
 import headerImage from './studio set 1 still_1.1.1.png';
 import dfwImage from './studio 2 set still_1.1.2.png';
-import Footer from './components/Footer';
+import Footer from './components/Footer.tsx';
 
 const LandingPage: React.FC = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
