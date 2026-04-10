@@ -180,7 +180,7 @@ const handleShare = async () => {
 
       <div className="hidden md:flex flex-col w-64 border-r border-[#F5F5F0]/10 p-6 sticky top-0 h-screen overflow-y-auto">
         <h2 className="font-black uppercase tracking-widest text-2xl mb-12 cursor-pointer" onClick={() => navigate('/')}>
-          CRC <span className="text-[#ff4d00]">Hub</span>
+          Rise & Render <span className="text-[#ff4d00]">Community</span>
         </h2>
         <div className="flex flex-col gap-2 flex-grow">
           <NavLinks />
@@ -254,13 +254,13 @@ const handleShare = async () => {
         {activeTab === 'guide' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">App Guide & FAQ</h1>
-            <p className="text-[#F5F5F0]/60 mb-8">Everything you need to know to navigate the CRC Hub.</p>
+            <p className="text-[#F5F5F0]/60 mb-8">Everything you need to know to navigate the community app.</p>
             
             <div className="space-y-6">
               <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
                 <h3 className="text-xl font-black text-[#ff4d00] mb-4">Welcome to the Community</h3>
                 <p className="text-white/80 leading-relaxed text-sm md:text-base">
-                  Creatives Representing Christ (CRC) is a dedicated space to help you master your craft and connect with like-minded believers. Update your profile with your setup, bio, and favorite Bible reading so others can get to know you!
+                  The Rise & Render Community is a dedicated space to help you master your craft and connect with like-minded believers. Update your profile with your setup, bio, and favorite Bible reading so others can get to know you!
                 </p>
               </div>
 
@@ -289,7 +289,7 @@ const handleShare = async () => {
               <div className="bg-gradient-to-br from-[#ff4d00]/10 to-transparent border border-[#ff4d00]/20 p-6 md:p-8 rounded-3xl shadow-xl">
                 <h3 className="text-xl font-black text-white mb-4">Special Member Pricing</h3>
                 <p className="text-white/80 leading-relaxed text-sm md:text-base mb-4">
-                  As an official member of the CRC Hub, you receive exclusive, discounted pricing on all services through <strong>Rise & Render</strong>.
+                  As an official member of the Rise & Render community, you receive exclusive, discounted pricing on all services through <strong>Rise & Render</strong>.
                 </p>
                 <ul className="list-disc pl-5 space-y-2 text-sm text-white/70">
                   <li><strong>DFW In-Studio:</strong> Book high-end podcast and video sessions in our Duncanville studio.</li>
