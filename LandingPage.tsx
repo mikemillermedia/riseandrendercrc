@@ -286,7 +286,6 @@ const LandingPage: React.FC = () => {
               className="w-full h-auto object-cover aspect-video"
             />
           </motion.div>
-
 {/* THE RISE FRAMEWORK & STRATEGY SECTION */}
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -368,7 +367,67 @@ const LandingPage: React.FC = () => {
                       <h5 className="font-black text-white text-lg tracking-wide mb-2">II. The Summit</h5>
                       <ul className="space-y-2">
                         <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 5 hours of studio time</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 4 Long-form 4K videos + 4 Mastered Audio Episodes</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 12 Social Clips + YouTube & Podcast management</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/30 shadow-[0_0_30px_rgba(255,77,0,0.1)]">
+                      <div className="flex justify-between items-center mb-2">
+                        <h5 className="font-black text-white text-lg tracking-wide">III. The Horizon</h5>
+                        <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-1 rounded-md">Premier</span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 5 hours studio + 4 Videos + 4 Audio Podcasts</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 20 Social Clips + Premium Custom Thumbnails</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Full management across 3 platforms + Strategy Review</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* NEW: HOURLY & BATCH RECORDING SECTION */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mb-20 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="flex-1">
+                  <h4 className="text-2xl font-black mb-3 text-white uppercase tracking-wider">A La Carte Studio Sessions</h4>
+                  <p className="text-[#F5F5F0]/70 text-sm leading-relaxed mb-4">
+                    All of our filming and recording services take place in our amazing, fully-equipped studio in Duncanville, TX. Just need a space to shoot your content without the full management package? We have you covered.
+                  </p>
+                  <p className="text-[#F5F5F0]/40 text-xs italic">
+                    * Editing and other post-production services are available upon request. However, we highly recommend our signature "Rise Framework" services above for end-to-end strategy and management.
+                  </p>
+                </div>
+                <div className="flex-shrink-0 flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                  <div className="bg-[#1A1A1A] border border-white/10 rounded-2xl p-6 text-center flex-1 md:min-w-[140px]">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Hourly Rate</p>
+                    <p className="text-3xl font-black text-white">$250<span className="text-sm text-white/40 font-medium">/hr</span></p>
+                  </div>
+                  <div className="bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/40 rounded-2xl p-6 text-center flex-1 shadow-[0_0_20px_rgba(255,77,0,0.1)] relative overflow-hidden md:min-w-[160px]">
+                    <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-bl-lg">Save $200</div>
+                    <p className="text-[#ff4d00] text-xs font-bold uppercase tracking-widest mb-2">Batch Record</p>
+                    <p className="text-3xl font-black text-white">$800<span className="text-sm text-[#ff4d00]/60 font-medium">/4 hrs</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center relative z-10 pt-10 border-t border-white/10">
+                <h4 className="text-2xl font-bold text-white mb-8">Ready to turn your expertise into a video brand that honors your mission?</h4>
+                <a 
+                  href="https://tally.so/r/dWxaOy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-[#ff4d00] text-[#131313] px-12 py-5 rounded-full font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] text-lg"
+                >
+                  Book Your Free Strategy Session
+                </a>
+              </div>
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+
      {/* TESTIMONIALS SECTION */}
       <section id="testimonials" className="py-32 bg-[#0a0a0a] text-[#F5F5F0] border-t border-[#F5F5F0]/5 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
