@@ -577,6 +577,12 @@ const LandingPage: React.FC = () => {
         </button>
       )}
 
+    </section>
+    
+      <Footer /> {/* <--- Add it right here */}
+    </div>
+  );
+};
     </div>
   );
 };
