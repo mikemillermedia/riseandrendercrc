@@ -131,8 +131,8 @@ const LandingPage: React.FC = () => {
         </motion.div>
 
         <h1 className="text-5xl md:text-8xl font-black max-w-5xl mb-8 leading-[0.95] text-[#F5F5F0] tracking-tighter">
-          CREATE WITH PURPOSE. <br/>
-          <span className="text-[#ff4d00]">MASTER YOUR CRAFT.</span>
+          RISE IN YOUR PURPOSE. <br/>
+          <span className="text-[#ff4d00]">RENDER YOUR CALLING.</span>
         </h1>
 
         <p className="text-lg md:text-2xl text-[#F5F5F0]/80 max-w-3xl mb-12 font-medium leading-relaxed">
