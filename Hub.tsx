@@ -34,7 +34,7 @@ export default function Hub() {
   const [loadingNotifs, setLoadingNotifs] = useState(false);
 const handleShare = async () => {
     const shareData = {
-      title: 'CRC Hub | Rise & Render',
+      title: 'Rise & Render Community',
       text: 'Check out this private community for faith-driven creators!',
       url: window.location.origin,
     };
