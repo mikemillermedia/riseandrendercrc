@@ -400,6 +400,7 @@ const handleShare = async () => {
         {activeTab === 'profile' && <ProfileTab user={user} />}
 
       </div>
+      <Footer />
     </div>
   );
 }
