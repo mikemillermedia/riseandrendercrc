@@ -20,7 +20,7 @@ export default function Hub() {
   const navigate = useNavigate();
   
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'activity';
+  const activeTab = searchParams.get('tab') || 'guide';
   
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab });
