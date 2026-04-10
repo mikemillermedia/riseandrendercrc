@@ -110,3 +110,6 @@ const FluidBackground: React.FC = () => {
       <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-black pointer-events-none" />
     </div>
   );
+};
+
+export default FluidBackground;
