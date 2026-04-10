@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe, Share2, Target, Music, TrendingUp, CheckCircle 
+  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe, Share2, Target, Music, TrendingUp, CheckCircle, Users, Sparkles 
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -233,23 +233,83 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* RESOURCES SECTION */}
-      <section id="resources" className="py-32 bg-[#131313] border-t border-[#F5F5F0]/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[200px] opacity-[0.03] pointer-events-none" />
+      {/* THE CRC HUB (FREE COMMUNITY) SECTION */}
+      <section id="resources" className="py-32 bg-[#1A1A1A] border-t border-[#F5F5F0]/5 relative overflow-hidden">
+        {/* Subtle orange glow in the background */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.05] pointer-events-none" />
 
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-4xl md:text-7xl font-black mb-8 uppercase tracking-tighter text-[#ff4d00]">
-            Elevate Your Content for Free.
-          </h2>
-          <p className="text-xl md:text-2xl text-[#F5F5F0]/80 mb-12 leading-relaxed">
-            Get access to our library of free technical and creative resources. 
-            <br/><span className="text-sm text-[#F5F5F0]/50 mt-4 block">(Note: Premium services and advanced masterclasses coming soon).</span>
-          </p>
+        <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Left Column: The Pitch */}
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/20 text-[#ff4d00] text-sm font-bold uppercase tracking-widest mb-6">
+                <Sparkles size={16} /> 100% Free to Join
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black mb-6 uppercase tracking-tighter text-white">
+                Don't Build Your <br/><span className="text-[#ff4d00]">Brand In Isolation.</span>
+              </h2>
+              <p className="text-lg md:text-xl text-[#F5F5F0]/70 mb-10 leading-relaxed">
+                The CRC Hub is a private, digital ecosystem designed specifically for faith-driven creators. Whether you're looking for gear advice, a video editor, or just a group of believers who understand the grind of content creation—this is your new digital home.
+              </p>
+              <button 
+                onClick={() => navigate('/login')} 
+                className="bg-[#ff4d00] hover:bg-orange-500 text-[#131313] font-black uppercase tracking-widest py-4 px-10 rounded-xl transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] hover:shadow-[0_0_30px_rgba(255,77,0,0.5)] hover:-translate-y-1 text-lg flex items-center gap-3 w-full md:w-auto justify-center"
+              >
+                <Users size={20} /> Create Free Profile
+              </button>
+            </motion.div>
 
-          <div className="flex justify-center">
-            <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-[#ff4d00]/90 text-[#131313] font-black uppercase tracking-widest py-3.5 px-10 rounded-full transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,77,0,0.4)] text-lg md:text-xl">
-              Join Now
-            </button>
+            {/* Right Column: The Features Grid */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            >
+              {/* Feature 1 */}
+              <div className="bg-[#131313] p-6 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-colors group">
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:bg-[#ff4d00]/10 transition-colors">
+                  <Briefcase className="w-6 h-6 text-white group-hover:text-[#ff4d00] transition-colors" />
+                </div>
+                <h3 className="text-white font-bold mb-2">Kingdom Collabs</h3>
+                <p className="text-white/50 text-sm leading-relaxed">Post gigs or find talent. Connect with Christian video editors, graphic designers, and co-hosts.</p>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="bg-[#131313] p-6 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-colors group">
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:bg-[#ff4d00]/10 transition-colors">
+                  <Wrench className="w-6 h-6 text-white group-hover:text-[#ff4d00] transition-colors" />
+                </div>
+                <h3 className="text-white font-bold mb-2">The Vault</h3>
+                <p className="text-white/50 text-sm leading-relaxed">Instantly unlock our proprietary "Content Creator Studio Kit" and gear blueprints for free.</p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="bg-[#131313] p-6 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-colors group">
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:bg-[#ff4d00]/10 transition-colors">
+                  <HeartHandshake className="w-6 h-6 text-white group-hover:text-[#ff4d00] transition-colors" />
+                </div>
+                <h3 className="text-white font-bold mb-2">The Prayer Wall</h3>
+                <p className="text-white/50 text-sm leading-relaxed">A dedicated, private space to bear one another's burdens and celebrate wins together.</p>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="bg-[#131313] p-6 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-colors group">
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:bg-[#ff4d00]/10 transition-colors">
+                  <Users className="w-6 h-6 text-white group-hover:text-[#ff4d00] transition-colors" />
+                </div>
+                <h3 className="text-white font-bold mb-2">Member Directory</h3>
+                <p className="text-white/50 text-sm leading-relaxed">Browse profiles, see what gear other creators are using, and send direct messages.</p>
+              </div>
+            </motion.div>
+
           </div>
         </div>
       </section>
