@@ -20,7 +20,7 @@ declare global {
 const AIChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: "Welcome to the CRC Hub. I'm your Rise & Render Assistant. How can I help you navigate the platform, recommend gear, or support your creative journey today?" }
+    { role: 'model', text: "Welcome to the Rise & Render Community. I'm your assistant. How can I help you navigate the platform, recommend gear, or support your creative journey today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
