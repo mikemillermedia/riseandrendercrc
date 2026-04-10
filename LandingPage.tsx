@@ -139,7 +139,7 @@ const LandingPage: React.FC = () => {
 
        <div className="flex flex-col sm:flex-row items-center gap-4">
           <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-[#ff4d00]/90 text-[#131313] font-black uppercase tracking-widest py-3.5 px-10 rounded-full transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,77,0,0.4)] text-lg md:text-xl w-full sm:w-auto">
-            Enter The Hub
+            Join the Community
           </button>
           
           <a 
