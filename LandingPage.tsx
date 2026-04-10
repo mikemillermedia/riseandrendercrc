@@ -287,7 +287,7 @@ const LandingPage: React.FC = () => {
             />
           </motion.div>
 
-         {/* THE RISE FRAMEWORK & STRATEGY SECTION */}
+{/* THE RISE FRAMEWORK & STRATEGY SECTION */}
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -308,7 +308,7 @@ const LandingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20 relative z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-12 relative z-10">
                 <div>
                   <h4 className="text-2xl font-black mb-6 text-white uppercase tracking-wider">The 30-Minute Strategy Session</h4>
                   <p className="text-[#F5F5F0]/70 mb-8 leading-relaxed">
@@ -368,43 +368,7 @@ const LandingPage: React.FC = () => {
                       <h5 className="font-black text-white text-lg tracking-wide mb-2">II. The Summit</h5>
                       <ul className="space-y-2">
                         <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 5 hours of studio time</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 4 Long-form 4K videos + 4 Mastered Audio Episodes</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 12 Social Clips + YouTube & Podcast management</li>
-                      </ul>
-                    </div>
-
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/30 shadow-[0_0_30px_rgba(255,77,0,0.1)]">
-                      <div className="flex justify-between items-center mb-2">
-                        <h5 className="font-black text-white text-lg tracking-wide">III. The Horizon</h5>
-                        <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-1 rounded-md">Premier</span>
-                      </div>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 5 hours studio + 4 Videos + 4 Audio Podcasts</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 20 Social Clips + Premium Custom Thumbnails</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Full management across 3 platforms + Strategy Review</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center relative z-10 pt-10 border-t border-white/10">
-                <h4 className="text-2xl font-bold text-white mb-8">Ready to turn your expertise into a video brand that honors your mission?</h4>
-                <a 
-                  href="https://calendar.app.google/yHaHjKPJyDSnfNw97"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-[#ff4d00] text-[#131313] px-12 py-5 rounded-full font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] text-lg"
-                >
-                  Book Your Free Strategy Session
-                </a>
-              </div>
-            </div>
-          </motion.div>
-
-        </div>
-      </section>
-
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-
      {/* TESTIMONIALS SECTION */}
       <section id="testimonials" className="py-32 bg-[#0a0a0a] text-[#F5F5F0] border-t border-[#F5F5F0]/5 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
