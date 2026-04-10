@@ -11,6 +11,7 @@ import DirectMessages from './components/DirectMessages';
 import CollabBoard from './components/CollabBoard'; // NEW COLLAB IMPORT
 import AIChat from './components/AIChat'; 
 import freeKitImage from './The Content Creator Studio Kit.jpg';
+import BrandLogo from '../components/BrandLogo';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
