@@ -153,7 +153,7 @@ const handleShare = async () => {
       
       {/* NEW: Hub Share Button */}
       <button onClick={() => { handleShare(); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm text-[#F5F5F0]/40 hover:text-white hover:bg-white/5">
-        <Share2 size={18} /> Share The Hub
+        <Share2 size={18} /> Share The Community
       </button>
     </>
   );
@@ -163,7 +163,7 @@ const handleShare = async () => {
       <div className="z-50"><AIChat /></div>
 
       <div className="md:hidden flex items-center justify-between p-4 border-b border-[#F5F5F0]/10 bg-[#131313] sticky top-0 z-50">
-        <h2 className="font-black uppercase tracking-widest text-lg">CRC <span className="text-[#ff4d00]">Hub</span></h2>
+        <h2 className="font-black uppercase tracking-widest text-lg">Rise & Render <span className="text-[#ff4d00]">Community</span></h2>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-[#F5F5F0]/80">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
