@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe, Share2 
+  Menu, X, MapPin, Wrench, HeartHandshake, Video, Globe, Share2, Target, Music, TrendingUp, CheckCircle 
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -287,106 +287,121 @@ const LandingPage: React.FC = () => {
             />
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            <motion.div 
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              whileHover={{ y: -5 }} 
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white p-8 rounded-[2rem] border border-[#131313]/5 shadow-xl shadow-black/5"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center mb-6">
-                <MapPin className="w-7 h-7 text-[#ff4d00]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">In-Studio (Duncanville)</h3>
-              <p className="text-[#131313]/70 leading-relaxed">
-                Our Duncanville studio is ready. Your message is ready. The only thing missing is to hit record and speak. We handle the lighting, cameras, and audio.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              whileHover={{ y: -5 }} 
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white p-8 rounded-[2rem] border border-[#131313]/5 shadow-xl shadow-black/5"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center mb-6">
-                <Video className="w-7 h-7 text-[#ff4d00]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Mobile Studio</h3>
-              <p className="text-[#131313]/70 leading-relaxed">
-                Don't want to travel? No problem. We bring the entire studio (cameras, lighting, and audio) directly to your home or office for a high-stakes, efficient environment.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              whileHover={{ y: -5 }} 
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="bg-white p-8 rounded-[2rem] border border-[#131313]/5 shadow-xl shadow-black/5"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center mb-6">
-                <Globe className="w-7 h-7 text-[#ff4d00]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Remote Consulting</h3>
-              <p className="text-[#131313]/70 leading-relaxed">
-                You don't need to step into our physical studio to leverage the Rise & Render system. We offer strategic remote consulting to architect your perfect content engine, wherever you are.
-              </p>
-            </motion.div>
-          </div>
-
+         {/* THE RISE FRAMEWORK & STRATEGY SECTION */}
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.8 }}
-            className="mt-20 p-12 rounded-[2.5rem] bg-[#131313] text-[#F5F5F0] text-center shadow-2xl relative overflow-hidden"
+            className="mt-24 rounded-[2.5rem] bg-[#131313] text-[#F5F5F0] shadow-2xl relative overflow-hidden border border-[#F5F5F0]/10"
           >
-            <div className="absolute top-0 left-0 w-full h-full bg-[#ff4d00] opacity-[0.03] pointer-events-none" />
-            <h3 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tighter">
-              Book Your <span className="text-[#ff4d00]">Studio Session</span>
-            </h3>
-            <p className="text-xl text-[#F5F5F0]/70 max-w-3xl mx-auto mb-10 leading-relaxed">
-              This is where you can book a studio request at our private studio. Exclusive pricing is available for members. If you haven't yet, join our Creatives Representing Christ (CRC) community to take advantage of special pricing.
-            </p>
-            <a 
-              href="https://tally.so/r/dWxaOy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-[#ff4d00] text-[#131313] px-12 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl shadow-orange-900/30"
-            >
-              Request Studio Time
-            </a>
+            <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-[#ff4d00]/10 to-transparent pointer-events-none" />
+            
+            <div className="p-8 md:p-16">
+              <div className="text-center max-w-4xl mx-auto mb-16 relative z-10">
+                <h3 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tighter">
+                  Rise in Your Purpose. <br />
+                  <span className="text-[#ff4d00]">Render Your Calling.</span>
+                </h3>
+                <p className="text-lg md:text-xl text-[#F5F5F0]/80 leading-relaxed border-l-4 border-[#ff4d00] pl-6 text-left italic">
+                  "This is a community built primarily for creatives representing Christ. We are here to help you master the tools of the trade so you can share your message with excellence."
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20 relative z-10">
+                <div>
+                  <h4 className="text-2xl font-black mb-6 text-white uppercase tracking-wider">The 30-Minute Strategy Session</h4>
+                  <p className="text-[#F5F5F0]/70 mb-8 leading-relaxed">
+                    In this complimentary session, we aren't just going to talk about cameras and microphones. We are going to audit your current brand visibility and identify exactly how a video podcast can become a lead-generating engine for your business. On this call, we will:
+                  </p>
+                  
+                  <div className="space-y-6">
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0">
+                        <Target className="w-6 h-6 text-[#ff4d00]" />
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-lg">Clarify Your Content Goals</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Are we building widespread fame, deep audience trust, or a direct sales pipeline? We build the strategy to match the goal.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0">
+                        <Music className="w-6 h-6 text-[#ff4d00]" />
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-lg">Establish Your Sonic Brand</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Explore incorporating custom music produced by Mike Miller to give your show a 100% unique, premium audio identity that cuts through the noise.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0">
+                        <Video className="w-6 h-6 text-[#ff4d00]" />
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-lg">Visualize Your Set</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Determine which of our premium studio aesthetics perfectly matches your brand's vibe and authority.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#1A1A1A] p-8 rounded-3xl border border-white/5">
+                  <h4 className="text-2xl font-black mb-2 text-[#ff4d00] uppercase tracking-wider flex items-center gap-3">
+                    <TrendingUp size={24} /> The "Rise" Framework
+                  </h4>
+                  <p className="text-[#F5F5F0]/60 text-sm mb-8 leading-relaxed">
+                    Pricing starts at <strong>$3,000/month</strong> rather than a rigid set price. We audit your unique needs to design the exact blueprint required to scale your business. We will explore one of our core tiers:
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4d00]/50 transition-colors">
+                      <h5 className="font-black text-white text-lg tracking-wide mb-2">I. The Ascent</h5>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 3 hours of studio time</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 2 Long-form 4K videos + 4 Social Clips</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Standard thumbnails & dedicated YouTube management</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4d00]/50 transition-colors">
+                      <h5 className="font-black text-white text-lg tracking-wide mb-2">II. The Summit</h5>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 5 hours of studio time</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 4 Long-form 4K videos + 4 Mastered Audio Episodes</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 12 Social Clips + YouTube & Podcast management</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/30 shadow-[0_0_30px_rgba(255,77,0,0.1)]">
+                      <div className="flex justify-between items-center mb-2">
+                        <h5 className="font-black text-white text-lg tracking-wide">III. The Horizon</h5>
+                        <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-1 rounded-md">Premier</span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 5 hours studio + 4 Videos + 4 Audio Podcasts</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 20 Social Clips + Premium Custom Thumbnails</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Full management across 3 platforms + Strategy Review</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center relative z-10 pt-10 border-t border-white/10">
+                <h4 className="text-2xl font-bold text-white mb-8">Ready to turn your expertise into a video brand that honors your mission?</h4>
+                <a 
+                  href="https://calendar.app.google/yHaHjKPJyDSnfNw97"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-[#ff4d00] text-[#131313] px-12 py-5 rounded-full font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] text-lg"
+                >
+                  Book Your Free Strategy Session
+                </a>
+              </div>
+            </div>
           </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-8 p-12 rounded-[2.5rem] bg-white text-[#131313] text-center shadow-2xl border border-[#131313]/5 relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 w-full h-full bg-[#ff4d00] opacity-[0.02] pointer-events-none" />
-            <h3 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tighter">
-              Mobile Studio & <span className="text-[#ff4d00]">Remote Consulting</span>
-            </h3>
-            <p className="text-xl text-[#131313]/70 max-w-3xl mx-auto mb-10 leading-relaxed">
-              Need us to come to you or want to build your authority remotely? Book a free consultation today.
-            </p>
-            <a 
-              href="https://calendar.app.google/yHaHjKPJyDSnfNw97"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-[#131313] text-[#F5F5F0] px-12 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-black/20"
-            >
-              Book Free Consultation
-            </a>
-          </motion.div>
         </div>
       </section>
 
