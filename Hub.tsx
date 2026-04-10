@@ -181,7 +181,7 @@ const handleShare = async () => {
       {/* Mobile Header & Onboarding Tooltip */}
       <div className="md:hidden flex items-center justify-between px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50">
         <div className="flex items-center">
-         <span className="text-white">Rise & Render</span> <span className="text-[#ff4d00]">Community</span>
+         <span className="text-white">Rise & Render </span> <span className="text-[#ff4d00]">Community</span>
         </div>
         
         {/* We added a relative wrapper and conditional 'animate-pulse' here */}
