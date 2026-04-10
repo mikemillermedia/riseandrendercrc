@@ -264,7 +264,7 @@ const LandingPage: React.FC = () => {
                 Don't Build Your <br/><span className="text-[#ff4d00]">Brand In Isolation.</span>
               </h2>
               <p className="text-lg md:text-xl text-[#F5F5F0]/70 mb-10 leading-relaxed">
-                The CRC Hub is a private, digital ecosystem designed specifically for faith-driven creators. Whether you're looking for gear advice, a video editor, or just a group of believers who understand the grind of content creation—this is your new digital home.
+                The Rise & Render Community is a private, digital ecosystem designed specifically for faith-driven creators. Whether you're looking for gear advice, a video editor, or just a group of believers who understand the grind of content creation—this is your new digital home.
               </p>
               <button 
                 onClick={() => navigate('/login')} 
