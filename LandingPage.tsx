@@ -46,7 +46,7 @@ const LandingPage: React.FC = () => {
 
   const handleShare = async () => {
     const shareData = {
-      title: 'CRC Hub | Rise & Render',
+      title: 'Rise & Render',
       text: 'Check out this private community for faith-driven creators!',
       url: window.location.origin, // Automatically grabs your live URL
     };
