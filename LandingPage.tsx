@@ -356,7 +356,7 @@ const LandingPage: React.FC = () => {
             />
           </motion.div>
 
-          {/* THE RISE FRAMEWORK & STRATEGY SECTION */}
+         {/* THE RISE FRAMEWORK & STRATEGY SECTION */}
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -368,30 +368,47 @@ const LandingPage: React.FC = () => {
             
             <div className="p-8 md:p-16">
               <div className="text-center max-w-4xl mx-auto mb-16 relative z-10">
-                <h3 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tighter">
-                  Rise in Your Purpose. <br />
-                  <span className="text-[#ff4d00]">Render Your Calling.</span>
+                <h3 className="text-3xl md:text-5xl font-black mb-4 uppercase tracking-tighter">
+                  Welcome to <br />
+                  <span className="text-[#ff4d00]">Rise & Render Studios</span>
                 </h3>
-                <p className="text-lg md:text-xl text-[#F5F5F0]/80 leading-relaxed border-l-4 border-[#ff4d00] pl-6 text-left italic">
-                  "This is a community built primarily for creatives representing Christ. We are here to help you master the tools of the trade so you can share your message with excellence."
+                <h4 className="text-xl md:text-2xl font-bold text-white mb-8 tracking-wide">
+                  Your Message. Our Expertise.
+                </h4>
+                <p className="text-lg md:text-xl text-[#F5F5F0]/80 leading-relaxed border-l-4 border-[#ff4d00] pl-6 text-left italic mb-8">
+                  "You were created to create, but navigating the technical side of content creation can be overwhelming. We exist to bridge the gap between your God-given message and the technical excellence required to share it effectively."
+                </p>
+                <p className="text-xl font-bold text-[#ff4d00]">
+                  At Rise & Render, all you need to do is show up and speak. We handle the rest.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-12 relative z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16 relative z-10">
+                
+                {/* LEFT COLUMN: Studio Experience & Add-ons */}
                 <div>
-                  <h4 className="text-2xl font-black mb-6 text-white uppercase tracking-wider">The 30-Minute Strategy Session</h4>
+                  <h4 className="text-2xl font-black mb-6 text-white uppercase tracking-wider">The Studio Experience</h4>
                   <p className="text-[#F5F5F0]/70 mb-8 leading-relaxed">
-                    In this complimentary session, we aren't just going to talk about cameras and microphones. We are going to audit your current brand visibility and identify exactly how a video podcast can become a lead-generating engine for your business. On this call, we will:
+                    Every booking at Rise & Render includes a dedicated on-site producer to run your session, ensuring a seamless, plug-and-play experience. Here is what is included in every session:
                   </p>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-6 mb-12">
                     <div className="flex gap-4">
                       <div className="w-12 h-12 rounded-xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0">
-                        <Target className="w-6 h-6 text-[#ff4d00]" />
+                        <Video className="w-6 h-6 text-[#ff4d00]" />
                       </div>
                       <div>
-                        <h5 className="font-bold text-white text-lg">Clarify Your Content Goals</h5>
-                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Are we building widespread fame, deep audience trust, or a direct sales pipeline? We build the strategy to match the goal.</p>
+                        <h5 className="font-bold text-white text-lg">Premium Video</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">4K Cinema Line Cameras for a stunning, broadcast-ready look.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-6 h-6 text-[#ff4d00]" />
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-lg">Studio Lighting</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Professional, flattering lighting setups tailored to your aesthetic.</p>
                       </div>
                     </div>
                     <div className="flex gap-4">
@@ -399,103 +416,144 @@ const LandingPage: React.FC = () => {
                         <Music className="w-6 h-6 text-[#ff4d00]" />
                       </div>
                       <div>
-                        <h5 className="font-bold text-white text-lg">Establish Your Sonic Brand</h5>
-                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Explore incorporating custom music produced by Mike Miller to give your show a 100% unique, premium audio identity that cuts through the noise.</p>
+                        <h5 className="font-bold text-white text-lg">Engineered Audio</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Crystal-clear sound capturing every word, featuring 2 professional microphones.</p>
                       </div>
                     </div>
                     <div className="flex gap-4">
                       <div className="w-12 h-12 rounded-xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0">
-                        <Video className="w-6 h-6 text-[#ff4d00]" />
+                        <Target className="w-6 h-6 text-[#ff4d00]" />
                       </div>
                       <div>
-                        <h5 className="font-bold text-white text-lg">Visualize Your Set</h5>
-                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Determine which of our premium studio aesthetics perfectly matches your brand's vibe and authority.</p>
+                        <h5 className="font-bold text-white text-lg">Set Design Choice</h5>
+                        <p className="text-[#F5F5F0]/60 text-sm mt-1 leading-relaxed">Choose the vibe that fits your brand: <strong>Modern Industrial</strong> (Edgy, sleek, and bold) or <strong>Light & Airy Neutral</strong> (Clean, bright, and welcoming).</p>
                       </div>
                     </div>
                   </div>
+
+                  {/* Creative Add-ons */}
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                     <h4 className="text-xl font-black mb-4 text-white uppercase tracking-wider">Creative Add-Ons</h4>
+                     <p className="text-[#F5F5F0]/60 text-sm mb-4 leading-relaxed">Build your perfect session with our a la carte post-production and studio upgrades:</p>
+                     <ul className="space-y-3">
+                        <li className="flex items-start gap-3 text-sm text-[#F5F5F0]/80"><span className="text-[#ff4d00] font-black">+$25</span> Extra Microphones (per additional mic)</li>
+                        <li className="flex items-start gap-3 text-sm text-[#F5F5F0]/80"><span className="text-[#ff4d00] font-black">+$150</span> Basic Episode Editing (per episode)</li>
+                        <li className="flex items-start gap-3 text-sm text-[#F5F5F0]/80"><span className="text-[#ff4d00] font-black">+$100</span> Social Media Vertical Clips (per reel)</li>
+                        <li className="flex items-start gap-3 text-sm text-[#F5F5F0]/80"><span className="text-[#ff4d00] font-black">+$75</span> Custom YouTube Thumbnails (per graphic)</li>
+                     </ul>
+                  </div>
                 </div>
 
+                {/* RIGHT COLUMN: The Rise Framework */}
                 <div className="bg-[#1A1A1A] p-8 rounded-3xl border border-white/5">
                   <h4 className="text-2xl font-black mb-2 text-[#ff4d00] uppercase tracking-wider flex items-center gap-3">
                     <TrendingUp size={24} /> The "Rise" Framework
                   </h4>
                   <p className="text-[#F5F5F0]/60 text-sm mb-8 leading-relaxed">
-                    Pricing starts at <strong>$3,000/month</strong> rather than a rigid set price. We audit your unique needs to design the exact blueprint required to scale your business. We will explore one of our core tiers:
+                    For creators and business owners who want to scale their impact without the headache of post-production. Pricing starts at <strong>$1,500/month</strong>.
                   </p>
 
                   <div className="space-y-4">
+                    {/* Tier 1 */}
                     <div className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4d00]/50 transition-colors">
-                      <h5 className="font-black text-white text-lg tracking-wide mb-2">I. The Ascent</h5>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 3 hours of studio time</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 2 Long-form 4K videos + 4 Social Clips</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Standard thumbnails & dedicated YouTube management</li>
-                      </ul>
-                    </div>
-
-                    <div className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4d00]/50 transition-colors">
-                      <h5 className="font-black text-white text-lg tracking-wide mb-2">II. The Summit</h5>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 5 hours of studio time</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 4 Long-form 4K videos + 4 Mastered Audio Episodes</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 12 Social Clips + YouTube & Podcast management</li>
-                      </ul>
-                    </div>
-
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/30 shadow-[0_0_30px_rgba(255,77,0,0.1)]">
-                      <div className="flex justify-between items-center mb-2">
-                        <h5 className="font-black text-white text-lg tracking-wide">III. The Horizon</h5>
-                        <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-1 rounded-md">Premier</span>
+                      <div className="flex justify-between items-center mb-3">
+                         <h5 className="font-black text-white text-lg tracking-wide">I. The Ascent</h5>
+                         <span className="text-[#ff4d00] font-black text-lg">$1,500<span className="text-sm font-medium">/mo</span></span>
                       </div>
                       <ul className="space-y-2">
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 5 hours studio + 4 Videos + 4 Audio Podcasts</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 20 Social Clips + Premium Custom Thumbnails</li>
-                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Full management across 3 platforms + Strategy Review</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 3 hours of studio time</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 2 Long-form 4K Videos + Mastered Audio</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 4 Social Media Vertical Clips</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Custom YouTube Thumbnails</li>
+                      </ul>
+                    </div>
+
+                    {/* Tier 2 */}
+                    <div className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4d00]/50 transition-colors">
+                      <div className="flex justify-between items-center mb-3">
+                         <h5 className="font-black text-white text-lg tracking-wide">II. The Summit</h5>
+                         <span className="text-[#ff4d00] font-black text-lg">$3,000<span className="text-sm font-medium">/mo</span></span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 5 hours of studio time</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 4 Long-form 4K Videos + Mastered Audio</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 12 Social Media Vertical Clips</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/70"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Custom YouTube Thumbnails</li>
+                      </ul>
+                    </div>
+
+                    {/* Tier 3 */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/30 shadow-[0_0_30px_rgba(255,77,0,0.1)]">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                            <h5 className="font-black text-white text-lg tracking-wide">III. The Horizon</h5>
+                            <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-1 rounded-md">Premier</span>
+                        </div>
+                        <span className="text-[#ff4d00] font-black text-lg">$5,000<span className="text-sm font-medium">/mo</span></span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> Up to 8 hours of studio time (2 full batch days!)</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 8 Long-form 4K Videos + Mastered Audio</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 20 Social Media Vertical Clips</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> 8 Premium Custom Thumbnails</li>
+                        <li className="flex items-start gap-2 text-sm text-[#F5F5F0]/80"><CheckCircle size={16} className="text-[#ff4d00] mt-0.5 flex-shrink-0" /> In-Depth Content Strategy Review</li>
                       </ul>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* NEW: HOURLY & BATCH RECORDING SECTION */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mb-20 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+              {/* A LA CARTE STUDIO SESSIONS */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mb-16 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                 <div className="flex-1">
                   <h4 className="text-2xl font-black mb-3 text-white uppercase tracking-wider">A La Carte Studio Sessions</h4>
                   <p className="text-[#F5F5F0]/70 text-sm leading-relaxed mb-4">
                     All of our filming and recording services take place in our amazing, fully-equipped studio in Duncanville, TX. Just need a space to shoot your content without the full management package? We have you covered.
                   </p>
-                  <p className="text-[#F5F5F0]/40 text-xs italic">
-                    * Editing and other post-production services are available upon request. However, we highly recommend our signature "Rise Framework" services above for end-to-end strategy and management.
-                  </p>
                 </div>
                 <div className="flex-shrink-0 flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                  <div className="bg-[#1A1A1A] border border-white/10 rounded-2xl p-6 text-center flex-1 md:min-w-[140px]">
-                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Hourly Rate</p>
+                  <div className="bg-[#1A1A1A] border border-white/10 rounded-2xl p-6 text-center flex-1 md:min-w-[160px]">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">The Power Hour</p>
                     <p className="text-3xl font-black text-white">$250<span className="text-sm text-white/40 font-medium">/hr</span></p>
                   </div>
-                  <div className="bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/40 rounded-2xl p-6 text-center flex-1 shadow-[0_0_20px_rgba(255,77,0,0.1)] relative overflow-hidden md:min-w-[160px]">
+                  <div className="bg-gradient-to-br from-[#ff4d00]/20 to-white/5 border border-[#ff4d00]/40 rounded-2xl p-6 text-center flex-1 shadow-[0_0_20px_rgba(255,77,0,0.1)] relative overflow-hidden md:min-w-[180px]">
                     <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-bl-lg">Save $200</div>
-                    <p className="text-[#ff4d00] text-xs font-bold uppercase tracking-widest mb-2">Batch Record</p>
+                    <p className="text-[#ff4d00] text-xs font-bold uppercase tracking-widest mb-2">The Batch Day</p>
                     <p className="text-3xl font-black text-white">$800<span className="text-sm text-[#ff4d00]/60 font-medium">/4 hrs</span></p>
                   </div>
                 </div>
               </div>
 
-              <div className="text-center relative z-10 pt-10 border-t border-white/10">
-                <h4 className="text-2xl font-bold text-white mb-8">Ready to turn your expertise into a video brand that honors your mission?</h4>
-                <a 
-                  href="https://tally.so/r/dWxaOy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-[#ff4d00] text-[#131313] px-12 py-5 rounded-full font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] text-lg"
-                >
-                  Book Your Free Strategy Session
-                </a>
+              {/* FOOTER CALL TO ACTION */}
+              <div className="text-center relative z-10 pt-12 border-t border-white/10">
+                <h4 className="text-3xl font-black text-white mb-4 uppercase tracking-tight">Your Voice Matters. Let’s Amplify It.</h4>
+                <p className="text-[#F5F5F0]/70 max-w-2xl mx-auto mb-10 leading-relaxed">
+                  Stop letting the technical details hold you back from sharing your purpose. Whether you are ready to record your very first episode or you need a premier team to produce a month's worth of content in a single day, Rise & Render is your creative home.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a 
+                      href="https://tally.so/r/dWxaOy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#ff4d00]/50 font-black uppercase tracking-widest py-4 px-8 rounded-full transition-all hover:scale-105 shadow-lg text-sm md:text-base w-full sm:w-auto text-center backdrop-blur-sm"
+                    >
+                      Book Your Studio Session Today
+                    </a>
+                    
+                    {/* Note: Update this tally.so link if you have a separate application form for the retainer! */}
+                    <a 
+                      href="https://tally.so/r/dWxaOy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-[#ff4d00] text-[#131313] px-8 py-4 rounded-full font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] text-sm md:text-base w-full sm:w-auto text-center"
+                    >
+                      Apply for the Rise Framework Retainer
+                    </a>
+                </div>
               </div>
             </div>
           </motion.div>
-
-        </div>
       </section>
 
       {/* TESTIMONIALS SECTION */}
