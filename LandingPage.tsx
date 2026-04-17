@@ -143,7 +143,7 @@ const LandingPage: React.FC = () => {
           </button>
           
           <a 
-            href="https://tally.so/r/dWxaOy"
+            href="https://cal.com/riseandrenderdfw/booking"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#ff4d00]/50 font-black uppercase tracking-widest py-3.5 px-10 rounded-full transition-all hover:scale-105 shadow-lg text-lg md:text-xl w-full sm:w-auto text-center backdrop-blur-sm"
@@ -533,7 +533,7 @@ const LandingPage: React.FC = () => {
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <a 
-                      href="https://tally.so/r/dWxaOy"
+                      href="https://cal.com/riseandrenderdfw/booking"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#ff4d00]/50 font-black uppercase tracking-widest py-4 px-8 rounded-full transition-all hover:scale-105 shadow-lg text-sm md:text-base w-full sm:w-auto text-center backdrop-blur-sm"
@@ -543,7 +543,7 @@ const LandingPage: React.FC = () => {
                     
                     {/* Note: Update this tally.so link if you have a separate application form for the retainer! */}
                     <a 
-                      href="https://tally.so/r/dWxaOy"
+                      href="https://cal.com/riseandrenderdfw/booking"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-[#ff4d00] text-[#131313] px-8 py-4 rounded-full font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] text-sm md:text-base w-full sm:w-auto text-center"
