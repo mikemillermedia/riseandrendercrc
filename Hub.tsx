@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase, Share2 } from 'lucide-react'; // Added Briefcase
+import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase, Share2 } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
 import CommunityChat from './CommunityChat';
 import Members from './Members';
 import DirectMessages from './components/DirectMessages'; 
-import CollabBoard from './components/CollabBoard'; // NEW COLLAB IMPORT
+import CollabBoard from './components/CollabBoard'; 
 import AIChat from './components/AIChat'; 
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 import BrandLogo from '../components/BrandLogo';
@@ -26,7 +26,8 @@ export default function Hub() {
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab });
   };
-// NEW: Onboarding Tooltip State
+
+  // NEW: Onboarding Tooltip State
   const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
 
   useEffect(() => {
@@ -42,13 +43,15 @@ export default function Hub() {
     setShowWelcomeTooltip(false);
     localStorage.setItem('hasSeenHubTooltip', 'true'); // Save to phone memory
   };
+  
   const [user, setUser] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
-const handleShare = async () => {
+
+  const handleShare = async () => {
     const shareData = {
       title: 'Rise & Render Community',
       text: 'Check out this private community for faith-driven creators!',
@@ -66,7 +69,10 @@ const handleShare = async () => {
       console.log('Share canceled or failed', err);
     }
   };
+
+  // UPDATED AUTHENTICATION LISTENER
   useEffect(() => {
+    // 1. Check the session immediately
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -76,6 +82,18 @@ const handleShare = async () => {
       }
     };
     checkUser();
+
+    // 2. Listen for active auth events (like token refreshes or magic link clicks)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate('/login');
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    // Cleanup the listener when the component unmounts
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   useEffect(() => {
@@ -124,7 +142,7 @@ const handleShare = async () => {
 
   if (!user) return <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex items-center justify-center">Loading Hub...</div>;
 
- const NavLinks = () => (
+  const NavLinks = () => (
     <>
       <button onClick={() => { setActiveTab('activity'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'activity' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Activity size={20} /> Latest Activity
@@ -173,6 +191,7 @@ const handleShare = async () => {
       </button>
     </>
   );
+
   return (
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
