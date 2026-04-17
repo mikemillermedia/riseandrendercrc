@@ -56,10 +56,10 @@ export default function Login() {
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[100px] opacity-10" />
 
         <div className="text-center mb-8 relative z-10">
-          <h1 className="text-3xl font-black text-white uppercase tracking-widest">CRC <span className="text-[#ff4d00]">Hub</span></h1>
-          <p className="text-[#ff4d00] font-bold text-xs tracking-widest mt-2 uppercase">Creatives Representing Christ</p>
+          <h1 className="text-3xl font-black text-white uppercase tracking-widest">RISE &<span className="text-[#ff4d00]">RENDER</span></h1>
+          <p className="text-[#ff4d00] font-bold text-xs tracking-widest mt-2 uppercase">Community Login</p>
           <p className="text-white/60 mt-4 text-sm">
-            {isSignUp ? "Create a free account to join our private community of Christian creatives." : "Welcome back! Sign in to access the community."}
+            {isSignUp ? "Create a free account to join our community of Christian creatives." : "Welcome back! Sign in to access the community."}
           </p>
         </div>
 
