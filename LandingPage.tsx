@@ -134,7 +134,7 @@ const LandingPage: React.FC = () => {
         </h1>
 
         <p className="text-lg md:text-2xl text-[#F5F5F0]/80 max-w-3xl mb-12 font-medium leading-relaxed">
-          A community for Creatives Representing Christ focusing on tech, gear, and elevating your content.
+          The definitive home for faith-driven creators. From our high-end recording studio to our community, we provide the tools and network to bring your God-given vision to life.
         </p>
 
        <div className="flex flex-col sm:flex-row items-center gap-4">
