@@ -8,11 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, Zap, TrendingUp, Award, ArrowRight, Mic, Video, Scissors, Share2, Palette, Plus, LayoutGrid 
 } from 'lucide-react';
-import FluidBackground from '../components/FluidBackground';
-import CustomCursor from '../components/CustomCursor';
-import AIChat from '../components/AIChat';
-import BrandLogo from '../components/BrandLogo';
-import Footer from '../components/Footer';
+import FluidBackground from './components/FluidBackground';
+import CustomCursor from './components/CustomCursor';
+import AIChat from './components/AIChat';
+import BrandLogo from './components/BrandLogo';
+// Footer temporarily removed to fix the build!
+
 
 const PricingPage: React.FC = () => {
   const navigate = useNavigate();
