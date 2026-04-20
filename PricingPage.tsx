@@ -351,7 +351,6 @@ const PricingPage: React.FC = () => {
         </button>
       )}
 
-      <Footer />
     </div>
   );
 };
