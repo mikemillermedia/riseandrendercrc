@@ -214,14 +214,14 @@ const PricingPage: React.FC = () => {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
-                  const pkg = basePackages[key];
+                  const pkg = basePackages[key as keyof typeof basePackages];
                   const isSelected = selectedBase === key;
                   return (
                     <motion.div
                       key={key}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedBase(key)}
+                      onClick={() => setSelectedBase(key as 'power_hour' | 'batch_day')}
                       className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 relative overflow-hidden ${
                         isSelected 
                         ? 'bg-gradient-to-br from-[#ff4d00]/20 to-[#1A1A1A] border-[#ff4d00] shadow-[0_0_30px_rgba(255,77,0,0.15)]' 
@@ -320,10 +320,10 @@ const PricingPage: React.FC = () => {
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         key={id} 
-                        className="flex justify-between items-center text-white/60 text-sm"
+                        className="flex justify-between items-center text-white/60 text-sm overflow-hidden"
                       >
-                        <span>+ {addon.name}</span>
-                        <span>${addon.price}</span>
+                        <span className="py-1">+ {addon.name}</span>
+                        <span className="py-1">${addon.price}</span>
                       </motion.div>
                     );
                   })}
@@ -344,7 +344,7 @@ const PricingPage: React.FC = () => {
                 href="https://form.jotform.com/261096943415057"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-[#131313] px-6 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] text-sm"
+                className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-[#131313] px-6 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] text-sm relative z-10"
               >
                 Submit Application <ArrowRight size={18} />
               </a>
@@ -363,7 +363,7 @@ const PricingPage: React.FC = () => {
            </div>
            <div className="flex-1 relative z-10">
              <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Want us to handle everything?</h4>
-             <p className="text-[#F5F5F0]/70 text-sm md:text-base leading-relaxed max-w-2xl">
+             <p className="text-[#F5F5F0]/70 text-sm md:text-base leading-relaxed max-w-2xl mx-auto md:mx-0">
                We offer custom <strong>Rise Framework Retainers</strong> for clients who want to scale. We take over strategy, recording, end-to-end editing, and platform distribution so you can just show up and speak.
              </p>
            </div>
@@ -372,4 +372,26 @@ const PricingPage: React.FC = () => {
                 href="https://form.jotform.com/261096943415057"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-full bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#ff4d00]/50 font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-all text-
+                className="inline-block w-full bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#ff4d00]/50 font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-all text-sm text-center"
+             >
+                Inquire About Retainers
+             </a>
+           </div>
+        </div>
+      </section>
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 left-6 z-40 bg-white/10 hover:bg-[#ff4d00] text-white p-3 rounded-full transition-all shadow-xl backdrop-blur-md border border-white/10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+      )}
+
+    </div>
+  );
+};
+
+export default PricingPage;
