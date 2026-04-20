@@ -71,12 +71,15 @@ const PricingPage: React.FC = () => {
     { id: 'social_clip', name: 'Social Media Clip', desc: '1 Vertical reel optimized for IG/TikTok.', price: 100, icon: <Share2 size={20} /> },
   ];
 
+  // SMART LOGIC: 1 episode for Power Hour, 4 episodes for Batch Day
+  const episodeMultiplier = selectedBase === 'batch_day' ? 4 : 1;
+
   // REAL-TIME TOTAL CALCULATION
   const calculateTotal = () => {
     let total = basePackages[selectedBase].price;
     selectedAddons.forEach(id => {
       const addon = addonOptions.find(a => a.id === id);
-      if (addon) total += addon.price;
+      if (addon) total += (addon.price * episodeMultiplier);
     });
     return total;
   };
@@ -214,7 +217,7 @@ const PricingPage: React.FC = () => {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
-                  const pkg = basePackages[key as keyof typeof basePackages];
+                  const pkg = basePackages[key];
                   const isSelected = selectedBase === key;
                   return (
                     <motion.div
@@ -282,7 +285,7 @@ const PricingPage: React.FC = () => {
                           <div>
                             <h4 className="font-bold text-white leading-tight mb-1">{addon.name}</h4>
                             <p className="text-xs text-white/50 leading-relaxed">{addon.desc}</p>
-                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>+${addon.price}</p>
+                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>+${addon.price} <span className="text-xs font-normal">/ episode</span></p>
                           </div>
                         </div>
                         <div className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center mt-1 ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
@@ -322,8 +325,13 @@ const PricingPage: React.FC = () => {
                         key={id} 
                         className="flex justify-between items-center text-white/60 text-sm overflow-hidden"
                       >
-                        <span className="py-1">+ {addon.name}</span>
-                        <span className="py-1">${addon.price}</span>
+                        <span className="py-1 flex items-center gap-1.5">
+                          + {addon.name} 
+                          {episodeMultiplier > 1 && (
+                            <span className="text-[#ff4d00] text-[10px] font-black bg-[#ff4d00]/10 px-1.5 py-0.5 rounded-md">x{episodeMultiplier}</span>
+                          )}
+                        </span>
+                        <span className="py-1">${addon.price * episodeMultiplier}</span>
                       </motion.div>
                     );
                   })}
