@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon 
+  CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -20,6 +20,7 @@ const PricingPage: React.FC = () => {
   // CALCULATOR STATE
   const [selectedBase, setSelectedBase] = useState<'power_hour' | 'batch_day'>('power_hour');
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
+  const [clipQuantity, setClipQuantity] = useState<number>(1);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -32,6 +33,10 @@ const PricingPage: React.FC = () => {
     setSelectedAddons(prev => 
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
     );
+    // Reset clip quantity if they deselect it
+    if (id === 'social_clip' && selectedAddons.includes('social_clip')) {
+      setClipQuantity(1);
+    }
   };
 
   // PRICING DATA
@@ -68,7 +73,7 @@ const PricingPage: React.FC = () => {
     { id: 'basic_edit', name: 'Basic Editing', desc: 'Simple multi-cam cuts and color grade.', price: 150, icon: <Scissors size={20} /> },
     { id: 'advanced_edit', name: 'Advanced Editing', desc: 'Engaging hooks & flow optimized for retention.', price: 250, icon: <PlayCircle size={20} /> },
     { id: 'thumbnail', name: 'Custom YouTube Thumbnail', desc: 'High-CTR custom graphic design.', price: 75, icon: <ImageIcon size={20} /> },
-    { id: 'social_clip', name: 'Social Media Clip', desc: '1 Vertical reel optimized for IG/TikTok.', price: 100, icon: <Share2 size={20} /> },
+    { id: 'social_clip', name: 'Social Media Clip', desc: 'Vertical reels optimized for IG/TikTok.', price: 100, icon: <Share2 size={20} /> },
   ];
 
   // SMART LOGIC: 1 episode for Power Hour, 4 episodes for Batch Day
@@ -79,9 +84,32 @@ const PricingPage: React.FC = () => {
     let total = basePackages[selectedBase].price;
     selectedAddons.forEach(id => {
       const addon = addonOptions.find(a => a.id === id);
-      if (addon) total += (addon.price * episodeMultiplier);
+      if (addon) {
+        if (id === 'social_clip') {
+          total += (addon.price * clipQuantity * episodeMultiplier);
+        } else {
+          total += (addon.price * episodeMultiplier);
+        }
+      }
     });
     return total;
+  };
+
+  // GENERATE JOTFORM URL WITH DATA
+  const generateJotformUrl = () => {
+    const baseUrl = "https://form.jotform.com/261096943415057";
+    const pkgName = encodeURIComponent(basePackages[selectedBase].name);
+    
+    // Format the addons nicely for your records
+    const addonsList = encodeURIComponent(selectedAddons.map(id => {
+      if (id === 'social_clip') return `Social Clips (x${clipQuantity} per ep)`;
+      return addonOptions.find(a => a.id === id)?.name || id;
+    }).join(', ') || 'None');
+    
+    const total = calculateTotal();
+    
+    // This maps to JotForm Unique Names: ?package=...&addons=...&total=...
+    return `${baseUrl}?package=${pkgName}&addons=${addonsList}&total=${total}`;
   };
 
   return (
@@ -269,15 +297,15 @@ const PricingPage: React.FC = () => {
                     <motion.div
                       key={addon.id}
                       whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileTap={addon.id !== 'social_clip' || !isSelected ? { scale: 0.98 } : {}} // Don't tap-animate if interacting with quantity
                       onClick={() => toggleAddon(addon.id)}
-                      className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 ${
+                      className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
                         isSelected 
                         ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' 
                         : 'bg-[#1A1A1A] border-white/5 hover:border-white/20'
                       }`}
                     >
-                      <div className="flex justify-between items-start gap-4">
+                      <div className="flex justify-between items-start gap-4 w-full">
                         <div className="flex gap-3">
                           <div className={`p-2 rounded-lg shrink-0 mt-1 ${isSelected ? 'bg-[#ff4d00] text-black' : 'bg-white/5 text-white/60'}`}>
                             {addon.icon}
@@ -285,13 +313,38 @@ const PricingPage: React.FC = () => {
                           <div>
                             <h4 className="font-bold text-white leading-tight mb-1">{addon.name}</h4>
                             <p className="text-xs text-white/50 leading-relaxed">{addon.desc}</p>
-                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>+${addon.price} <span className="text-xs font-normal">/ episode</span></p>
+                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>+${addon.price} <span className="text-xs font-normal">/ {addon.id === 'social_clip' ? 'clip' : 'episode'}</span></p>
                           </div>
                         </div>
                         <div className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center mt-1 ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
                           {isSelected && <CheckCircle2 size={14} className="text-[#131313]" />}
                         </div>
                       </div>
+
+                      {/* QUANTITY SELECTOR FOR SOCIAL CLIPS */}
+                      {addon.id === 'social_clip' && isSelected && (
+                        <div 
+                          className="mt-4 pt-4 border-t border-[#ff4d00]/20 flex items-center justify-between"
+                          onClick={(e) => e.stopPropagation()} // Prevents the card from toggling off when clicking buttons
+                        >
+                          <span className="text-xs font-bold text-[#ff4d00] uppercase tracking-wider">Clips per episode:</span>
+                          <div className="flex items-center gap-3 bg-[#131313] rounded-full p-1 border border-[#ff4d00]/30">
+                            <button 
+                              onClick={() => setClipQuantity(Math.max(1, clipQuantity - 1))}
+                              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                            >
+                              <Minus size={14} className="text-white" />
+                            </button>
+                            <span className="font-black text-white w-4 text-center">{clipQuantity}</span>
+                            <button 
+                              onClick={() => setClipQuantity(clipQuantity + 1)}
+                              className="w-7 h-7 rounded-full bg-[#ff4d00]/20 hover:bg-[#ff4d00]/40 flex items-center justify-center transition-colors"
+                            >
+                              <Plus size={14} className="text-[#ff4d00]" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   );
                 })}
@@ -317,6 +370,10 @@ const PricingPage: React.FC = () => {
                   {selectedAddons.map(id => {
                     const addon = addonOptions.find(a => a.id === id);
                     if (!addon) return null;
+                    
+                    const qtyMultiplier = addon.id === 'social_clip' ? clipQuantity : 1;
+                    const itemTotal = addon.price * episodeMultiplier * qtyMultiplier;
+
                     return (
                       <motion.div 
                         initial={{ opacity: 0, height: 0 }}
@@ -325,13 +382,16 @@ const PricingPage: React.FC = () => {
                         key={id} 
                         className="flex justify-between items-center text-white/60 text-sm overflow-hidden"
                       >
-                        <span className="py-1 flex items-center gap-1.5">
+                        <span className="py-1 flex items-center gap-1.5 flex-wrap">
                           + {addon.name} 
+                          {addon.id === 'social_clip' && clipQuantity > 1 && (
+                             <span className="text-white/40 text-[10px] uppercase tracking-wider">(x{clipQuantity})</span>
+                          )}
                           {episodeMultiplier > 1 && (
-                            <span className="text-[#ff4d00] text-[10px] font-black bg-[#ff4d00]/10 px-1.5 py-0.5 rounded-md">x{episodeMultiplier}</span>
+                            <span className="text-[#ff4d00] text-[10px] font-black bg-[#ff4d00]/10 px-1.5 py-0.5 rounded-md shrink-0">x{episodeMultiplier} eps</span>
                           )}
                         </span>
-                        <span className="py-1">${addon.price * episodeMultiplier}</span>
+                        <span className="py-1 shrink-0 ml-2">${itemTotal}</span>
                       </motion.div>
                     );
                   })}
@@ -348,8 +408,9 @@ const PricingPage: React.FC = () => {
                 </p>
               </div>
 
+              {/* DYNAMIC JOTFORM LINK */}
               <a 
-                href="https://form.jotform.com/261096943415057"
+                href={generateJotformUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-[#131313] px-6 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] text-sm relative z-10"
