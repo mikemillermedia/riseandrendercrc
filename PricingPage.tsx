@@ -176,15 +176,28 @@ const PricingPage: React.FC = () => {
     <div className="relative min-h-screen bg-[#0a0a0a] text-[#F5F5F0] overflow-x-hidden">
       <CustomCursor />
       
-      {/* APPLE-STYLE DEPTH MESH BACKGROUND */}
+      {/* NEW SUBTLE MONOCHROMATIC DEPTH BACKGROUND */}
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute top-0 -left-1/4 w-3/4 h-3/4 bg-[#ff4d00]/15 rounded-full filter blur-[150px] mix-blend-screen opacity-60" />
-        <div className="absolute bottom-0 -right-1/4 w-3/4 h-3/4 bg-[#ff4d00]/10 rounded-full filter blur-[150px] mix-blend-screen opacity-40" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[#131313] mix-blend-multiply opacity-90" />
+        <div className="absolute inset-0 bg-[#131313]" />
         
-        {/* Subtle cyan accent to counter the orange and add depth */}
-        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-cyan-950/20 rounded-full filter blur-[120px] mix-blend-screen" />
-        <div className="absolute bottom-[20%] left-[10%] w-[500px] h-[500px] bg-purple-950/20 rounded-full filter blur-[120px] mix-blend-screen" />
+        {/* Subtle animated grey movements for depth */}
+        <motion.div
+          animate={{
+            x: [0, 80, 0, -80, 0],
+            y: [0, -80, 0, 80, 0],
+          }}
+          transition={{
+            duration: 90, // very slow
+            repeat: Infinity,
+            ease: "linear",
+          }}
+          className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] mix-blend-screen"
+        >
+          <div className="absolute top-[10%] left-[10%] w-[80%] h-[80%] bg-[#F5F5F0]/3 rounded-full filter blur-[180px]" />
+          <div className="absolute bottom-[10%] right-[10%] w-[80%] h-[80%] bg-[#F5F5F0]/2 rounded-full filter blur-[180px]" />
+        </motion.div>
+        
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[#131313] mix-blend-multiply opacity-90" />
       </div>
 
       <FluidBackground />
@@ -388,27 +401,21 @@ const PricingPage: React.FC = () => {
                 Select Studio Time
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 relative bg-white/5 p-1 rounded-3xl border border-white/10">
-                {/* Floating animated tab switcher background */}
-                <motion.div 
-                  className="absolute top-1 bottom-1 bg-[#ff4d00] rounded-2xl z-0 border border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.3)]"
-                  layout
-                  initial={false}
-                  animate={{
-                    left: selectedBase === 'power_hour' ? '4px' : '50%',
-                    right: selectedBase === 'power_hour' ? '50%' : '4px',
-                  }}
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                />
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
                 {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
                   const pkg = basePackages[key as keyof typeof basePackages];
                   const isSelected = selectedBase === key;
                   return (
-                    <div
+                    <motion.div
                       key={key}
+                      whileHover={{ y: -3, borderColor: 'rgba(255, 255, 255, 0.2)' }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedBase(key as 'power_hour' | 'batch_day')}
-                      className="cursor-pointer p-7 rounded-2xl transition-all duration-300 relative z-10 overflow-hidden"
+                      className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${
+                        isSelected 
+                        ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_30px_rgba(255,77,0,0.1)]' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
                     >
                       {key === 'batch_day' && !isBatchDayPromo && (
                         <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">Save $200</div>
@@ -421,21 +428,21 @@ const PricingPage: React.FC = () => {
                       )}
                       
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className={`text-xl font-black uppercase tracking-tight ${isSelected ? 'text-black' : 'text-white'}`}>{pkg.name}</h4>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${isSelected ? 'border-black bg-black' : 'border-white/20'}`}>
-                          {isSelected && <div className="w-2.5 h-2.5 bg-[#ff4d00] rounded-full" />}
+                        <h4 className={`text-xl font-black uppercase tracking-tight text-white`}>{pkg.name}</h4>
+                        <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center mt-1 transition-colors ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
+                          {isSelected && <CheckCircle2 size={14} className="text-black" />}
                         </div>
                       </div>
-                      <p className={`text-4xl font-black mb-5 ${isSelected ? 'text-black' : 'text-[#ff4d00]'}`}>${pkg.price}</p>
-                      <ul className={`space-y-2 text-sm ${isSelected ? 'text-black/70 font-medium' : 'text-[#F5F5F0]/70'}`}>
+                      <p className={`text-3xl font-black ${isSelected ? 'text-[#ff4d00]' : 'text-white'} mb-4`}>${pkg.price}</p>
+                      <ul className={`space-y-2 text-sm text-[#F5F5F0]/70 flex-grow`}>
                         {pkg.features.map((feat, idx) => (
                           <li key={idx} className="flex items-start gap-2">
-                            <CheckCircle2 size={16} className={`${isSelected ? 'text-black' : 'text-[#ff4d00]'} shrink-0 mt-0.5`} />
+                            <CheckCircle2 size={16} className={`${isSelected ? 'text-[#ff4d00]' : 'text-white/60'} shrink-0 mt-0.5`} />
                             <span>{key === 'power_hour' && isPowerHourPromo && idx === 0 ? '2 Hours Recording Time (BOGO)' : feat}</span>
                           </li>
                         ))}
                       </ul>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -459,7 +466,7 @@ const PricingPage: React.FC = () => {
                       onClick={() => toggleAddon(addon.id)}
                       className={`cursor-pointer p-6 rounded-3xl border backdrop-blur-sm transition-all duration-300 flex flex-col justify-between ${
                         isSelected 
-                        ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_30px_rgba(255,77,0,0.1)]' 
+                        ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' 
                         : 'bg-white/5 border-white/10 hover:border-white/20'
                       }`}
                     >
