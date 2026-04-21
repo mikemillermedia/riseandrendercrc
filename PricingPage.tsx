@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus, FileText, Headphones, Monitor, Radio, Camera 
+  CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus, FileText, Headphones, Monitor, Radio, Camera, Crown 
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -38,7 +38,6 @@ const PricingPage: React.FC = () => {
     setSelectedAddons(prev => 
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
     );
-    // Reset clip quantity if they deselect it
     if (id === 'social_clip' && selectedAddons.includes('social_clip')) {
       setClipQuantity(1);
     }
@@ -47,10 +46,10 @@ const PricingPage: React.FC = () => {
   const handleApplyPromo = () => {
     if (promoCode.trim().toLowerCase() === 'fruit15') {
       setPromoApplied(true);
-      if (selectedBase !== 'power_hour') {
-        setPromoMessage('Code "fruit15" is active, but only applies to The Power Hour.');
-      } else {
+      if (selectedBase === 'power_hour') {
         setPromoMessage('Success! Buy 1 Get 1 Free Hour applied.');
+      } else {
+        setPromoMessage('Success! $200 Off applied.');
       }
     } else {
       setPromoApplied(false);
@@ -61,15 +60,15 @@ const PricingPage: React.FC = () => {
   // Keep promo message accurate if they switch packages after applying
   useEffect(() => {
     if (promoApplied) {
-      if (selectedBase !== 'power_hour') {
-        setPromoMessage('Code "fruit15" is active, but only applies to The Power Hour.');
-      } else {
+      if (selectedBase === 'power_hour') {
         setPromoMessage('Success! Buy 1 Get 1 Free Hour applied.');
+      } else {
+        setPromoMessage('Success! $200 Off applied.');
       }
     }
   }, [selectedBase, promoApplied]);
 
-  // PRICING DATA
+  // A-LA-CARTE PRICING DATA
   const basePackages = {
     power_hour: {
       id: 'power_hour',
@@ -111,13 +110,21 @@ const PricingPage: React.FC = () => {
     { id: 'bts_broll', name: 'Behind-The-Scenes B-Roll', desc: 'Raw, cinematic vertical footage for organic social.', price: 75, type: 'per_session', icon: <Camera size={20} /> },
   ];
 
-  // SMART LOGIC: 1 episode for normal Power Hour, 2 for BOGO Power Hour, 4 for Batch Day
-  const isPromoValid = promoApplied && selectedBase === 'power_hour';
-  const episodeMultiplier = selectedBase === 'batch_day' ? 4 : (isPromoValid ? 2 : 1);
+  // SMART LOGIC: Handle specific promo rules for each tier
+  const isPowerHourPromo = promoApplied && selectedBase === 'power_hour';
+  const isBatchDayPromo = promoApplied && selectedBase === 'batch_day';
+  
+  // Episode Multiplier (2 for BOGO Power Hour, 4 for Batch Day)
+  const episodeMultiplier = selectedBase === 'batch_day' ? 4 : (isPowerHourPromo ? 2 : 1);
 
-  // REAL-TIME TOTAL CALCULATION
   const calculateTotal = () => {
     let total = basePackages[selectedBase].price;
+    
+    // Apply Batch Day $200 Discount
+    if (isBatchDayPromo) {
+      total -= 200;
+    }
+
     selectedAddons.forEach(id => {
       const addon = addonOptions.find(a => a.id === id);
       if (addon) {
@@ -126,33 +133,35 @@ const PricingPage: React.FC = () => {
         } else if (addon.type === 'per_episode') {
           total += (addon.price * episodeMultiplier);
         } else if (addon.type === 'per_session') {
-          total += addon.price; // Flat fee for the whole session
+          total += addon.price; 
         }
       }
     });
     return total;
   };
 
-  // GENERATE JOTFORM URL WITH DATA
-  const generateJotformUrl = () => {
+  const generateCalculatorUrl = () => {
     const baseUrl = "https://form.jotform.com/261096943415057";
-    
-    // Pass promo info dynamically so you see it in JotForm
     let pkgName = basePackages[selectedBase].name;
-    if (isPromoValid) {
-      pkgName += ' (BOGO PROMO CLAIMED - 2 Hours Total)';
-    }
-    const finalPkgName = encodeURIComponent(pkgName);
     
-    // Format the addons nicely for your records
+    if (isPowerHourPromo) {
+      pkgName += ' (BOGO PROMO CLAIMED - 2 Hours Total)';
+    } else if (isBatchDayPromo) {
+      pkgName += ' (PROMO CLAIMED - $200 Off)';
+    }
+    
+    const finalPkgName = encodeURIComponent(pkgName);
     const addonsList = encodeURIComponent(selectedAddons.map(id => {
       if (id === 'social_clip') return `Social Clips (x${clipQuantity} per ep)`;
       return addonOptions.find(a => a.id === id)?.name || id;
     }).join(', ') || 'None');
-    
     const total = calculateTotal();
     
     return `${baseUrl}?package=${finalPkgName}&addons=${addonsList}&total=${total}`;
+  };
+
+  const getSignatureUrl = (packageName: string) => {
+    return `https://form.jotform.com/261096943415057?package=${encodeURIComponent(packageName + ' Retainer')}&addons=All%20Inclusive&total=Custom`;
   };
 
   return (
@@ -262,15 +271,99 @@ const PricingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* SIGNATURE RETAINER PACKAGES */}
+      <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto relative z-10">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">Signature <span className="text-[#ff4d00]">Partnerships</span></h2>
+          <p className="text-xl text-[#F5F5F0]/60 max-w-2xl mx-auto leading-relaxed">
+            For creators and business owners who want us to handle everything. Pricing starts at $1,500/month.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* I. The Ascent */}
+          <motion.div whileHover={{ y: -10 }} className="bg-[#1A1A1A] p-8 rounded-3xl border border-white/5 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl">
+            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">I. The Ascent</h3>
+            <p className="text-4xl font-black text-[#ff4d00] mb-6">$1,500<span className="text-sm text-white/40 font-medium">/mo</span></p>
+            <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Up to 3 hours of studio time</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 2 Long-form 4K Videos + Mastered Audio</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 4 Social Media Vertical Clips</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
+            </ul>
+            <a 
+              href={getSignatureUrl("The Ascent")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
+            >
+              Apply Now
+            </a>
+          </motion.div>
+
+          {/* II. The Summit */}
+          <motion.div whileHover={{ y: -10 }} className="bg-[#131313] p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col transition-all shadow-[0_0_30px_rgba(255,77,0,0.15)] relative transform lg:-translate-y-4">
+            <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-xs font-black uppercase px-4 py-1.5 rounded-bl-xl">Most Popular</div>
+            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">II. The Summit</h3>
+            <p className="text-4xl font-black text-[#ff4d00] mb-6">$3,000<span className="text-sm text-white/40 font-medium">/mo</span></p>
+            <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Up to 5 hours of studio time</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 4 Long-form 4K Videos + Mastered Audio</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 12 Social Media Vertical Clips</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
+            </ul>
+            <a 
+              href={getSignatureUrl("The Summit")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full block text-center bg-[#ff4d00] hover:bg-[#ff4d00]/90 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors shadow-lg"
+            >
+              Apply Now
+            </a>
+          </motion.div>
+
+          {/* III. The Horizon */}
+          <motion.div whileHover={{ y: -10 }} className="bg-[#1A1A1A] p-8 rounded-3xl border border-white/5 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl relative">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-2xl font-black text-white uppercase tracking-tight">III. The Horizon</h3>
+              <Crown size={20} className="text-yellow-500" />
+            </div>
+            <p className="text-4xl font-black text-[#ff4d00] mb-6">$5,000<span className="text-sm text-white/40 font-medium">/mo</span></p>
+            <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Up to 8 hours (2 full batch days!)</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 8 Long-form 4K Videos + Mastered Audio</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 20 Social Media Vertical Clips</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 8 Premium Custom Thumbnails</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> In-Depth Content Strategy Review</li>
+            </ul>
+            <a 
+              href={getSignatureUrl("The Horizon")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
+            >
+              Apply Now
+            </a>
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* DIVIDER */}
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-10"></div>
+      </div>
+
       {/* INTERACTIVE PRICING CALCULATOR */}
-      <section className="py-24 px-6 md:px-12 max-w-6xl mx-auto relative z-10">
+      <section className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-20">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/20 text-[#ff4d00] text-sm font-bold uppercase tracking-widest mb-6">
-            <Calculator size={16} /> Interactive Estimate
+            <Calculator size={16} /> A La Carte Studio Time
           </div>
           <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">Build Your <span className="text-[#ff4d00]">Package</span></h2>
           <p className="text-xl text-[#F5F5F0]/60 max-w-2xl mx-auto leading-relaxed">
-            Select your studio time and creative add-ons below to generate a real-time estimate.
+            Just need a single session? Select your studio time and creative add-ons below to generate a real-time estimate.
           </p>
         </div>
 
@@ -302,10 +395,13 @@ const PricingPage: React.FC = () => {
                         : 'bg-[#1A1A1A] border-white/5 hover:border-white/20'
                       }`}
                     >
-                      {key === 'batch_day' && (
+                      {key === 'batch_day' && !isBatchDayPromo && (
                         <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">Save $200</div>
                       )}
-                      {key === 'power_hour' && isPromoValid && (
+                      {key === 'batch_day' && isBatchDayPromo && (
+                        <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">-$200 OFF APPLIED</div>
+                      )}
+                      {key === 'power_hour' && isPowerHourPromo && (
                         <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">+1 FREE HOUR</div>
                       )}
                       
@@ -321,7 +417,7 @@ const PricingPage: React.FC = () => {
                           <li key={idx} className="flex items-start gap-2">
                             {idx === 1 ? <Clock size={16} className="text-[#ff4d00] shrink-0 mt-0.5" /> : <CheckCircle2 size={16} className="text-[#ff4d00] shrink-0 mt-0.5" />}
                             <span>
-                              {key === 'power_hour' && isPromoValid && idx === 0 ? '2 Hours Recording Time (BOGO)' : feat}
+                              {key === 'power_hour' && isPowerHourPromo && idx === 0 ? '2 Hours Recording Time (BOGO)' : feat}
                             </span>
                           </li>
                         ))}
@@ -418,10 +514,21 @@ const PricingPage: React.FC = () => {
                 <div className="flex justify-between items-start text-white/80">
                   <div className="flex flex-col">
                     <span className="font-medium">{basePackages[selectedBase].name}</span>
-                    {isPromoValid && <span className="text-green-400 text-[11px] font-bold mt-1 uppercase tracking-wider">+ 1 FREE Hour Applied</span>}
+                    {isPowerHourPromo && <span className="text-green-400 text-[11px] font-bold mt-1 uppercase tracking-wider">+ 1 FREE Hour Applied</span>}
                   </div>
                   <span className="font-bold mt-0.5">${basePackages[selectedBase].price}</span>
                 </div>
+
+                {isBatchDayPromo && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="flex justify-between items-center text-green-400 text-sm overflow-hidden"
+                  >
+                    <span className="py-1 font-bold">Promo: FRUIT15</span>
+                    <span className="py-1 font-bold">-$200</span>
+                  </motion.div>
+                )}
                 
                 <AnimatePresence>
                   {selectedAddons.map(id => {
@@ -479,7 +586,7 @@ const PricingPage: React.FC = () => {
                 {promoMessage && (
                   <motion.p 
                     initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`text-xs mt-3 font-medium ${promoApplied && selectedBase === 'power_hour' ? 'text-green-400' : 'text-[#ff4d00]'}`}
+                    className={`text-xs mt-3 font-medium ${promoApplied && (selectedBase === 'power_hour' || selectedBase === 'batch_day') ? 'text-green-400' : 'text-[#ff4d00]'}`}
                   >
                     {promoMessage}
                   </motion.p>
@@ -498,7 +605,7 @@ const PricingPage: React.FC = () => {
 
               {/* DYNAMIC JOTFORM LINK */}
               <a 
-                href={generateJotformUrl()}
+                href={generateCalculatorUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-[#131313] px-6 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] text-sm relative z-10"
@@ -508,32 +615,6 @@ const PricingPage: React.FC = () => {
             </div>
           </div>
 
-        </div>
-      </section>
-
-      {/* RETAINER BANNER */}
-      <section className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-20">
-        <div className="bg-[#1A1A1A] border border-[#ff4d00]/20 rounded-3xl p-8 md:p-12 relative z-10 shadow-xl flex flex-col md:flex-row items-center gap-8 text-center md:text-left overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-[#ff4d00]/5 via-transparent to-transparent pointer-events-none" />
-           <div className="w-16 h-16 rounded-2xl bg-[#ff4d00]/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0">
-             <TrendingUp className="w-8 h-8 text-[#ff4d00]" />
-           </div>
-           <div className="flex-1 relative z-10">
-             <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Want us to handle everything?</h4>
-             <p className="text-[#F5F5F0]/70 text-sm md:text-base leading-relaxed max-w-2xl mx-auto md:mx-0">
-               We offer custom <strong>Rise Framework Retainers</strong> for clients who want to scale. We take over strategy, recording, end-to-end editing, and platform distribution so you can just show up and speak.
-             </p>
-           </div>
-           <div className="flex-shrink-0 w-full md:w-auto relative z-10">
-             <a 
-                href="https://form.jotform.com/261096943415057"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block w-full bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#ff4d00]/50 font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-all text-sm text-center"
-             >
-                Inquire About Retainers
-             </a>
-           </div>
         </div>
       </section>
 
