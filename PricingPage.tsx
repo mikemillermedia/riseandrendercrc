@@ -2,8 +2,8 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus, FileText, Headphones, Monitor, Radio, Camera, Crown 
@@ -13,9 +13,32 @@ import CustomCursor from './components/CustomCursor';
 import AIChat from './components/AIChat';
 import BrandLogo from './components/BrandLogo';
 
+// Animation variants for section entrances
+const sectionVariants = {
+  hidden: { opacity: 0, y: 50, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1, 
+    transition: { 
+      duration: 0.8, 
+      ease: [0.22, 1, 0.36, 1], // Custom Apple-style ease-out curve
+      staggerChildren: 0.1 
+    } 
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
+
 const PricingPage: React.FC = () => {
   const navigate = useNavigate();
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const yHeroText = useTransform(scrollYProgress, [0, 1], [0, 150]);
   
   // CALCULATOR STATE
   const [selectedBase, setSelectedBase] = useState<'power_hour' | 'batch_day'>('power_hour');
@@ -57,7 +80,6 @@ const PricingPage: React.FC = () => {
     }
   };
 
-  // Keep promo message accurate if they switch packages after applying
   useEffect(() => {
     if (promoApplied) {
       if (selectedBase === 'power_hour') {
@@ -68,7 +90,7 @@ const PricingPage: React.FC = () => {
     }
   }, [selectedBase, promoApplied]);
 
-  // A-LA-CARTE PRICING DATA
+  // PRICING DATA
   const basePackages = {
     power_hour: {
       id: 'power_hour',
@@ -110,21 +132,13 @@ const PricingPage: React.FC = () => {
     { id: 'bts_broll', name: 'Behind-The-Scenes B-Roll', desc: 'Raw, cinematic vertical footage for organic social.', price: 75, type: 'per_session', icon: <Camera size={20} /> },
   ];
 
-  // SMART LOGIC: Handle specific promo rules for each tier
   const isPowerHourPromo = promoApplied && selectedBase === 'power_hour';
   const isBatchDayPromo = promoApplied && selectedBase === 'batch_day';
-  
-  // Episode Multiplier (2 for BOGO Power Hour, 4 for Batch Day)
   const episodeMultiplier = selectedBase === 'batch_day' ? 4 : (isPowerHourPromo ? 2 : 1);
 
   const calculateTotal = () => {
     let total = basePackages[selectedBase].price;
-    
-    // Apply Batch Day $200 Discount
-    if (isBatchDayPromo) {
-      total -= 200;
-    }
-
+    if (isBatchDayPromo) total -= 200;
     selectedAddons.forEach(id => {
       const addon = addonOptions.find(a => a.id === id);
       if (addon) {
@@ -143,20 +157,14 @@ const PricingPage: React.FC = () => {
   const generateCalculatorUrl = () => {
     const baseUrl = "https://form.jotform.com/261096943415057";
     let pkgName = basePackages[selectedBase].name;
-    
-    if (isPowerHourPromo) {
-      pkgName += ' (BOGO PROMO CLAIMED - 2 Hours Total)';
-    } else if (isBatchDayPromo) {
-      pkgName += ' (PROMO CLAIMED - $200 Off)';
-    }
-    
+    if (isPowerHourPromo) pkgName += ' (BOGO PROMO CLAIMED)';
+    else if (isBatchDayPromo) pkgName += ' (PROMO CLAIMED - $200 Off)';
     const finalPkgName = encodeURIComponent(pkgName);
     const addonsList = encodeURIComponent(selectedAddons.map(id => {
       if (id === 'social_clip') return `Social Clips (x${clipQuantity} per ep)`;
       return addonOptions.find(a => a.id === id)?.name || id;
     }).join(', ') || 'None');
     const total = calculateTotal();
-    
     return `${baseUrl}?package=${finalPkgName}&addons=${addonsList}&total=${total}`;
   };
 
@@ -165,125 +173,120 @@ const PricingPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#131313] text-[#F5F5F0] overflow-x-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-[#F5F5F0] overflow-x-hidden">
       <CustomCursor />
+      
+      {/* APPLE-STYLE DEPTH MESH BACKGROUND */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute top-0 -left-1/4 w-3/4 h-3/4 bg-[#ff4d00]/15 rounded-full filter blur-[150px] mix-blend-screen opacity-60" />
+        <div className="absolute bottom-0 -right-1/4 w-3/4 h-3/4 bg-[#ff4d00]/10 rounded-full filter blur-[150px] mix-blend-screen opacity-40" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[#131313] mix-blend-multiply opacity-90" />
+        
+        {/* Subtle cyan accent to counter the orange and add depth */}
+        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-cyan-950/20 rounded-full filter blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-[20%] left-[10%] w-[500px] h-[500px] bg-purple-950/20 rounded-full filter blur-[120px] mix-blend-screen" />
+      </div>
+
       <FluidBackground />
       <AIChat />
 
       {/* NAVBAR */}
-      <div className="fixed top-0 left-0 w-full z-50 bg-[#131313]/90 backdrop-blur-md border-b border-[#F5F5F0]/5 px-6 py-4 flex justify-between items-center">
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        className="fixed top-0 left-0 w-full z-50 bg-[#0a0a0a]/70 backdrop-blur-2xl border-b border-white/5 px-6 py-4 flex justify-between items-center"
+      >
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
           <BrandLogo className="h-14 md:h-16 w-auto" />
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
-          <button onClick={() => navigate('/')} className="hover:text-[#ff4d00] transition-colors">Back to Home</button>
-          <button onClick={() => navigate('/login')} className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full transition-all">Hub Login</button>
+          <motion.button whileHover={{ y: -1, color: '#F5F5F0' }} onClick={() => navigate('/')} className="hover:text-[#ff4d00] transition-colors">Back to Home</motion.button>
+          <motion.button whileHover={{ scale: 1.05 }} onClick={() => navigate('/login')} className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full transition-all border border-white/10">Hub Login</motion.button>
         </nav>
-      </div>
+      </motion.div>
 
-      {/* HERO SECTION */}
-      <section className="pt-40 pb-20 px-6 md:px-12 max-w-5xl mx-auto text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-[0.95] tracking-tighter uppercase">
-            Turn Your Podcast Into A <br />
-            <span className="text-[#ff4d00]">Growth Engine.</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-[#F5F5F0]/80 mb-10 font-medium">
-            Strategy. Production. Distribution. All in one place.
-          </p>
-          <p className="text-lg text-[#F5F5F0]/60 max-w-2xl mx-auto leading-relaxed">
-            We don’t just record podcasts. We help you clarify your message, create high-impact content, turn episodes into consistent platform-ready assets, and build real visibility and authority.
-          </p>
+      {/* HERO SECTION with PARALLAX EFFECT */}
+      <section ref={heroRef} className="pt-48 pb-24 px-6 md:px-12 max-w-5xl mx-auto text-center relative z-10 overflow-hidden">
+        <motion.div style={{ y: yHeroText }}>
+          <motion.h1
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            className="text-5xl md:text-8xl font-black mb-8 leading-[0.92] tracking-tighter uppercase"
+          >
+            A Platform <br /> Built to <span className="text-[#ff4d00]">Scale.</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="text-xl md:text-3xl text-[#F5F5F0]/90 mb-12 font-medium max-w-3xl mx-auto leading-tight"
+          >
+            We don’t just record podcasts. We help you clarify your message, create high-impact content, and build real authority.
+          </motion.p>
         </motion.div>
       </section>
 
       {/* THE RISE PODCAST SYSTEM */}
-      <section className="py-20 bg-[#0a0a0a] border-y border-white/5 relative z-10">
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionVariants}
+        className="py-24 bg-[#0a0a0a]/50 backdrop-blur-xl border-y border-white/5 relative z-10"
+      >
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white mb-4">The Rise Podcast System™</h2>
-            <p className="text-[#F5F5F0]/60">Our 5-pillar framework for total content dominance.</p>
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Rise Podcast System™</h2>
+            <p className="text-[#F5F5F0]/60 max-w-xl mx-auto">Our 5-pillar framework for total content dominance.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-8 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-all">
-              <TrendingUp className="w-10 h-10 text-[#ff4d00] mb-6" />
-              <h3 className="text-xl font-bold text-white mb-3 uppercase">1. Strategy</h3>
-              <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
-                <li>• Podcast positioning & audience clarity</li>
-                <li>• Episode format + structure</li>
-                <li>• Content calendar (4–8 weeks)</li>
-                <li>• Platform strategy & growth roadmap</li>
-              </ul>
-            </motion.div>
-
-            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-8 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-all">
-              <Video className="w-10 h-10 text-[#ff4d00] mb-6" />
-              <h3 className="text-xl font-bold text-white mb-3 uppercase">2. Production</h3>
-              <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
-                <li>• 4K multi-camera recording</li>
-                <li>• Professional lighting & set design</li>
-                <li>• Studio-grade audio engineering</li>
-                <li>• On-site production support</li>
-              </ul>
-            </motion.div>
-
-            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-8 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-all">
-              <Scissors className="w-10 h-10 text-[#ff4d00] mb-6" />
-              <h3 className="text-xl font-bold text-white mb-3 uppercase">3. Post-Production</h3>
-              <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
-                <li>• Full episode edit (tight pacing)</li>
-                <li>• Hook optimization (first 5-15s)</li>
-                <li>• Audio mastering</li>
-                <li>• Branded intro/outro & visual captions</li>
-              </ul>
-            </motion.div>
-
-            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-8 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-all lg:col-span-1 md:col-span-2">
-              <Share2 className="w-10 h-10 text-[#ff4d00] mb-6" />
-              <h3 className="text-xl font-bold text-white mb-3 uppercase">4. Distribution Engine</h3>
-              <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
-                <li>• 5–20 vertical clips per episode</li>
-                <li>• Platform-optimized (TikTok, Reels, Shorts)</li>
-                <li>• Hook-driven editing with visual styling</li>
-                <li>• High-conversion YouTube thumbnails</li>
-              </ul>
-            </motion.div>
-
-            <motion.div whileHover={{ y: -5 }} className="bg-[#131313] p-8 rounded-3xl border border-white/5 hover:border-[#ff4d00]/30 transition-all lg:col-span-2 md:col-span-2 flex flex-col md:flex-row items-start md:items-center gap-8">
-              <div>
-                <Palette className="w-10 h-10 text-[#ff4d00] mb-6" />
-                <h3 className="text-xl font-bold text-white mb-3 uppercase">5. Branding & Growth</h3>
-                <ul className="space-y-2 text-sm text-[#F5F5F0]/70 grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                  <li>• Podcast cover art</li>
-                  <li>• YouTube channel setup</li>
-                  <li>• Thumbnail design system</li>
-                  <li>• Social media templates</li>
-                  <li>• Custom podcast landing pages</li>
-                </ul>
-              </div>
-            </motion.div>
-          </div>
+          <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[{ icon: TrendingUp, title: "1. Strategy", lines: ["• Podcast positioning", "• Episode structure", "• Content calendar", "• Growth roadmap"] },
+              { icon: Video, title: "2. Production", lines: ["• 4K multi-camera recording", "• Professional lighting", "• Studio audio engineering", "• On-site support"] },
+              { icon: Scissors, title: "3. Post-Production", lines: ["• Full episode edit", "• Hook optimization", "• Audio mastering", "• Visual captions"] },
+              { icon: Share2, title: "4. Distribution Engine", lines: ["• 5–20 vertical clips", "• Platform-optimized", "• Hook-driven editing", "• YT Thumbnails"] },
+              { icon: Palette, title: "5. Branding & Growth", lines: ["• Podcast cover art", "• YouTube setup", "• Design system", "• Templates", "• Landing pages"], colspan: 2 },
+            ].map((item, idx) => (
+              <motion.div 
+                key={idx}
+                variants={itemVariants}
+                whileHover={{ y: -5, borderColor: 'rgba(255, 77, 0, 0.3)' }} 
+                className={`bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 hover:bg-[#131313]/60 transition-all duration-300 ${item.colspan ? `lg:col-span-${item.colspan} flex flex-col md:flex-row items-start md:items-center gap-8` : ''}`}
+              >
+                <div>
+                  <item.icon className="w-10 h-10 text-[#ff4d00] mb-6" />
+                  <h3 className="text-xl font-bold text-white mb-3 uppercase">{item.title}</h3>
+                  <ul className={`space-y-2 text-sm text-[#F5F5F0]/70 ${item.colspan ? 'grid grid-cols-1 sm:grid-cols-2 gap-x-8' : ''}`}>
+                    {item.lines.map((line, lidx) => <li key={lidx}>{line}</li>)}
+                  </ul>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* SIGNATURE RETAINER PACKAGES */}
-      <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto relative z-10">
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionVariants}
+        className="py-32 px-6 md:px-12 max-w-7xl mx-auto relative z-10"
+      >
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">Signature <span className="text-[#ff4d00]">Partnerships</span></h2>
-          <p className="text-xl text-[#F5F5F0]/60 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-[#F5F5F0]/80 max-w-2xl mx-auto leading-relaxed">
             For creators and business owners who want us to handle everything. Pricing starts at $1,500/month.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
           
           {/* I. The Ascent */}
-          <motion.div whileHover={{ y: -10 }} className="bg-[#1A1A1A] p-8 rounded-3xl border border-white/5 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl">
+          <motion.div variants={itemVariants} whileHover={{ y: -10 }} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl">
             <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">I. The Ascent</h3>
             <p className="text-4xl font-black text-[#ff4d00] mb-6">$1,500<span className="text-sm text-white/40 font-medium">/mo</span></p>
             <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
@@ -292,18 +295,18 @@ const PricingPage: React.FC = () => {
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 4 Social Media Vertical Clips</li>
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
             </ul>
-            <a 
-              href={getSignatureUrl("The Ascent")}
-              target="_blank"
-              rel="noopener noreferrer"
+            <motion.a 
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              href={getSignatureUrl("The Ascent")} target="_blank" rel="noopener noreferrer"
               className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
             >
               Apply Now
-            </a>
+            </motion.a>
           </motion.div>
 
           {/* II. The Summit */}
-          <motion.div whileHover={{ y: -10 }} className="bg-[#131313] p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col transition-all shadow-[0_0_30px_rgba(255,77,0,0.15)] relative transform lg:-translate-y-4">
+          <motion.div variants={itemVariants} whileHover={{ y: -10 }} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col transition-all shadow-[0_0_40px_rgba(255,77,0,0.2)] relative transform lg:-translate-y-4">
             <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-xs font-black uppercase px-4 py-1.5 rounded-bl-xl">Most Popular</div>
             <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">II. The Summit</h3>
             <p className="text-4xl font-black text-[#ff4d00] mb-6">$3,000<span className="text-sm text-white/40 font-medium">/mo</span></p>
@@ -313,18 +316,18 @@ const PricingPage: React.FC = () => {
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 12 Social Media Vertical Clips</li>
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
             </ul>
-            <a 
-              href={getSignatureUrl("The Summit")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full block text-center bg-[#ff4d00] hover:bg-[#ff4d00]/90 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors shadow-lg"
+            <motion.a 
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              href={getSignatureUrl("The Summit")} target="_blank" rel="noopener noreferrer"
+              className="w-full block text-center bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors shadow-lg"
             >
               Apply Now
-            </a>
+            </motion.a>
           </motion.div>
 
           {/* III. The Horizon */}
-          <motion.div whileHover={{ y: -10 }} className="bg-[#1A1A1A] p-8 rounded-3xl border border-white/5 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl relative">
+          <motion.div variants={itemVariants} whileHover={{ y: -10 }} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl relative">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-2xl font-black text-white uppercase tracking-tight">III. The Horizon</h3>
               <Crown size={20} className="text-yellow-500" />
@@ -335,12 +338,12 @@ const PricingPage: React.FC = () => {
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 8 Long-form 4K Videos + Mastered Audio</li>
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 20 Social Media Vertical Clips</li>
               <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 8 Premium Custom Thumbnails</li>
-              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> In-Depth Content Strategy Review</li>
+              <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> In-Depth Content Strategy</li>
             </ul>
-            <a 
-              href={getSignatureUrl("The Horizon")}
-              target="_blank"
-              rel="noopener noreferrer"
+            <motion.a 
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              href={getSignatureUrl("The Horizon")} target="_blank" rel="noopener noreferrer"
               className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
             >
               Apply Now
@@ -348,7 +351,7 @@ const PricingPage: React.FC = () => {
           </motion.div>
 
         </div>
-      </section>
+      </motion.section>
 
       {/* DIVIDER */}
       <div className="max-w-6xl mx-auto px-6">
@@ -356,73 +359,83 @@ const PricingPage: React.FC = () => {
       </div>
 
       {/* INTERACTIVE PRICING CALCULATOR */}
-      <section className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-20">
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={sectionVariants}
+        className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-28"
+      >
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/20 text-[#ff4d00] text-sm font-bold uppercase tracking-widest mb-6">
             <Calculator size={16} /> A La Carte Studio Time
           </div>
           <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">Build Your <span className="text-[#ff4d00]">Package</span></h2>
-          <p className="text-xl text-[#F5F5F0]/60 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-[#F5F5F0]/70 max-w-2xl mx-auto leading-relaxed">
             Just need a single session? Select your studio time and creative add-ons below to generate a real-time estimate.
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-12">
+        <div className="flex flex-col lg:flex-row gap-12 items-start">
           
           {/* LEFT COLUMN: SELECTIONS */}
-          <div className="flex-1 space-y-12">
+          <motion.div variants={itemVariants} className="flex-1 space-y-12 w-full">
             
             {/* Step 1: Base Time */}
             <div>
-              <h3 className="text-2xl font-black uppercase tracking-wide text-white mb-6 flex items-center gap-3">
-                <span className="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span> 
+              <h3 className="text-2xl font-black uppercase tracking-wide text-white mb-8 flex items-center gap-3">
+                <span className="bg-white/5 w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10">1</span> 
                 Select Studio Time
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 relative bg-white/5 p-1 rounded-3xl border border-white/10">
+                {/* Floating animated tab switcher background */}
+                <motion.div 
+                  className="absolute top-1 bottom-1 bg-[#ff4d00] rounded-2xl z-0 border border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.3)]"
+                  layout
+                  initial={false}
+                  animate={{
+                    left: selectedBase === 'power_hour' ? '4px' : '50%',
+                    right: selectedBase === 'power_hour' ? '50%' : '4px',
+                  }}
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+
                 {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
-                  const pkg = basePackages[key as keyof typeof basePackages];
+                  const pkg = basePackages[key];
                   const isSelected = selectedBase === key;
                   return (
-                    <motion.div
+                    <div
                       key={key}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedBase(key as 'power_hour' | 'batch_day')}
-                      className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 relative overflow-hidden ${
-                        isSelected 
-                        ? 'bg-gradient-to-br from-[#ff4d00]/20 to-[#1A1A1A] border-[#ff4d00] shadow-[0_0_30px_rgba(255,77,0,0.15)]' 
-                        : 'bg-[#1A1A1A] border-white/5 hover:border-white/20'
-                      }`}
+                      onClick={() => setSelectedBase(key)}
+                      className="cursor-pointer p-7 rounded-2xl transition-all duration-300 relative z-10 overflow-hidden"
                     >
                       {key === 'batch_day' && !isBatchDayPromo && (
                         <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">Save $200</div>
                       )}
                       {key === 'batch_day' && isBatchDayPromo && (
-                        <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">-$200 OFF APPLIED</div>
+                        <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">-$200 APPLIED</div>
                       )}
                       {key === 'power_hour' && isPowerHourPromo && (
                         <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">+1 FREE HOUR</div>
                       )}
                       
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-xl font-black text-white uppercase tracking-tight">{pkg.name}</h4>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
-                          {isSelected && <div className="w-2.5 h-2.5 bg-[#131313] rounded-full" />}
+                        <h4 className={`text-xl font-black uppercase tracking-tight ${isSelected ? 'text-black' : 'text-white'}`}>{pkg.name}</h4>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${isSelected ? 'border-black bg-black' : 'border-white/20'}`}>
+                          {isSelected && <div className="w-2.5 h-2.5 bg-[#ff4d00] rounded-full" />}
                         </div>
                       </div>
-                      <p className="text-3xl font-black text-[#ff4d00] mb-4">${pkg.price}</p>
-                      <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
+                      <p className={`text-4xl font-black mb-5 ${isSelected ? 'text-black' : 'text-[#ff4d00]'}`}>${pkg.price}</p>
+                      <ul className={`space-y-2 text-sm ${isSelected ? 'text-black/70 font-medium' : 'text-[#F5F5F0]/70'}`}>
                         {pkg.features.map((feat, idx) => (
                           <li key={idx} className="flex items-start gap-2">
-                            {idx === 1 ? <Clock size={16} className="text-[#ff4d00] shrink-0 mt-0.5" /> : <CheckCircle2 size={16} className="text-[#ff4d00] shrink-0 mt-0.5" />}
-                            <span>
-                              {key === 'power_hour' && isPowerHourPromo && idx === 0 ? '2 Hours Recording Time (BOGO)' : feat}
-                            </span>
+                            <CheckCircle2 size={16} className={`${isSelected ? 'text-black' : 'text-[#ff4d00]'} shrink-0 mt-0.5`} />
+                            <span>{key === 'power_hour' && isPowerHourPromo && idx === 0 ? '2 Hours Recording Time (BOGO)' : feat}</span>
                           </li>
                         ))}
                       </ul>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
@@ -430,35 +443,35 @@ const PricingPage: React.FC = () => {
 
             {/* Step 2: Add-Ons */}
             <div>
-              <h3 className="text-2xl font-black uppercase tracking-wide text-white mb-6 flex items-center gap-3">
-                <span className="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span> 
+              <h3 className="text-2xl font-black uppercase tracking-wide text-white mb-8 flex items-center gap-3">
+                <span className="bg-white/5 w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10">2</span> 
                 Creative Add-Ons <span className="text-xs text-white/40 font-normal tracking-normal capitalize ml-2">(Optional)</span>
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
                 {addonOptions.map((addon) => {
                   const isSelected = selectedAddons.includes(addon.id);
                   return (
                     <motion.div
                       key={addon.id}
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ y: -3, borderColor: 'rgba(255, 255, 255, 0.2)' }}
                       whileTap={addon.id !== 'social_clip' || !isSelected ? { scale: 0.98 } : {}}
                       onClick={() => toggleAddon(addon.id)}
-                      className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
+                      className={`cursor-pointer p-6 rounded-3xl border backdrop-blur-sm transition-all duration-300 flex flex-col justify-between ${
                         isSelected 
-                        ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' 
-                        : 'bg-[#1A1A1A] border-white/5 hover:border-white/20'
+                        ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_30px_rgba(255,77,0,0.1)]' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
                       }`}
                     >
                       <div className="flex justify-between items-start gap-4 w-full">
-                        <div className="flex gap-3">
-                          <div className={`p-2 rounded-lg shrink-0 mt-1 ${isSelected ? 'bg-[#ff4d00] text-black' : 'bg-white/5 text-white/60'}`}>
+                        <div className="flex gap-4">
+                          <div className={`p-2.5 rounded-xl shrink-0 mt-1 ${isSelected ? 'bg-[#ff4d00] text-black' : 'bg-white/5 text-white/80'}`}>
                             {addon.icon}
                           </div>
                           <div>
                             <h4 className="font-bold text-white leading-tight mb-1">{addon.name}</h4>
-                            <p className="text-xs text-white/50 leading-relaxed pr-2">{addon.desc}</p>
-                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>
+                            <p className="text-xs text-white/60 leading-relaxed pr-2">{addon.desc}</p>
+                            <p className={`text-sm font-black mt-2.5 ${isSelected ? 'text-[#ff4d00]' : 'text-white/80'}`}>
                               +${addon.price} 
                               <span className="text-xs font-normal">
                                 {addon.type === 'per_clip' ? ' / clip' : addon.type === 'per_episode' ? ' / episode' : ' / session'}
@@ -466,67 +479,58 @@ const PricingPage: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center mt-1 ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
-                          {isSelected && <CheckCircle2 size={14} className="text-[#131313]" />}
+                        <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center mt-1.5 transition-colors ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
+                          {isSelected && <CheckCircle2 size={14} className="text-black" />}
                         </div>
                       </div>
 
                       {/* QUANTITY SELECTOR FOR SOCIAL CLIPS */}
-                      {addon.id === 'social_clip' && isSelected && (
-                        <div 
-                          className="mt-4 pt-4 border-t border-[#ff4d00]/20 flex items-center justify-between"
-                          onClick={(e) => e.stopPropagation()} 
-                        >
-                          <span className="text-xs font-bold text-[#ff4d00] uppercase tracking-wider">Clips per episode:</span>
-                          <div className="flex items-center gap-3 bg-[#131313] rounded-full p-1 border border-[#ff4d00]/30">
-                            <button 
-                              onClick={() => setClipQuantity(Math.max(1, clipQuantity - 1))}
-                              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
-                            >
-                              <Minus size={14} className="text-white" />
-                            </button>
-                            <span className="font-black text-white w-4 text-center">{clipQuantity}</span>
-                            <button 
-                              onClick={() => setClipQuantity(clipQuantity + 1)}
-                              className="w-7 h-7 rounded-full bg-[#ff4d00]/20 hover:bg-[#ff4d00]/40 flex items-center justify-center transition-colors"
-                            >
-                              <Plus size={14} className="text-[#ff4d00]" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {addon.id === 'social_clip' && isSelected && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="mt-5 pt-5 border-t border-[#ff4d00]/20 flex items-center justify-between overflow-hidden"
+                            onClick={(e) => e.stopPropagation()} 
+                          >
+                            <span className="text-xs font-bold text-[#ff4d00] uppercase tracking-wider">Clips per episode:</span>
+                            <div className="flex items-center gap-3 bg-[#0a0a0a] rounded-full p-1 border border-white/10">
+                              <motion.button whileTap={{ scale: 0.9 }} onClick={() => setClipQuantity(Math.max(1, clipQuantity - 1))} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"><Minus size={14} className="text-white" /></motion.button>
+                              <span className="font-black text-white w-4 text-center">{clipQuantity}</span>
+                              <motion.button whileTap={{ scale: 0.9 }} onClick={() => setClipQuantity(clipQuantity + 1)} className="w-7 h-7 rounded-full bg-[#ff4d00]/20 hover:bg-[#ff4d00]/40 flex items-center justify-center transition-colors"><Plus size={14} className="text-[#ff4d00]" /></motion.button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   );
                 })}
               </div>
             </div>
 
-          </div>
+          </motion.div>
 
-          {/* RIGHT COLUMN: THE RECEIPT / ESTIMATE */}
-          <div className="lg:w-[400px]">
-            <div className="sticky top-32 bg-[#131313] border border-white/10 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-[#ff4d00]/5 to-transparent pointer-events-none" />
+          {/* RIGHT COLUMN: THE RECEIPT / ESTIMATE (Sticky) */}
+          <motion.div variants={itemVariants} className="lg:w-[420px] lg:sticky lg:top-32 w-full">
+            <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-9 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-[#ff4d00]/10 via-transparent to-transparent pointer-events-none" />
               
-              <h3 className="text-xl font-black uppercase tracking-widest text-white mb-6 border-b border-white/10 pb-4">Estimated Investment</h3>
+              <h3 className="text-xl font-black uppercase tracking-widest text-white mb-7 border-b border-white/10 pb-5">Estimated Investment</h3>
               
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-start text-white/80">
+              <div className="space-y-4 mb-7 min-h-[100px]">
+                <div className="flex justify-between items-start text-white/90">
                   <div className="flex flex-col">
-                    <span className="font-medium">{basePackages[selectedBase].name}</span>
-                    {isPowerHourPromo && <span className="text-green-400 text-[11px] font-bold mt-1 uppercase tracking-wider">+ 1 FREE Hour Applied</span>}
+                    <span className="font-bold text-lg leading-snug">{basePackages[selectedBase].name}</span>
+                    {isPowerHourPromo && <span className="text-green-400 text-[11px] font-bold mt-1.5 uppercase tracking-wider">+ 1 FREE Hour Applied</span>}
                   </div>
-                  <span className="font-bold mt-0.5">${basePackages[selectedBase].price}</span>
+                  <span className="font-black text-lg mt-0.5">${basePackages[selectedBase].price}</span>
                 </div>
 
                 {isBatchDayPromo && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="flex justify-between items-center text-green-400 text-sm overflow-hidden"
-                  >
-                    <span className="py-1 font-bold">Promo: FRUIT15</span>
-                    <span className="py-1 font-bold">-$200</span>
+                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex justify-between items-center text-green-400 text-sm overflow-hidden bg-green-950/40 px-3 py-2 rounded-lg border border-green-500/30">
+                    <span className="font-bold">Promo: FRUIT15 (-$200)</span>
+                    <span className="font-black">-$200</span>
                   </motion.div>
                 )}
                 
@@ -534,32 +538,27 @@ const PricingPage: React.FC = () => {
                   {selectedAddons.map(id => {
                     const addon = addonOptions.find(a => a.id === id);
                     if (!addon) return null;
-                    
-                    let itemTotal = addon.price;
-                    if (addon.type === 'per_clip') {
-                      itemTotal = addon.price * episodeMultiplier * clipQuantity;
-                    } else if (addon.type === 'per_episode') {
-                      itemTotal = addon.price * episodeMultiplier;
-                    }
+                    const qtyMultiplier = addon.id === 'social_clip' ? clipQuantity : 1;
+                    const itemTotal = addon.price * episodeMultiplier * qtyMultiplier;
 
                     return (
                       <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
                         key={id} 
-                        className="flex justify-between items-center text-white/60 text-sm overflow-hidden"
+                        layout
+                        initial={{ opacity: 0, y: 15, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -15, scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        className="flex justify-between items-center text-white/70 text-sm overflow-hidden"
                       >
                         <span className="py-1 flex items-center gap-1.5 flex-wrap">
                           + {addon.name} 
-                          {addon.id === 'social_clip' && clipQuantity > 1 && (
-                             <span className="text-white/40 text-[10px] uppercase tracking-wider">(x{clipQuantity})</span>
-                          )}
+                          {addon.id === 'social_clip' && clipQuantity > 1 && <span className="text-white/40 text-[10px] uppercase tracking-wider">(x{clipQuantity})</span>}
                           {addon.type !== 'per_session' && episodeMultiplier > 1 && (
                             <span className="text-[#ff4d00] text-[10px] font-black bg-[#ff4d00]/10 px-1.5 py-0.5 rounded-md shrink-0">x{episodeMultiplier} eps</span>
                           )}
                         </span>
-                        <span className="py-1 shrink-0 ml-2">${itemTotal}</span>
+                        <span className="py-1 shrink-0 ml-3 font-bold text-white/90">${itemTotal}</span>
                       </motion.div>
                     );
                   })}
@@ -567,56 +566,62 @@ const PricingPage: React.FC = () => {
               </div>
 
               {/* PROMO CODE SECTION */}
-              <div className="border-t border-white/10 pt-4 mt-4">
-                <div className="flex items-center gap-2">
+              <div className="border-t border-white/10 pt-5 mt-5">
+                <div className="flex items-center gap-2.5">
                   <input
                     type="text"
                     placeholder="Enter Promo Code"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
-                    className="bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm w-full text-white placeholder:text-white/30 focus:outline-none focus:border-[#ff4d00] transition-colors"
+                    className="bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-3 text-sm w-full text-white placeholder:text-white/30 focus:outline-none focus:border-[#ff4d00] transition-colors"
                   />
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleApplyPromo}
-                    className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shrink-0"
+                    className="bg-white hover:bg-white/90 text-black px-6 py-3 rounded-xl text-sm font-bold transition-all shrink-0"
                   >
                     Apply
-                  </button>
+                  </motion.button>
                 </div>
-                {promoMessage && (
-                  <motion.p 
-                    initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`text-xs mt-3 font-medium ${promoApplied && (selectedBase === 'power_hour' || selectedBase === 'batch_day') ? 'text-green-400' : 'text-[#ff4d00]'}`}
-                  >
-                    {promoMessage}
-                  </motion.p>
-                )}
+                <AnimatePresence>
+                  {promoMessage && (
+                    <motion.p 
+                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                      className={`text-xs mt-3.5 font-medium px-1 ${promoApplied && (selectedBase === 'power_hour' || selectedBase === 'batch_day') ? 'text-green-400' : 'text-[#ff4d00]'}`}
+                    >
+                      {promoMessage}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
 
-              <div className="border-t border-white/10 pt-6 mt-4 mb-8">
+              <div className="border-t border-white/10 pt-7 mt-5 mb-10">
                 <div className="flex justify-between items-end">
                   <span className="text-white/60 uppercase tracking-widest text-xs font-bold">Estimated Total</span>
-                  <span className="text-5xl font-black text-[#ff4d00]">${calculateTotal()}</span>
+                  <span className="text-6xl font-black text-[#ff4d00] tracking-tighter">${calculateTotal()}</span>
                 </div>
-                <p className="text-[#F5F5F0]/40 text-xs italic mt-4 text-center leading-relaxed">
-                  *This calculator provides a preview estimate. Exact pricing and packaging will be solidified during consultation. No payment required today.
+                <p className="text-[#F5F5F0]/50 text-xs italic mt-5 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/10">
+                  *This providing a preview estimate. Exact packaging will be solidified during consultation. No payment required today.
                 </p>
               </div>
 
               {/* DYNAMIC JOTFORM LINK */}
-              <a 
+              <motion.a 
+                whileHover={{ scale: 1.03, y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 href={generateCalculatorUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-[#131313] px-6 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-orange-500 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] text-sm relative z-10"
+                className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-black px-6 py-4.5 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-[0_10px_30px_rgba(255,77,0,0.3)] text-base relative z-10"
               >
                 Submit Application <ArrowRight size={18} />
-              </a>
+              </motion.a>
             </div>
-          </div>
+          </motion.div>
 
         </div>
-      </section>
+      </motion.section>
 
       {/* Back to Top Button */}
       {showBackToTop && (
