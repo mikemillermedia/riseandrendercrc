@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus
+  CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus, FileText, Headphones, Monitor, Radio, Camera 
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
@@ -70,10 +70,15 @@ const PricingPage: React.FC = () => {
   };
 
   const addonOptions = [
-    { id: 'basic_edit', name: 'Basic Editing', desc: 'Simple multi-cam cuts and color grade.', price: 150, icon: <Scissors size={20} /> },
-    { id: 'advanced_edit', name: 'Advanced Editing', desc: 'Engaging hooks & flow optimized for retention.', price: 250, icon: <PlayCircle size={20} /> },
-    { id: 'thumbnail', name: 'Custom YouTube Thumbnail', desc: 'High-CTR custom graphic design.', price: 75, icon: <ImageIcon size={20} /> },
-    { id: 'social_clip', name: 'Social Media Clip', desc: 'Vertical reels optimized for IG/TikTok.', price: 100, icon: <Share2 size={20} /> },
+    { id: 'basic_edit', name: 'Basic Editing', desc: 'Simple multi-cam cuts and color grade.', price: 150, type: 'per_episode', icon: <Scissors size={20} /> },
+    { id: 'advanced_edit', name: 'Advanced Editing', desc: 'Engaging hooks & flow optimized for retention.', price: 250, type: 'per_episode', icon: <PlayCircle size={20} /> },
+    { id: 'thumbnail', name: 'Custom YouTube Thumbnail', desc: 'High-CTR custom graphic design.', price: 75, type: 'per_episode', icon: <ImageIcon size={20} /> },
+    { id: 'social_clip', name: 'Social Media Clip', desc: 'Vertical reels optimized for IG/TikTok.', price: 100, type: 'per_clip', icon: <Share2 size={20} /> },
+    { id: 'seo_notes', name: 'SEO Show Notes', desc: 'YouTube description, summary & timestamps.', price: 50, type: 'per_episode', icon: <FileText size={20} /> },
+    { id: 'audio_dist', name: 'Audio Distribution', desc: 'Master & upload to Spotify/Apple Podcasts.', price: 50, type: 'per_episode', icon: <Headphones size={20} /> },
+    { id: 'teleprompter', name: 'Teleprompter Setup', desc: 'Send script in advance, we run the prompter.', price: 50, type: 'per_session', icon: <Monitor size={20} /> },
+    { id: 'live_stream', name: 'Live Simulcast', desc: 'Broadcast live to YouTube/Facebook.', price: 150, type: 'per_session', icon: <Radio size={20} /> },
+    { id: 'bts_broll', name: 'Behind-The-Scenes B-Roll', desc: 'Raw, cinematic vertical footage for organic social.', price: 75, type: 'per_session', icon: <Camera size={20} /> },
   ];
 
   // SMART LOGIC: 1 episode for Power Hour, 4 episodes for Batch Day
@@ -85,10 +90,12 @@ const PricingPage: React.FC = () => {
     selectedAddons.forEach(id => {
       const addon = addonOptions.find(a => a.id === id);
       if (addon) {
-        if (id === 'social_clip') {
+        if (addon.type === 'per_clip') {
           total += (addon.price * clipQuantity * episodeMultiplier);
-        } else {
+        } else if (addon.type === 'per_episode') {
           total += (addon.price * episodeMultiplier);
+        } else if (addon.type === 'per_session') {
+          total += addon.price; // Flat fee for the whole session
         }
       }
     });
@@ -108,7 +115,6 @@ const PricingPage: React.FC = () => {
     
     const total = calculateTotal();
     
-    // This maps to JotForm Unique Names: ?package=...&addons=...&total=...
     return `${baseUrl}?package=${pkgName}&addons=${addonsList}&total=${total}`;
   };
 
@@ -297,7 +303,7 @@ const PricingPage: React.FC = () => {
                     <motion.div
                       key={addon.id}
                       whileHover={{ scale: 1.02 }}
-                      whileTap={addon.id !== 'social_clip' || !isSelected ? { scale: 0.98 } : {}} // Don't tap-animate if interacting with quantity
+                      whileTap={addon.id !== 'social_clip' || !isSelected ? { scale: 0.98 } : {}}
                       onClick={() => toggleAddon(addon.id)}
                       className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
                         isSelected 
@@ -312,8 +318,13 @@ const PricingPage: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="font-bold text-white leading-tight mb-1">{addon.name}</h4>
-                            <p className="text-xs text-white/50 leading-relaxed">{addon.desc}</p>
-                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>+${addon.price} <span className="text-xs font-normal">/ {addon.id === 'social_clip' ? 'clip' : 'episode'}</span></p>
+                            <p className="text-xs text-white/50 leading-relaxed pr-2">{addon.desc}</p>
+                            <p className={`text-sm font-black mt-2 ${isSelected ? 'text-[#ff4d00]' : 'text-white/60'}`}>
+                              +${addon.price} 
+                              <span className="text-xs font-normal">
+                                {addon.type === 'per_clip' ? ' / clip' : addon.type === 'per_episode' ? ' / episode' : ' / session'}
+                              </span>
+                            </p>
                           </div>
                         </div>
                         <div className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center mt-1 ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
@@ -325,7 +336,7 @@ const PricingPage: React.FC = () => {
                       {addon.id === 'social_clip' && isSelected && (
                         <div 
                           className="mt-4 pt-4 border-t border-[#ff4d00]/20 flex items-center justify-between"
-                          onClick={(e) => e.stopPropagation()} // Prevents the card from toggling off when clicking buttons
+                          onClick={(e) => e.stopPropagation()} 
                         >
                           <span className="text-xs font-bold text-[#ff4d00] uppercase tracking-wider">Clips per episode:</span>
                           <div className="flex items-center gap-3 bg-[#131313] rounded-full p-1 border border-[#ff4d00]/30">
@@ -371,8 +382,12 @@ const PricingPage: React.FC = () => {
                     const addon = addonOptions.find(a => a.id === id);
                     if (!addon) return null;
                     
-                    const qtyMultiplier = addon.id === 'social_clip' ? clipQuantity : 1;
-                    const itemTotal = addon.price * episodeMultiplier * qtyMultiplier;
+                    let itemTotal = addon.price;
+                    if (addon.type === 'per_clip') {
+                      itemTotal = addon.price * episodeMultiplier * clipQuantity;
+                    } else if (addon.type === 'per_episode') {
+                      itemTotal = addon.price * episodeMultiplier;
+                    }
 
                     return (
                       <motion.div 
@@ -387,7 +402,7 @@ const PricingPage: React.FC = () => {
                           {addon.id === 'social_clip' && clipQuantity > 1 && (
                              <span className="text-white/40 text-[10px] uppercase tracking-wider">(x{clipQuantity})</span>
                           )}
-                          {episodeMultiplier > 1 && (
+                          {addon.type !== 'per_session' && episodeMultiplier > 1 && (
                             <span className="text-[#ff4d00] text-[10px] font-black bg-[#ff4d00]/10 px-1.5 py-0.5 rounded-md shrink-0">x{episodeMultiplier} eps</span>
                           )}
                         </span>
