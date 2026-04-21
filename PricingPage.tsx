@@ -22,6 +22,11 @@ const PricingPage: React.FC = () => {
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [clipQuantity, setClipQuantity] = useState<number>(1);
 
+  // PROMO CODE STATE
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoMessage, setPromoMessage] = useState('');
+
   useEffect(() => {
     window.scrollTo(0, 0);
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -38,6 +43,31 @@ const PricingPage: React.FC = () => {
       setClipQuantity(1);
     }
   };
+
+  const handleApplyPromo = () => {
+    if (promoCode.trim().toLowerCase() === 'fruit15') {
+      setPromoApplied(true);
+      if (selectedBase !== 'power_hour') {
+        setPromoMessage('Code "fruit15" is active, but only applies to The Power Hour.');
+      } else {
+        setPromoMessage('Success! Buy 1 Get 1 Free Hour applied.');
+      }
+    } else {
+      setPromoApplied(false);
+      setPromoMessage('Invalid discount code.');
+    }
+  };
+
+  // Keep promo message accurate if they switch packages after applying
+  useEffect(() => {
+    if (promoApplied) {
+      if (selectedBase !== 'power_hour') {
+        setPromoMessage('Code "fruit15" is active, but only applies to The Power Hour.');
+      } else {
+        setPromoMessage('Success! Buy 1 Get 1 Free Hour applied.');
+      }
+    }
+  }, [selectedBase, promoApplied]);
 
   // PRICING DATA
   const basePackages = {
@@ -81,8 +111,9 @@ const PricingPage: React.FC = () => {
     { id: 'bts_broll', name: 'Behind-The-Scenes B-Roll', desc: 'Raw, cinematic vertical footage for organic social.', price: 75, type: 'per_session', icon: <Camera size={20} /> },
   ];
 
-  // SMART LOGIC: 1 episode for Power Hour, 4 episodes for Batch Day
-  const episodeMultiplier = selectedBase === 'batch_day' ? 4 : 1;
+  // SMART LOGIC: 1 episode for normal Power Hour, 2 for BOGO Power Hour, 4 for Batch Day
+  const isPromoValid = promoApplied && selectedBase === 'power_hour';
+  const episodeMultiplier = selectedBase === 'batch_day' ? 4 : (isPromoValid ? 2 : 1);
 
   // REAL-TIME TOTAL CALCULATION
   const calculateTotal = () => {
@@ -105,7 +136,13 @@ const PricingPage: React.FC = () => {
   // GENERATE JOTFORM URL WITH DATA
   const generateJotformUrl = () => {
     const baseUrl = "https://form.jotform.com/261096943415057";
-    const pkgName = encodeURIComponent(basePackages[selectedBase].name);
+    
+    // Pass promo info dynamically so you see it in JotForm
+    let pkgName = basePackages[selectedBase].name;
+    if (isPromoValid) {
+      pkgName += ' (BOGO PROMO CLAIMED - 2 Hours Total)';
+    }
+    const finalPkgName = encodeURIComponent(pkgName);
     
     // Format the addons nicely for your records
     const addonsList = encodeURIComponent(selectedAddons.map(id => {
@@ -115,7 +152,7 @@ const PricingPage: React.FC = () => {
     
     const total = calculateTotal();
     
-    return `${baseUrl}?package=${pkgName}&addons=${addonsList}&total=${total}`;
+    return `${baseUrl}?package=${finalPkgName}&addons=${addonsList}&total=${total}`;
   };
 
   return (
@@ -251,7 +288,7 @@ const PricingPage: React.FC = () => {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
-                  const pkg = basePackages[key];
+                  const pkg = basePackages[key as keyof typeof basePackages];
                   const isSelected = selectedBase === key;
                   return (
                     <motion.div
@@ -268,6 +305,10 @@ const PricingPage: React.FC = () => {
                       {key === 'batch_day' && (
                         <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">Save $200</div>
                       )}
+                      {key === 'power_hour' && isPromoValid && (
+                        <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">+1 FREE HOUR</div>
+                      )}
+                      
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-xl font-black text-white uppercase tracking-tight">{pkg.name}</h4>
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-[#ff4d00] bg-[#ff4d00]' : 'border-white/20'}`}>
@@ -279,7 +320,9 @@ const PricingPage: React.FC = () => {
                         {pkg.features.map((feat, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             {idx === 1 ? <Clock size={16} className="text-[#ff4d00] shrink-0 mt-0.5" /> : <CheckCircle2 size={16} className="text-[#ff4d00] shrink-0 mt-0.5" />}
-                            <span>{feat}</span>
+                            <span>
+                              {key === 'power_hour' && isPromoValid && idx === 0 ? '2 Hours Recording Time (BOGO)' : feat}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -372,9 +415,12 @@ const PricingPage: React.FC = () => {
               <h3 className="text-xl font-black uppercase tracking-widest text-white mb-6 border-b border-white/10 pb-4">Estimated Investment</h3>
               
               <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-center text-white/80">
-                  <span className="font-medium">{basePackages[selectedBase].name}</span>
-                  <span className="font-bold">${basePackages[selectedBase].price}</span>
+                <div className="flex justify-between items-start text-white/80">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{basePackages[selectedBase].name}</span>
+                    {isPromoValid && <span className="text-green-400 text-[11px] font-bold mt-1 uppercase tracking-wider">+ 1 FREE Hour Applied</span>}
+                  </div>
+                  <span className="font-bold mt-0.5">${basePackages[selectedBase].price}</span>
                 </div>
                 
                 <AnimatePresence>
@@ -413,13 +459,40 @@ const PricingPage: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="border-t border-white/10 pt-6 mb-8">
+              {/* PROMO CODE SECTION */}
+              <div className="border-t border-white/10 pt-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter Promo Code"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                    className="bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm w-full text-white placeholder:text-white/30 focus:outline-none focus:border-[#ff4d00] transition-colors"
+                  />
+                  <button
+                    onClick={handleApplyPromo}
+                    className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shrink-0"
+                  >
+                    Apply
+                  </button>
+                </div>
+                {promoMessage && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+                    className={`text-xs mt-3 font-medium ${promoApplied && selectedBase === 'power_hour' ? 'text-green-400' : 'text-[#ff4d00]'}`}
+                  >
+                    {promoMessage}
+                  </motion.p>
+                )}
+              </div>
+
+              <div className="border-t border-white/10 pt-6 mt-4 mb-8">
                 <div className="flex justify-between items-end">
                   <span className="text-white/60 uppercase tracking-widest text-xs font-bold">Estimated Total</span>
                   <span className="text-5xl font-black text-[#ff4d00]">${calculateTotal()}</span>
                 </div>
                 <p className="text-[#F5F5F0]/40 text-xs italic mt-4 text-center leading-relaxed">
-                  *This calculator provides a preview estimate. Exact pricing and packaging will be custom tailored and solidified during your consultation.
+                  *This calculator provides a preview estimate. Exact pricing and packaging will be solidified during consultation. No payment required today.
                 </p>
               </div>
 
