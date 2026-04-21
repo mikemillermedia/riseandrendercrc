@@ -347,7 +347,7 @@ const PricingPage: React.FC = () => {
               className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
             >
               Apply Now
-            </a>
+            </motion.a>
           </motion.div>
 
         </div>
@@ -402,12 +402,12 @@ const PricingPage: React.FC = () => {
                 />
 
                 {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
-                  const pkg = basePackages[key];
+                  const pkg = basePackages[key as keyof typeof basePackages];
                   const isSelected = selectedBase === key;
                   return (
                     <div
                       key={key}
-                      onClick={() => setSelectedBase(key)}
+                      onClick={() => setSelectedBase(key as 'power_hour' | 'batch_day')}
                       className="cursor-pointer p-7 rounded-2xl transition-all duration-300 relative z-10 overflow-hidden"
                     >
                       {key === 'batch_day' && !isBatchDayPromo && (
