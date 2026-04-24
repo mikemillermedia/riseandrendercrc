@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
-import AIChat from './components/AIChat';
 import BrandLogo from './components/BrandLogo';
 
 // Animation variants for section entrances
