@@ -75,8 +75,8 @@ const LandingPage: React.FC = () => {
       <footer className="absolute bottom-0 left-0 w-full z-50 p-6 md:p-12 pb-8">
         <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
           <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
-          <a href="#" className="hover:text-white transition-colors">DFW Location</a>
-          <a href="#" className="hover:text-white transition-colors">Contact</a>
+          <a href="https://share.google/IgqCwzByhKTVbgUZL" className="hover:text-white transition-colors">DFW Location</a>
+          <a href="mailto:booking@riseandrenderdfw.com.com" className="hover:text-white transition-colors">Contact</a>
           
           {/* Designed by Mike Miller Media - Separated with a border line on desktop */}
           <div className="hidden md:block w-px h-4 bg-white/20"></div>
