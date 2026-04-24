@@ -9,7 +9,6 @@ import CommunityChat from './CommunityChat';
 import Members from './Members';
 import DirectMessages from './components/DirectMessages'; 
 import CollabBoard from './components/CollabBoard'; 
-import AIChat from './components/AIChat'; 
 import freeKitImage from './The Content Creator Studio Kit.jpg';
 import BrandLogo from '../components/BrandLogo';
 
@@ -195,7 +194,6 @@ export default function Hub() {
   return (
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
-      <div className="z-50"><AIChat /></div>
 
       {/* Mobile Header & Onboarding Tooltip */}
       <div className="md:hidden flex items-center justify-between px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50">
