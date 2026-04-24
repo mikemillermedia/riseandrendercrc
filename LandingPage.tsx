@@ -1,7 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
-*/
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -12,7 +8,8 @@ import FluidBackground from './components/FluidBackground';
 import CustomCursor from './components/CustomCursor';
 import BrandLogo from './components/BrandLogo';
 import mikeMillerImage from './mike-miller.png';
-import headerImage from './studio set 1 still_1.1.1.png';
+// NOTE: I replaced the old headerImage placeholder with a background video loop placeholder.
+// You need a video file named 'studio-hero-loop.mp4' in your public folder, using similar grayscale lighting shown in previous placeholders.
 import dfwImage from './studio 2 set still_1.1.2.png';
 
 const LandingPage: React.FC = () => {
@@ -97,32 +94,60 @@ const LandingPage: React.FC = () => {
         </div>
       )}
 
-      {/* THE GATEWAY HERO */}
-      <section className="relative pt-40 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col items-center text-center overflow-hidden min-h-[90vh] justify-center">
+      {/* THE CINEMATIC GATEWAY HERO (Now with Video Header) */}
+      <section className="relative pt-40 pb-20 max-w-[1440px] mx-auto flex flex-col items-center text-center overflow-hidden min-h-[90vh] justify-center">
         
-        {/* Subtle glowing orb behind text */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[250px] opacity-[0.07] pointer-events-none" />
+        {/* WIDE VIDEO HEADER BLOCK */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="absolute inset-0 z-0 w-full h-full overflow-hidden"
+        >
+          {/* Muted dark overlay for text readability, consistent with previous visual styles */}
+          <div className="absolute inset-0 bg-black/60 z-10" />
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover grayscale opacity-40 transition-all duration-1000"
+          >
+            {/* Replace this with your actual cinematic studio loop mp4 */}
+            <source src="/studio-hero-loop.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          {/* Dark gradient to blend video into content section */}
+          <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent z-15" />
+        </motion.div>
+        
+        {/* Subtle glowing orb behind text for atmospheric depth */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#ff4d00] rounded-full mix-blend-screen filter blur-[250px] opacity-[0.05] pointer-events-none z-10" />
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 w-full max-w-5xl mx-auto"
+          className="relative z-20 w-full max-w-5xl mx-auto px-6"
         >
           <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-black mb-8 leading-[0.92] text-[#F5F5F0] tracking-tighter uppercase">
-            Rise In Your Purpose. <br/>
-            <span className="text-[#ff4d00] relative inline-block">
-              Render Your Calling.
-            </span>
+            {/* New Main Header Text */}
+            Premium Video <br/> Podcasting Studio
           </h1>
+          <h2 className="text-3xl md:text-5xl font-black mb-8 leading-[0.92] tracking-tighter uppercase">
+            {/* "Rise In Your Purpose" is now the Subtitle with orange energy accent */}
+            <span className="text-[#ff4d00] relative inline-block">
+              Rise In Your Purpose. <br/> Render Your Calling.
+            </span>
+          </h2>
 
-          <p className="text-xl md:text-3xl text-[#F5F5F0]/70 max-w-4xl mx-auto mb-20 font-medium leading-relaxed">
-            You were created to create, but the technical side of production can be overwhelming. We exist to bridge the gap between your God-given message and the excellence required to share it.
+          <p className="text-xl md:text-3xl text-[#F5F5F0]/70 max-w-4xl mx-auto mb-20 font-medium leading-relaxedStreamlined description">
+            We bridge the gap between your God-given message and the technical excellence required to share it. View our Studio or Community packages below to enter the magic.
           </p>
         </motion.div>
 
         {/* THE TWO PATHS (SPLIT CARDS) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-[1200px] relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-[1200px] relative z-20 px-6 mt-16">
           
           {/* PATH 1: THE STUDIO */}
           <motion.div 
@@ -136,19 +161,19 @@ const LandingPage: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
             <img 
               src={dfwImage} 
-              alt="DFW Studio" 
+              alt="DFW Studio Placeholder" 
               className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700"
             />
             <div className="relative z-20 p-12 md:p-16 h-full flex flex-col justify-end min-h-[500px] text-left">
               <div className="w-16 h-16 rounded-2xl bg-[#ff4d00] flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(255,77,0,0.5)]">
                 <Mic className="w-8 h-8 text-black" />
               </div>
-              <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Studio</h2>
+              <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Studio</h3>
               <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-10 max-w-md">
                 Local to DFW? Step into our high-end recording space. 4K video, engineered audio, and full-service post-production. You show up and speak; we handle the rest.
               </p>
               <div className="flex items-center gap-3 text-[#ff4d00] font-black uppercase tracking-widest text-lg group-hover:translate-x-2 transition-transform">
-                View Packages <ArrowRight size={24} />
+                View Studio Packages <ArrowRight size={24} />
               </div>
             </div>
           </motion.div>
@@ -163,16 +188,17 @@ const LandingPage: React.FC = () => {
             onClick={() => navigate('/login')}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
+            {/* Reusing DFW image placeholder as we don't have a community one defined in context */}
             <img 
-              src={headerImage} 
-              alt="Digital Community" 
+              src={dfwImage} 
+              alt="Digital Community Placeholder" 
               className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-700"
             />
             <div className="relative z-20 p-12 md:p-16 h-full flex flex-col justify-end min-h-[500px] text-left">
               <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-8 group-hover:bg-white/20 transition-colors">
                 <Globe className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Community</h2>
+              <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Community</h3>
               <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-10 max-w-md">
                 Master your gear, dial in your remote setup, and connect with a global network of faith-driven creators building their digital legacy.
               </p>
@@ -185,7 +211,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* FOUNDER STORY SECTION */}
+      {/* FOUNDER STORY SECTION - establishing trust after CTAs */}
       <section className="py-32 bg-[#131313] text-[#F5F5F0] relative overflow-hidden mt-20">
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 relative z-10">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-20 items-center">
@@ -227,8 +253,8 @@ const LandingPage: React.FC = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative flex flex-col justify-between">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-6">
+            <div className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               <p className="text-lg text-[#F5F5F0]/70 italic leading-relaxed mb-10">
                 "Mike provided me with guidance on how to setup my podcast and best practices to help my video podcast get started. I have since recorded many special episodes!"
               </p>
@@ -238,7 +264,7 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative flex flex-col justify-between">
+            <div className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               <p className="text-lg text-[#F5F5F0]/70 italic leading-relaxed mb-10">
                 "Rise & Render completely transformed the way we approach content. The remote consulting helped us dial in our lighting and audio without having to buy a whole new studio."
               </p>
@@ -248,7 +274,7 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative flex flex-col justify-between">
+            <div className="bg-[#131313] p-10 rounded-[2rem] border border-[#F5F5F0]/5 relative flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               <p className="text-lg text-[#F5F5F0]/70 italic leading-relaxed mb-10">
                 "Having access to the DFW studio was a game changer. All I had to do was show up and speak my message. The team handled the rest with absolute excellence."
               </p>
