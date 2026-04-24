@@ -200,7 +200,6 @@ const PricingPage: React.FC = () => {
       </div>
 
       <FluidBackground />
-      <AIChat />
 
       {/* NAVBAR */}
       <motion.div 
