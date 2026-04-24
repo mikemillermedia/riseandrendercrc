@@ -197,20 +197,20 @@ export default function Hub() {
 
       {/* Mobile Header & Onboarding Tooltip */}
       <div className="md:hidden flex items-center justify-between px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50">
-        <div className="flex items-center">
-         <span className="text-white">Rise & Render </span> <span className="text-[#ff4d00]">Community</span>
+        <div className="flex items-center font-black uppercase tracking-widest">
+         <span className="text-white mr-1">Rise & Render</span> <span className="text-[#ff4d00]">Community</span>
         </div>
         
-        {/* We added a relative wrapper and conditional 'animate-pulse' here */}
+        {/* FIX: Menu Toggle and Icon Update */}
         <div className="relative">
           <button 
             onClick={() => {
-              setIsMobileMenuOpen(true);
+              setIsMobileMenuOpen(!isMobileMenuOpen);
               if (showWelcomeTooltip) dismissTooltip(); // Dismiss if they click the menu directly
             }} 
             className={`text-white p-2 rounded-xl transition-all ${showWelcomeTooltip ? 'bg-[#ff4d00]/20 text-[#ff4d00] animate-pulse' : ''}`}
           >
-            <Menu />
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
           {/* THE WELCOME POP-UP */}
@@ -381,40 +381,24 @@ export default function Hub() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">The Vault</h1>
             <p className="text-[#F5F5F0]/60 mb-8">Download your exclusive assets and templates.</p>
-            <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl max-w-sm hover:border-[#ff4d00]/50 transition-colors shadow-xl">
-              <div className="bg-black w-full aspect-square rounded-xl mb-6 overflow-hidden flex items-center justify-center border border-[#F5F5F0]/5">
-                <img src={freeKitImage} alt="Content Creator Kit" className="w-full h-full object-cover rounded-xl" />
+            <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl max-w-sm hover:border-[#ff4d00]/50 transition-colors cursor-pointer group shadow-xl">
+              <div className="w-full aspect-video bg-[#1a1a1a] rounded-xl mb-4 overflow-hidden relative">
+                 <img src={freeKitImage} alt="The Content Creator Studio Kit" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-105 duration-500" />
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-[#ff4d00] text-white p-3 rounded-full">
+                       <Download size={24} />
+                    </div>
+                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-white uppercase tracking-wider">Content Creator Kit</h3>
-              <div className="text-sm text-[#F5F5F0]/70 mb-8 space-y-3 leading-relaxed">
-                <p>Too many options. Too much gear. No clear system.</p>
-                <p>This kit removes the guesswork. Every item is here because it:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Works reliably in small home spaces</li>
-                  <li>Is forgiving for non-technical users</li>
-                  <li>Delivers professional results without overbuilding</li>
-                </ul>
-                <p>This is the setup I recommend to the majority of serious business owners.</p>
-              </div>
-              <a href="https://checkout.mailerlite.com/checkout/13297" target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-[#ff4d00]/80 text-white font-bold py-3 px-4 rounded-xl transition-colors w-full flex items-center justify-center gap-2">
-                <Download size={18} /> Download Kit
+              <h3 className="font-bold text-lg mb-1 group-hover:text-[#ff4d00] transition-colors">The Content Creator Studio Kit</h3>
+              <p className="text-sm text-white/40 mb-4">A complete PDF guide to our exact studio setup and gear recommendations.</p>
+              
+              <a href="/The Content Creator Studio Kit.pdf" download className="flex items-center gap-2 text-sm text-[#ff4d00] font-bold hover:underline">
+                <Download size={16} /> Download PDF
               </a>
             </div>
           </div>
         )}
-
-        {activeTab === 'prayer' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Prayer Wall</h1>
-            <p className="text-[#F5F5F0]/60 mb-8">Bear one another's burdens.</p>
-            <PrayerWall user={user} />
-          </div>
-        )}
-        
-        {activeTab === 'chat' && <CommunityChat user={user} />}
-
-        {activeTab === 'profile' && <ProfileTab user={user} />}
-
       </div>
     </div>
   );
