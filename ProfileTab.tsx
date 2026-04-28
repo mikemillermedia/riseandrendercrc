@@ -8,7 +8,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Tell TypeScript that window.OneSignalDeferred exists
 declare global {
   interface Window {
     OneSignalDeferred: any[];
@@ -18,7 +17,7 @@ declare global {
 export default function ProfileTab({ user }: { user: any }) {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // ONBOARDING LOGIC: Check URL for the onboarding flag
+  // ONBOARDING LOGIC
   const isOnboarding = searchParams.get('onboarding') === 'true';
   const [showTooltip, setShowTooltip] = useState(isOnboarding);
 
@@ -48,7 +47,7 @@ export default function ProfileTab({ user }: { user: any }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [oneSignalId, setOneSignalId] = useState<string | null>(null); // NEW: Track the device ID
+  const [oneSignalId, setOneSignalId] = useState<string | null>(null); 
 
   useEffect(() => {
     if (user) {
@@ -58,14 +57,7 @@ export default function ProfileTab({ user }: { user: any }) {
     }
   }, [user]);
 
-  // ONBOARDING CLEANUP: When they click edit, hide tooltip and clean URL
-  useEffect(() => {
-    if (isEditing) {
-      setShowTooltip(false);
-      searchParams.delete('onboarding');
-      setSearchParams(searchParams);
-    }
-  }, [isEditing, searchParams, setSearchParams]);
+  // REMOVED THE BUGGY USE-EFFECT HERE!
 
   const fetchProfile = async () => {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -101,15 +93,12 @@ export default function ProfileTab({ user }: { user: any }) {
     if (data) setMyPosts(data);
   };
 
-  // UPDATED: OneSignal Toggle Logic
   const handlePushToggle = async () => {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     
     if (!pushEnabled) {
       window.OneSignalDeferred.push(async function(OneSignal: any) {
-        await OneSignal.Slidedown.promptPush(); // Show the official browser prompt
-        
-        // Wait a brief moment for user to click Allow
+        await OneSignal.Slidedown.promptPush(); 
         setTimeout(async () => {
           const isOptedIn = OneSignal.User.PushSubscription.optedIn;
           if (isOptedIn) {
@@ -123,7 +112,6 @@ export default function ProfileTab({ user }: { user: any }) {
         }, 1500);
       });
     } else {
-      // Opt out of notifications
       window.OneSignalDeferred.push(async function(OneSignal: any) {
         await OneSignal.User.PushSubscription.optOut();
         setPushEnabled(false);
@@ -160,7 +148,7 @@ export default function ProfileTab({ user }: { user: any }) {
       website_url: formatUrl(websiteUrl),     
       avatar_url: newAvatarUrl,
       push_notifications_enabled: pushEnabled, 
-      onesignal_id: oneSignalId, // NEW: Save their device ID to the database!
+      onesignal_id: oneSignalId, 
       updated_at: new Date()
     };
 
@@ -299,7 +287,15 @@ export default function ProfileTab({ user }: { user: any }) {
               </AnimatePresence>
               
               <button 
-                onClick={() => setIsEditing(true)} 
+                onClick={() => {
+                  // CORRECTED LOGIC: Clean URL here on click instead of crashing React
+                  setIsEditing(true);
+                  setShowTooltip(false);
+                  if (searchParams.has('onboarding')) {
+                    searchParams.delete('onboarding');
+                    setSearchParams(searchParams);
+                  }
+                }} 
                 className={`bg-[#1A1A1A] hover:bg-white/10 text-white px-8 py-2.5 rounded-full font-semibold transition-all text-sm border border-white/5 shadow-lg ${showTooltip ? 'animate-pulse ring-2 ring-[#ff4d00]/50' : ''}`}
               >
                 Edit Profile
@@ -368,4 +364,100 @@ export default function ProfileTab({ user }: { user: any }) {
                       <p className="text-white/90 text-sm md:text-base mb-4 whitespace-pre-wrap leading-relaxed">
                         {post.content}
                       </p>
-                      {
+                      {post.media_url && (
+                        <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
+                      )}
+                      <div className="flex gap-4 text-white/40">
+                        <div className="flex items-center gap-1.5">
+                          <Heart size={16} className={post.post_likes?.length > 0 ? "text-[#ff4d00]" : ""} /> 
+                          <span className="text-xs font-bold">{post.post_likes?.length || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MessageCircle size={16} /> 
+                          <span className="text-xs font-bold">{post.comments?.length || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-[#131313] border border-white/5 rounded-[2rem] p-8 mt-10 shadow-xl">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-black text-white">Edit Profile</h2>
+            <button onClick={() => setIsEditing(false)} className="text-white/40 hover:text-white">Cancel</button>
+          </div>
+          <div className="space-y-6">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-full border-2 border-[#ff4d00] p-0.5 overflow-hidden bg-black">
+                {avatarPreview ? <img src={avatarPreview} className="w-full h-full rounded-full object-cover" /> : <User size={32} className="m-auto mt-4 text-white/20" />}
+              </div>
+              <label className="cursor-pointer bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full text-sm font-bold transition-colors flex items-center gap-2 border border-white/10">
+                <Camera size={16} /> Change Avatar
+                <input type="file" className="hidden" accept="image/*" onChange={e => {
+                  if (e.target.files?.[0]) {
+                    setAvatarFile(e.target.files[0]);
+                    setAvatarPreview(URL.createObjectURL(e.target.files[0]));
+                  }
+                }}/>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">First Name</label>
+                <input value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" />
+              </div>
+              <div>
+                <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Last Name</label>
+                <input value={lastName} onChange={e => setLastName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Bio</label>
+              <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="Tell the community about yourself..." />
+            </div>
+            
+            <div>
+              <label className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                <BookOpen size={14} /> Favorite Verse or Current Reading
+              </label>
+              <textarea value={bibleVerse} onChange={e => setBibleVerse(e.target.value)} rows={2} className="w-full bg-[#ff4d00]/5 border border-[#ff4d00]/20 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00] placeholder:text-[#ff4d00]/30" placeholder="e.g. Proverbs 3:5-6 or Currently reading through Acts..." />
+            </div>
+
+            <div>
+              <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Website URL (Optional)</label>
+              <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="mikemillermedia.com" />
+            </div>
+            <div>
+              <label className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2 block">Instagram URL</label>
+              <input value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]" placeholder="instagram.com/mikemiller" />
+            </div>
+            
+            <div className="pt-6 border-t border-white/10 mt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold mb-1">Push Notifications</h3>
+                  <p className="text-xs text-white/50">Get alerts on this device when someone follows you or posts.</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={handlePushToggle}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${pushEnabled ? 'bg-[#ff4d00]' : 'bg-white/10'}`}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${pushEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+
+            <button onClick={handleSave} disabled={saving} className="w-full bg-[#ff4d00] text-black font-black uppercase tracking-widest py-4 rounded-xl hover:bg-orange-500 transition-colors mt-8">
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
