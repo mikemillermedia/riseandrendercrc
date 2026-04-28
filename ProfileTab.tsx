@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, BookOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -16,10 +15,10 @@ declare global {
 
 export default function ProfileTab({ user }: { user: any }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   
-  // ONBOARDING LOGIC
-  const isOnboarding = searchParams.get('onboarding') === 'true';
-  const [showTooltip, setShowTooltip] = useState(isOnboarding);
+  // ONBOARDING LOGIC: Hidden safely in router state to prevent crashing the Hub tabs
+  const [showTooltip, setShowTooltip] = useState(location.state?.onboarding === true);
 
   const [profile, setProfile] = useState<any>(null);
   const [latestSetup, setLatestSetup] = useState<string | null>(null);
@@ -56,8 +55,6 @@ export default function ProfileTab({ user }: { user: any }) {
       fetchUserPosts();
     }
   }, [user]);
-
-  // REMOVED THE BUGGY USE-EFFECT HERE!
 
   const fetchProfile = async () => {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -272,29 +269,17 @@ export default function ProfileTab({ user }: { user: any }) {
 
             {/* MAGIC ONBOARDING TOOLTIP & BUTTON */}
             <div className="relative mt-8">
-              <AnimatePresence>
-                {showTooltip && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#ff4d00] text-black font-bold text-xs px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(255,77,0,0.4)] z-10"
-                  >
-                    👋 Welcome! Let's set up your profile.
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#ff4d00] rotate-45" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {showTooltip && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#ff4d00] text-black font-bold text-xs px-4 py-2 rounded-lg shadow-xl z-10 animate-bounce">
+                  👋 Welcome! Let's set up your profile.
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#ff4d00] rotate-45" />
+                </div>
+              )}
               
               <button 
                 onClick={() => {
-                  // CORRECTED LOGIC: Clean URL here on click instead of crashing React
                   setIsEditing(true);
                   setShowTooltip(false);
-                  if (searchParams.has('onboarding')) {
-                    searchParams.delete('onboarding');
-                    setSearchParams(searchParams);
-                  }
                 }} 
                 className={`bg-[#1A1A1A] hover:bg-white/10 text-white px-8 py-2.5 rounded-full font-semibold transition-all text-sm border border-white/5 shadow-lg ${showTooltip ? 'animate-pulse ring-2 ring-[#ff4d00]/50' : ''}`}
               >
