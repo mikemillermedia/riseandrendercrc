@@ -40,7 +40,9 @@ export default function Login() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate('/hub');
+        
+        // THE MAGIC REDIRECT: Sends them directly to their profile with the onboarding tooltip activated!
+        navigate('/hub?tab=profile&onboarding=true');
       }
     } catch (err: any) {
       setError(err.message);
