@@ -277,6 +277,10 @@ export default function Hub() {
         {/* --- ADDED THIS LINE SO THE PRAYER WALL LOADS! --- */}
         {activeTab === 'prayer' && <PrayerWall user={user} />}
 
+        {/* ---> HERE ARE THE TWO MISSING LINES THAT FIXED THE BLANK SCREEN! <--- */}
+        {activeTab === 'chat' && <CommunityChat user={user} />}
+        {activeTab === 'profile' && <ProfileTab user={user} />}
+
         {activeTab === 'notifications' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">Notifications</h1>
