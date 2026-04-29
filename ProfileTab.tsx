@@ -648,7 +648,7 @@ export default function ProfileTab({ user }: { user: any }) {
 
                       key={post.id} 
 
-                      onClick={() => setSearchParams({ tab: 'chat', postId: post.id })}
+                      onClick={() => setSearchParams({ tab: 'Chat', postId: post.id })}
 
                       className="bg-black/20 p-5 rounded-2xl border border-white/5 cursor-pointer hover:border-[#ff4d00]/50 transition-all group"
 
