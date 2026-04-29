@@ -42,7 +42,7 @@ export default function Login() {
         if (error) throw error;
         
         // THE MAGIC REDIRECT: Sends them directly to their profile with the onboarding tooltip activated!
-        navigate('/hub?tab=Profile&onboarding=true');
+        navigate('/hub?tab=profile&onboarding=true');
       }
     } catch (err: any) {
       setError(err.message);
