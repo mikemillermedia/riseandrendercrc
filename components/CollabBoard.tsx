@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Briefcase, User, Trash2, Mail, MessageCircle, Share2 } from 'lucide-react';
+import { Briefcase, User, Trash2, Mail, MessageCircle, Share2, Heart, Repeat, X } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -16,10 +16,11 @@ export default function CollabBoard({ user }: { user: any }) {
   const [posting, setPosting] = useState(false);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
 
-  // New Reply & Share States
+  // Interaction States
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [repostTarget, setRepostTarget] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -34,10 +35,18 @@ export default function CollabBoard({ user }: { user: any }) {
   };
 
   const fetchCollabs = async () => {
-    // Fetch collabs AND their associated comments
     const { data } = await supabase
       .from('collabs')
-      .select('*, profiles:user_id(first_name, last_name, avatar_url, instagram_url), collab_comments(*, profiles:user_id(first_name, last_name, avatar_url))')
+      .select(`
+        *, 
+        profiles:user_id(first_name, last_name, avatar_url, instagram_url), 
+        collab_comments(*, profiles:user_id(first_name, last_name, avatar_url)),
+        collab_likes(user_id),
+        original_collab:original_collab_id(
+          id, title, description, created_at,
+          profiles:user_id(first_name, last_name, avatar_url)
+        )
+      `)
       .order('created_at', { ascending: false });
     
     if (data) setCollabs(data);
@@ -52,19 +61,28 @@ export default function CollabBoard({ user }: { user: any }) {
     await supabase.from('collabs').insert([{ 
       user_id: user.id, 
       title: title.trim(),
-      description: description.trim() 
+      description: description.trim(),
+      original_collab_id: repostTarget?.id || null 
     }]);
       
     setTitle('');
     setDescription('');
+    setRepostTarget(null);
     fetchCollabs();
     setPosting(false);
   };
 
-  const deleteCollab = async (collabId: string) => {
-    if (!window.confirm("Delete this collab request?")) return;
-    await supabase.from('collabs').delete().eq('id', collabId);
-    fetchCollabs();
+  const toggleLike = async (collabId: string, currentLikes: any[] = []) => {
+    if (!user) return;
+    const isLiked = currentLikes.some(like => like.user_id === user.id);
+    try {
+      if (isLiked) {
+        await supabase.from('collab_likes').delete().match({ collab_id: collabId, user_id: user.id });
+      } else {
+        await supabase.from('collab_likes').insert([{ collab_id: collabId, user_id: user.id }]);
+      }
+      fetchCollabs();
+    } catch (e) { console.error(e); }
   };
 
   const submitComment = async (collabId: string) => {
@@ -74,6 +92,17 @@ export default function CollabBoard({ user }: { user: any }) {
       setCommentText('');
       fetchCollabs();
     } catch (e) { console.error(e); }
+  };
+
+  const initiateRepost = (collab: any) => {
+    setRepostTarget(collab.original_collab || collab);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
+
+  const deleteCollab = async (collabId: string) => {
+    if (!window.confirm("Delete this collab request?")) return;
+    await supabase.from('collabs').delete().eq('id', collabId);
+    fetchCollabs();
   };
 
   const handleShare = async (collabId: string) => {
@@ -104,16 +133,28 @@ export default function CollabBoard({ user }: { user: any }) {
           </div>
           
           <div className="flex-grow pt-1">
+            {repostTarget && (
+              <div className="mb-3 p-3 border border-white/10 rounded-xl relative bg-white/5">
+                <button type="button" onClick={() => setRepostTarget(null)} className="absolute top-2 right-2 text-white/40 hover:text-white transition-colors"><X size={14}/></button>
+                <div className="flex items-center gap-2 mb-1 text-white/40">
+                  <Repeat size={12} />
+                  <p className="text-[10px] font-bold uppercase tracking-wider">Quote Repost</p>
+                </div>
+                <p className="text-sm font-bold text-[#ff4d00]">{repostTarget.title}</p>
+                <p className="text-sm text-white/80 line-clamp-2">{repostTarget.description}</p>
+              </div>
+            )}
+
             <input 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="What are you looking for? (e.g. Need a Video Editor)" 
+              placeholder={repostTarget ? "Why are you sharing this gig?" : "What are you looking for? (e.g. Need a Video Editor)"} 
               className="w-full bg-transparent border-none font-bold text-[#F5F5F0] focus:ring-0 text-base placeholder:text-white/40 p-0 mb-1"
             />
             <textarea 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add details about the project, your budget, or skills needed..." 
+              placeholder={repostTarget ? "Add your own thoughts..." : "Add details about the project, your budget, or skills needed..."} 
               className="w-full bg-transparent border-none text-[#F5F5F0]/80 focus:ring-0 text-[15px] placeholder:text-white/30 resize-none min-h-[40px] p-0"
               rows={description.split('\n').length > 2 ? description.split('\n').length : 2}
             />
@@ -124,7 +165,7 @@ export default function CollabBoard({ user }: { user: any }) {
                 disabled={posting || !title.trim() || !description.trim()}
                 className="bg-white text-black px-5 py-1.5 rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-30"
               >
-                {posting ? 'Posting' : 'Post Gig'}
+                {posting ? 'Posting' : (repostTarget ? 'Repost Collab' : 'Post Gig')}
               </button>
             </div>
           </div>
@@ -136,11 +177,19 @@ export default function CollabBoard({ user }: { user: any }) {
         {collabs.map((collab) => {
           const isMyPost = user?.id === collab.user_id;
           const comments = collab.collab_comments || [];
+          const likes = collab.collab_likes || [];
+          const isLiked = likes.some((l: any) => l.user_id === user?.id);
 
           return (
             <div key={collab.id} className="py-4 border-b border-white/10 transition-colors">
+              
+              {collab.original_collab && (
+                <div className="flex items-center gap-2 text-white/40 text-[11px] font-bold mb-2 ml-14">
+                  <Repeat size={12} /> {collab.profiles?.first_name} Reposted
+                </div>
+              )}
+
               <div className="flex gap-4">
-                
                 {/* The "Thread Line" Column */}
                 <div className="flex flex-col items-center">
                   <div 
@@ -149,7 +198,6 @@ export default function CollabBoard({ user }: { user: any }) {
                   >
                     {collab.profiles?.avatar_url ? <img src={collab.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                   </div>
-                  {/* Vertical line connecting avatar to comments below */}
                   {openCommentId === collab.id && (
                      <div className="w-[1px] flex-grow bg-white/10 my-2" />
                   )}
@@ -180,9 +228,34 @@ export default function CollabBoard({ user }: { user: any }) {
                   <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">
                     {collab.description}
                   </p>
+
+                  {/* Original Collab Quote Block */}
+                  {collab.original_collab && (
+                    <div className="mb-3 p-3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center bg-white/5">
+                          {collab.original_collab.profiles?.avatar_url ? <img src={collab.original_collab.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={10} className="text-white/20" />}
+                        </div>
+                        <span className="text-sm font-bold text-white">{collab.original_collab.profiles?.first_name} {collab.original_collab.profiles?.last_name}</span>
+                        <span className="text-xs text-white/40">· {new Date(collab.original_collab.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                      </div>
+                      <h4 className="text-[14px] font-bold text-[#ff4d00] mb-1">{collab.original_collab.title}</h4>
+                      <p className="text-[14px] text-white/80 whitespace-pre-wrap">{collab.original_collab.description}</p>
+                    </div>
+                  )}
                   
                   {/* THREADS STYLE INTERACTION ROW */}
                   <div className="flex items-center gap-6 mt-1 text-white/40">
+                    <button 
+                      onClick={() => toggleLike(collab.id, likes)} 
+                      className={`flex items-center gap-1.5 hover:text-red-500 transition-colors group ${isLiked ? 'text-red-500' : ''}`}
+                    >
+                      <div className="p-1.5 rounded-full group-hover:bg-red-500/10 transition-colors -ml-1.5">
+                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                      </div>
+                      {likes.length > 0 && <span className="text-[13px]">{likes.length}</span>}
+                    </button>
+
                     <button 
                       onClick={() => setOpenCommentId(openCommentId === collab.id ? null : collab.id)} 
                       className={`flex items-center gap-1.5 hover:text-white transition-colors group ${openCommentId === collab.id ? 'text-white' : ''}`}
@@ -191,6 +264,15 @@ export default function CollabBoard({ user }: { user: any }) {
                         <MessageCircle size={16} />
                       </div>
                       {comments.length > 0 && <span className="text-[13px]">{comments.length}</span>}
+                    </button>
+
+                    <button 
+                      onClick={() => initiateRepost(collab)} 
+                      className="flex items-center gap-1.5 hover:text-green-400 transition-colors group"
+                    >
+                      <div className="p-1.5 rounded-full group-hover:bg-green-400/10 transition-colors -ml-1.5">
+                        <Repeat size={16} />
+                      </div>
                     </button>
 
                     {!isMyPost && (
