@@ -13,6 +13,7 @@ export default function PrayerWall({ user }: { user: any }) {
   const [, setSearchParams] = useSearchParams();
   const [requests, setRequests] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false); // NEW: Anonymous State
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -57,10 +58,15 @@ export default function PrayerWall({ user }: { user: any }) {
     setPosting(true);
     const { error } = await supabase
       .from('prayer_requests')
-      .insert([{ user_id: user.id, content: newRequest.trim() }]);
+      .insert([{ 
+        user_id: user.id, 
+        content: newRequest.trim(),
+        is_anonymous: isAnonymous // Send anonymous flag to database
+      }]);
       
     if (!error) {
       setNewRequest('');
+      setIsAnonymous(false); // Reset toggle after posting
       fetchRequests();
     } else {
       setErrorMsg(error.message);
@@ -112,7 +118,13 @@ export default function PrayerWall({ user }: { user: any }) {
       <div className="border-b border-white/10 pb-6 mb-2 relative">
         <form onSubmit={handlePost} className="flex gap-4">
           <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center mt-1 border border-white/5">
-            {currentUserAvatar ? <img src={currentUserAvatar} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
+            {isAnonymous ? (
+              <User size={20} className="text-white/20" /> // Show blank avatar to the user if they have anon toggled ON
+            ) : currentUserAvatar ? (
+              <img src={currentUserAvatar} className="w-full h-full object-cover" />
+            ) : (
+              <User size={20} className="text-white/20" />
+            )}
           </div>
           
           <div className="flex-grow pt-1">
@@ -124,7 +136,19 @@ export default function PrayerWall({ user }: { user: any }) {
               rows={newRequest.split('\n').length > 1 ? newRequest.split('\n').length : 1}
             />
             
-            <div className="flex justify-end items-center mt-3 pt-2">
+            <div className="flex justify-between items-center mt-3 pt-2">
+              
+              {/* Anonymous Checkbox */}
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-white/40 hover:text-white transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="rounded border-white/20 bg-transparent text-[#ff4d00] focus:ring-[#ff4d00] focus:ring-offset-0 focus:ring-offset-transparent w-4 h-4"
+                />
+                Post anonymously
+              </label>
+
               <button 
                 type="submit" 
                 disabled={posting || !newRequest.trim()}
@@ -142,10 +166,13 @@ export default function PrayerWall({ user }: { user: any }) {
         {requests.map((request) => {
           const likes = request.prayer_likes || [];
           const comments = request.prayer_comments || [];
-          const firstName = request.profiles?.first_name || 'Member';
-          const lastName = request.profiles?.last_name || '';
-          const avatarUrl = request.profiles?.avatar_url;
           const isMyPost = user?.id === request.user_id;
+
+          // Override profile details if the post is anonymous
+          const isAnon = request.is_anonymous;
+          const firstName = isAnon ? 'Anonymous' : (request.profiles?.first_name || 'Member');
+          const lastName = isAnon ? '' : (request.profiles?.last_name || '');
+          const avatarUrl = isAnon ? null : request.profiles?.avatar_url;
 
           return (
             <div key={request.id} className="py-4 border-b border-white/10 transition-colors">
@@ -154,8 +181,8 @@ export default function PrayerWall({ user }: { user: any }) {
                 {/* The "Thread Line" Column */}
                 <div className="flex flex-col items-center">
                   <div 
-                    onClick={() => setSearchParams({ tab: 'activity', viewUser: request.user_id })}
-                    className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer relative z-10 hover:border hover:border-white/20 transition-all"
+                    onClick={() => !isAnon && setSearchParams({ tab: 'activity', viewUser: request.user_id })}
+                    className={`w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center relative z-10 ${!isAnon ? 'cursor-pointer hover:border hover:border-white/20 transition-all' : ''}`}
                   >
                     {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                   </div>
@@ -168,16 +195,17 @@ export default function PrayerWall({ user }: { user: any }) {
                 <div className="flex-grow min-w-0 pb-1">
                   <div className="flex justify-between items-start mb-0.5">
                     <div 
-                      className="group flex items-center gap-1.5 cursor-pointer"
-                      onClick={() => setSearchParams({ tab: 'activity', viewUser: request.user_id })}
+                      className={`group flex items-center gap-1.5 ${!isAnon ? 'cursor-pointer' : ''}`}
+                      onClick={() => !isAnon && setSearchParams({ tab: 'activity', viewUser: request.user_id })}
                     >
-                      <h3 className="font-bold text-sm text-white hover:underline">
+                      <h3 className={`font-bold text-sm ${isAnon ? 'text-white/60 italic' : 'text-white hover:underline'}`}>
                         {firstName} {lastName}
                       </h3>
                     </div>
                     
                     <div className="flex items-center gap-3">
                       <span className="text-[12px] text-white/40">{new Date(request.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                      {/* Allow the user to delete their own post, even if it's anonymous to others */}
                       {isMyPost && (
                         <button onClick={() => deleteRequest(request.id)} className="text-white/20 hover:text-red-500 transition-colors">
                           <Trash2 size={14} />
