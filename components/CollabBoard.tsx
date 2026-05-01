@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Briefcase, User, Trash2, Mail, MessageCircle } from 'lucide-react';
+import { Briefcase, User, Trash2, Mail, MessageCircle, Share2 } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -16,9 +16,10 @@ export default function CollabBoard({ user }: { user: any }) {
   const [posting, setPosting] = useState(false);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
 
-  // New Reply States
+  // New Reply & Share States
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -73,6 +74,17 @@ export default function CollabBoard({ user }: { user: any }) {
       setCommentText('');
       fetchCollabs();
     } catch (e) { console.error(e); }
+  };
+
+  const handleShare = async (collabId: string) => {
+    const url = `${window.location.origin}/hub?tab=collabs&collabId=${collabId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(collabId);
+      setTimeout(() => setCopiedId(null), 2000); 
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
   };
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading Collab Board...</div>;
@@ -185,13 +197,22 @@ export default function CollabBoard({ user }: { user: any }) {
                       <button 
                         onClick={() => setSearchParams({ tab: 'messages', userId: collab.user_id })}
                         className="flex items-center gap-1.5 hover:text-[#ff4d00] transition-colors group"
+                        title="Direct Message"
                       >
                         <div className="p-1.5 rounded-full group-hover:bg-[#ff4d00]/10 transition-colors -ml-1.5">
                           <Mail size={16} />
                         </div>
-                        <span className="text-[13px] font-medium hidden sm:inline">Direct Message</span>
                       </button>
                     )}
+
+                    <button onClick={() => handleShare(collab.id)} className="flex items-center gap-1.5 hover:text-blue-400 transition-colors group relative" title="Share Collab">
+                      <div className="p-1.5 rounded-full group-hover:bg-blue-400/10 transition-colors -ml-1.5">
+                        <Share2 size={16} />
+                      </div>
+                      {copiedId === collab.id && (
+                        <span className="absolute -top-6 -left-2 bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded">Copied!</span>
+                      )}
+                    </button>
                   </div>
 
                   {/* FLATTENED COMMENTS SECTION */}
