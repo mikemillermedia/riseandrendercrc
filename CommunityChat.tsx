@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Send, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2, BookOpen } from 'lucide-react';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { Heart, MessageCircle, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2, BookOpen } from 'lucide-react';
+import { supabase } from './supabaseClient'; // Make sure this matches your client file path!
 
 export default function CommunityChat({ user }: { user: any }) {
   const [searchParams] = useSearchParams();
@@ -28,7 +24,6 @@ export default function CommunityChat({ user }: { user: any }) {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionTarget, setMentionTarget] = useState<'post' | 'comment' | null>(null);
 
-  // NEW: Verse Fetcher States
   const [fetchingVerse, setFetchingVerse] = useState(false);
   const verseMatch = newPost.match(/\/verse\s+([1-3]?\s*[a-zA-Z]+\s+\d+:\d+(?:-\d+)?)/i);
 
@@ -85,7 +80,6 @@ export default function CommunityChat({ user }: { user: any }) {
     setLoading(false);
   };
 
-  // NEW: The API Magic
   const handleFetchVerse = async () => {
     if (!verseMatch) return;
     setFetchingVerse(true);
@@ -94,7 +88,6 @@ export default function CommunityChat({ user }: { user: any }) {
       const data = await response.json();
       
       if (data.text) {
-         // Clean up the text, wrap it in quotes, and replace the /verse command!
          const cleanText = data.text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
          const replacement = `"${cleanText}" - ${data.reference}`;
          setNewPost(newPost.replace(verseMatch[0], replacement));
@@ -206,7 +199,7 @@ export default function CommunityChat({ user }: { user: any }) {
     if (!text) return null;
     return text.split(/(@\w+)/g).map((part, index) => {
       if (part.startsWith('@')) {
-        return <span key={index} className="text-[#ff4d00] font-bold cursor-pointer hover:underline">{part}</span>;
+        return <span key={index} className="text-[#ff4d00] cursor-pointer hover:underline">{part}</span>;
       }
       return part;
     });
@@ -255,18 +248,18 @@ export default function CommunityChat({ user }: { user: any }) {
   const MentionDropdown = () => {
     if (mentionQuery === null || filteredMentions.length === 0) return null;
     return (
-      <div className="absolute bottom-[calc(100%+8px)] left-0 w-64 bg-[#1A1A1A]/95 backdrop-blur-xl border border-[#ff4d00]/30 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-50">
-        <div className="p-2 text-xs font-bold text-[#ff4d00] uppercase tracking-widest border-b border-white/5 bg-[#ff4d00]/5">Mentions</div>
+      <div className="absolute bottom-[calc(100%+8px)] left-0 w-64 bg-[#131313] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="p-2 text-[10px] font-bold text-white/40 uppercase tracking-widest border-b border-white/5 bg-white/5">Mentions</div>
         {filteredMentions.map(m => (
           <div 
             key={m.id} 
             onClick={() => insertMention(m)} 
-            className="flex items-center gap-3 p-3 hover:bg-white/10 cursor-pointer transition-colors"
+            className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer transition-colors"
           >
-            <div className="w-8 h-8 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
-              {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
+            <div className="w-6 h-6 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+              {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : <User size={12} className="text-white/20" />}
             </div>
-            <span className="text-sm font-bold text-white truncate">{m.first_name} {m.last_name}</span>
+            <span className="text-sm font-medium text-white truncate">{m.first_name} {m.last_name}</span>
           </div>
         ))}
       </div>
@@ -276,80 +269,82 @@ export default function CommunityChat({ user }: { user: any }) {
   if (loading) return <div className="text-center py-20 text-white/40">Loading threads...</div>;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto pb-20">
+    <div className="animate-in fade-in duration-500 max-w-2xl mx-auto pb-32">
       {error && (
-        <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3">
-          <AlertCircle size={20} />
-          <p className="text-sm">{error}</p>
-          <button onClick={() => setError(null)} className="ml-auto"><X size={16}/></button>
+        <div className="mb-4 bg-red-500/10 text-red-400 p-3 rounded-xl flex items-center gap-2 text-sm">
+          <AlertCircle size={16} />
+          <p>{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto"><X size={14}/></button>
         </div>
       )}
 
-      {/* COMPOSER BOX */}
-      <div className="bg-[#131313] border border-[#F5F5F0]/10 p-6 rounded-2xl shadow-xl mb-8 relative">
+      {/* FLATTENED COMPOSER BOX */}
+      <div className="border-b border-white/10 pb-6 mb-2 relative">
         {mentionTarget === 'post' && <MentionDropdown />}
         
         <form onSubmit={handlePost} className="flex gap-4">
-          <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center mt-1">
+          <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center mt-1">
             {currentUserAvatar ? <img src={currentUserAvatar} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
           </div>
-          <div className="flex-grow">
+          
+          <div className="flex-grow pt-1">
             <textarea 
               value={newPost} 
               onChange={e => handleTextInput(e, 'post')} 
-              placeholder={repostTarget ? "Add your thoughts to this repost..." : "Start a thread... Try typing @name or /verse John 3:16"} 
-              className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-lg placeholder:text-white/30 resize-none min-h-[48px]" 
+              placeholder={repostTarget ? "Add a quote to this repost..." : "Start a thread..."} 
+              className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-base placeholder:text-white/30 resize-none min-h-[24px] p-0" 
+              rows={newPost.split('\n').length > 1 ? newPost.split('\n').length : 1}
             />
             
             {mediaPreview && (
-              <div className="mt-4 relative">
+              <div className="mt-3 relative inline-block">
                 <img src={mediaPreview} className="rounded-xl max-h-64 border border-white/10" />
-                <button type="button" onClick={() => {setMediaFile(null); setMediaPreview(null);}} className="absolute top-2 right-2 bg-black/50 p-1 text-white rounded-full hover:bg-black transition-colors"><X size={14}/></button>
+                <button type="button" onClick={() => {setMediaFile(null); setMediaPreview(null);}} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm p-1.5 text-white rounded-full hover:bg-black transition-colors"><X size={14}/></button>
               </div>
             )}
 
             {repostTarget && (
-              <div className="mt-4 p-4 border border-[#ff4d00]/30 bg-[#ff4d00]/5 rounded-xl relative">
-                <button type="button" onClick={() => setRepostTarget(null)} className="absolute top-2 right-2 text-[#ff4d00]/60 hover:text-[#ff4d00] transition-colors"><X size={16}/></button>
-                <div className="flex items-center gap-2 mb-2">
-                  <Repeat size={14} className="text-[#ff4d00]" />
-                  <p className="text-xs text-[#ff4d00] font-bold">Reposting {repostTarget.profiles?.first_name}</p>
+              <div className="mt-3 p-3 border border-white/10 rounded-xl relative">
+                <button type="button" onClick={() => setRepostTarget(null)} className="absolute top-2 right-2 text-white/40 hover:text-white transition-colors"><X size={14}/></button>
+                <div className="flex items-center gap-2 mb-1 text-white/40">
+                  <Repeat size={12} />
+                  <p className="text-[10px] font-bold uppercase tracking-wider">Quote Repost</p>
                 </div>
                 <p className="text-sm text-white/80 line-clamp-2">{repostTarget.content}</p>
               </div>
             )}
 
-            <div className="flex justify-between items-center mt-4">
-               <div className="flex items-center gap-2">
-                 <label className="cursor-pointer text-white/40 hover:text-[#ff4d00] transition-colors p-2 -ml-2">
-                   <ImageIcon size={20} /><input type="file" className="hidden" accept="image/*,video/*" onChange={e => {
+            <div className="flex justify-between items-center mt-3 pt-2">
+               <div className="flex items-center gap-4 text-white/40">
+                 <label className="cursor-pointer hover:text-white transition-colors">
+                   <ImageIcon size={18} />
+                   <input type="file" className="hidden" accept="image/*,video/*" onChange={e => {
                      if (e.target.files?.[0]) { setMediaFile(e.target.files[0]); setMediaPreview(URL.createObjectURL(e.target.files[0])); }
                    }} />
                  </label>
                  
-                 {/* NEW: Magic Verse Button! Appears when they type /verse */}
                  {verseMatch && (
                    <button 
                      type="button" 
                      onClick={handleFetchVerse}
                      disabled={fetchingVerse}
-                     className="flex items-center gap-1.5 text-xs font-bold bg-[#ff4d00]/20 text-[#ff4d00] px-3 py-1.5 rounded-full hover:bg-[#ff4d00]/30 transition-colors animate-in fade-in zoom-in"
+                     className="flex items-center gap-1.5 text-xs text-[#ff4d00] hover:text-orange-400 transition-colors"
                    >
                      <BookOpen size={14} /> {fetchingVerse ? 'Fetching...' : `Fetch ${verseMatch[1]}`}
                    </button>
                  )}
                </div>
 
-               <button type="submit" disabled={posting} className="bg-[#F5F5F0] text-black px-6 py-1.5 rounded-full font-bold text-sm hover:bg-white transition-colors disabled:opacity-50">
-                 {posting ? 'Posting...' : (repostTarget ? 'Repost' : 'Post')}
+               <button type="submit" disabled={posting || (!newPost.trim() && !mediaFile && !repostTarget)} className="bg-white text-black px-5 py-1.5 rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-30">
+                 {posting ? 'Posting' : 'Post'}
                </button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* POSTS FEED */}
-      <div className="space-y-0">
+      {/* FLATTENED POSTS FEED */}
+      <div className="flex flex-col">
         {posts.map((post) => {
           const postLikes = post.post_likes || [];
           const postComments = post.comments || [];
@@ -361,29 +356,35 @@ export default function CommunityChat({ user }: { user: any }) {
             <div 
               key={post.id} 
               id={`post-${post.id}`} 
-              className={`py-6 border-b border-white/5 transition-all duration-700 ${isTargeted ? 'bg-white/5 -mx-4 px-4 rounded-2xl border-transparent' : ''}`}
+              className={`py-4 border-b border-white/10 transition-colors ${isTargeted ? 'bg-white/5 px-4 -mx-4 rounded-xl' : ''}`}
             >
               
               {post.original_post && (
-                <div className="flex items-center gap-2 text-white/30 text-xs font-bold uppercase tracking-wider mb-3 ml-12">
+                <div className="flex items-center gap-2 text-white/40 text-[11px] font-bold mb-2 ml-14">
                   <Repeat size={12} /> {post.profiles?.first_name} Reposted
                 </div>
               )}
 
-              <div className="flex gap-4 px-2">
-                <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border-2 border-[#ff4d00]/50 hover:border-[#ff4d00] transition-colors flex items-center justify-center cursor-pointer mt-1">
-                  {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
-                </a>
+              <div className="flex gap-4">
+                {/* The "Thread Line" Column */}
+                <div className="flex flex-col items-center">
+                  <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer relative z-10">
+                    {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
+                  </a>
+                  {/* Vertical line connecting avatar to content below */}
+                  {openCommentId === post.id && (
+                     <div className="w-[1px] flex-grow bg-white/10 my-2" />
+                  )}
+                </div>
 
-                <div className="flex-grow min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="group flex items-center gap-2 cursor-pointer">
-                      <h3 className="font-bold text-sm text-white group-hover:text-[#ff4d00] transition-colors">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
-                      {post.profiles?.instagram_url && <span className="text-xs text-white/30 group-hover:text-[#ff4d00]/70 transition-colors">@{post.profiles.instagram_url.split('.com/')[1]?.replace('/', '')}</span>}
+                <div className="flex-grow min-w-0 pb-1">
+                  <div className="flex justify-between items-start mb-0.5">
+                    <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="group flex items-center gap-1.5 cursor-pointer">
+                      <h3 className="font-bold text-sm text-white hover:underline">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
                     </a>
                     
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs text-white/30">{new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] text-white/40">{new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                       {isMyPost && (
                         <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors">
                           <Trash2 size={14} />
@@ -392,71 +393,86 @@ export default function CommunityChat({ user }: { user: any }) {
                     </div>
                   </div>
                   
-                  {post.content && <p className="text-[#F5F5F0]/90 mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>}
+                  {post.content && <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>}
                   
-                  {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/5 max-h-96 w-full object-contain bg-black/20" />}
+                  {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto object-contain bg-black/40" />}
                   
+                  {/* Flattened Repost Content */}
                   {post.original_post && (
-                    <div className="mt-2 mb-4 p-4 border border-white/10 bg-white/5 rounded-xl hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-5 h-5 rounded-full bg-black overflow-hidden flex items-center justify-center border border-white/10">
+                    <div className="mb-3 p-3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center bg-white/5">
                           {post.original_post.profiles?.avatar_url ? <img src={post.original_post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={10} className="text-white/20" />}
                         </div>
-                        <span className="text-xs font-bold text-white">{post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}</span>
-                        <span className="text-[10px] text-white/30">{new Date(post.original_post.created_at).toLocaleDateString()}</span>
+                        <span className="text-sm font-bold text-white">{post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}</span>
+                        <span className="text-xs text-white/40">· {new Date(post.original_post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                       </div>
-                      <p className="text-sm text-white/80 whitespace-pre-wrap">{renderContentWithMentions(post.original_post.content)}</p>
-                      {post.original_post.media_url && <img src={post.original_post.media_url} className="mt-3 rounded-lg border border-white/5 max-h-64 w-full object-cover" />}
+                      <p className="text-[15px] text-white/80 whitespace-pre-wrap">{renderContentWithMentions(post.original_post.content)}</p>
+                      {post.original_post.media_url && <img src={post.original_post.media_url} className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto object-cover" />}
                     </div>
                   )}
 
-                  {/* INTERACTION ROW */}
-                  <div className="flex gap-6 mt-2 text-white/40">
-                    <button onClick={() => toggleLike(post.id, postLikes)} className={`flex items-center gap-1.5 hover:text-red-500 transition-colors ${isLiked ? 'text-red-500' : ''}`}>
-                      <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-                      <span className="text-xs font-medium">{postLikes.length}</span>
+                  {/* THREADS STYLE INTERACTION ROW */}
+                  <div className="flex items-center gap-6 mt-1 text-white/40">
+                    <button onClick={() => toggleLike(post.id, postLikes)} className={`flex items-center gap-1.5 hover:text-red-500 transition-colors group ${isLiked ? 'text-red-500' : ''}`}>
+                      <div className="p-1.5 rounded-full group-hover:bg-red-500/10 transition-colors -ml-1.5">
+                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                      </div>
+                      {postLikes.length > 0 && <span className="text-[13px]">{postLikes.length}</span>}
                     </button>
-                    <button onClick={() => setOpenCommentId(openCommentId === post.id ? null : post.id)} className={`flex items-center gap-1.5 hover:text-white transition-colors ${openCommentId === post.id ? 'text-white' : ''}`}>
-                      <MessageCircle size={18} />
-                      <span className="text-xs font-medium">{postComments.length}</span>
+                    
+                    <button onClick={() => setOpenCommentId(openCommentId === post.id ? null : post.id)} className={`flex items-center gap-1.5 hover:text-white transition-colors group ${openCommentId === post.id ? 'text-white' : ''}`}>
+                      <div className="p-1.5 rounded-full group-hover:bg-white/10 transition-colors -ml-1.5">
+                        <MessageCircle size={16} />
+                      </div>
+                      {postComments.length > 0 && <span className="text-[13px]">{postComments.length}</span>}
                     </button>
-                    <button onClick={() => initiateRepost(post)} className="flex items-center gap-1.5 hover:text-green-400 transition-colors">
-                      <Repeat size={18} />
+                    
+                    <button onClick={() => initiateRepost(post)} className="flex items-center gap-1.5 hover:text-green-400 transition-colors group">
+                      <div className="p-1.5 rounded-full group-hover:bg-green-400/10 transition-colors -ml-1.5">
+                        <Repeat size={16} />
+                      </div>
                     </button>
-                    <button onClick={() => handleShare(post.id)} className="flex items-center gap-1.5 hover:text-blue-400 transition-colors relative">
-                      <Share2 size={18} />
+                    
+                    <button onClick={() => handleShare(post.id)} className="flex items-center gap-1.5 hover:text-blue-400 transition-colors group relative">
+                      <div className="p-1.5 rounded-full group-hover:bg-blue-400/10 transition-colors -ml-1.5">
+                        <Share2 size={16} />
+                      </div>
                       {copiedId === post.id && (
-                        <span className="absolute -top-8 -left-4 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-md">Copied!</span>
+                        <span className="absolute -top-6 -left-2 bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded">Copied!</span>
                       )}
                     </button>
                   </div>
 
-                  {/* COMMENTS SECTION */}
+                  {/* FLATTENED COMMENTS SECTION */}
                   {openCommentId === post.id && (
-                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 relative">
+                    <div className="mt-3 space-y-4 relative animate-in fade-in slide-in-from-top-2">
                       {mentionTarget === 'comment' && <MentionDropdown />}
                       
                       {postComments.map((c: any) => (
-                        <div key={c.id} className="flex gap-3 items-start">
-                          <div className="w-6 h-6 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
-                            {c.profiles?.avatar_url ? <img src={c.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={12} className="text-white/20" />}
+                        <div key={c.id} className="flex gap-3 items-start pt-2">
+                          <div className="w-8 h-8 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                            {c.profiles?.avatar_url ? <img src={c.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="text-white/20" />}
                           </div>
-                          <div className="bg-white/5 px-4 py-2 rounded-2xl flex-grow">
-                            <p className="text-[10px] font-bold text-[#ff4d00] uppercase">{c.profiles?.first_name || 'Member'}</p>
-                            <p className="text-sm text-white/80">{renderContentWithMentions(c.content)}</p>
+                          <div className="flex-grow pt-1">
+                            <p className="text-[13px] font-bold text-white mb-0.5">{c.profiles?.first_name || 'Member'}</p>
+                            <p className="text-[14px] text-white/80 leading-snug">{renderContentWithMentions(c.content)}</p>
                           </div>
                         </div>
                       ))}
                       
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex gap-3 items-center pt-3 mt-2 border-t border-white/5">
+                        <div className="w-8 h-8 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {currentUserAvatar ? <img src={currentUserAvatar} className="w-full h-full object-cover" /> : <User size={14} className="text-white/20" />}
+                        </div>
                         <input 
                           value={commentText} 
                           onChange={e => handleTextInput(e as any, 'comment')} 
                           onKeyDown={e => e.key === 'Enter' && submitComment(post.id)} 
-                          placeholder="Reply... Try @name" 
-                          className="flex-grow bg-white/5 border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-[#ff4d00] text-white" 
+                          placeholder={`Reply to ${post.profiles?.first_name || 'Member'}...`} 
+                          className="flex-grow bg-transparent border-none text-[14px] text-white focus:ring-0 p-0 placeholder:text-white/30" 
                         />
-                        <button onClick={() => submitComment(post.id)} className="text-[#ff4d00] font-bold text-sm px-4 hover:text-white transition-colors">Reply</button>
+                        <button onClick={() => submitComment(post.id)} disabled={!commentText.trim()} className="text-[#ff4d00] font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed">Post</button>
                       </div>
                     </div>
                   )}
