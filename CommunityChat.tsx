@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2, BookOpen } from 'lucide-react';
-import { supabase } from './supabaseClient'; // Make sure this matches your client file path!
+import { Heart, MessageCircle, User, ImageIcon, X, AlertCircle, Share2, Repeat, Trash2, BookOpen, Pencil } from 'lucide-react';
+import { supabase } from './supabaseClient'; 
 
 export default function CommunityChat({ user }: { user: any }) {
   const [searchParams] = useSearchParams();
@@ -19,6 +19,10 @@ export default function CommunityChat({ user }: { user: any }) {
   const [openCommentId, setOpenCommentId] = useState<string | null>(targetPostId);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [repostTarget, setRepostTarget] = useState<any>(null);
+
+  // Edit States
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   const [allMembers, setAllMembers] = useState<any[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -147,6 +151,15 @@ export default function CommunityChat({ user }: { user: any }) {
       setError(err.message);
     }
     setPosting(false);
+  };
+
+  const saveEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
+    try {
+      await supabase.from('posts').update({ content: editContent.trim(), is_edited: true }).eq('id', postId);
+      setEditingPostId(null);
+      fetchPosts();
+    } catch (e) { console.error(e); }
   };
 
   const toggleLike = async (postId: string, currentLikes: any[] = []) => {
@@ -371,7 +384,6 @@ export default function CommunityChat({ user }: { user: any }) {
                   <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer relative z-10">
                     {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                   </a>
-                  {/* Vertical line connecting avatar to content below */}
                   {openCommentId === post.id && (
                      <div className="w-[1px] flex-grow bg-white/10 my-2" />
                   )}
@@ -384,16 +396,39 @@ export default function CommunityChat({ user }: { user: any }) {
                     </a>
                     
                     <div className="flex items-center gap-3">
-                      <span className="text-[12px] text-white/40">{new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                      <span className="text-[12px] text-white/40">
+                        {new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        {post.is_edited && <span className="text-[10px] text-white/20 italic ml-1">(edited)</span>}
+                      </span>
                       {isMyPost && (
-                        <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} className="text-white/20 hover:text-blue-400 transition-colors">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
                   
-                  {post.content && <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>}
+                  {editingPostId === post.id ? (
+                    <div className="mb-3 mt-1">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full bg-transparent border-b border-[#ff4d00]/50 text-[#F5F5F0]/90 focus:ring-0 text-[15px] resize-none p-0"
+                        rows={editContent.split('\n').length > 1 ? editContent.split('\n').length : 1}
+                      />
+                      <div className="flex justify-end gap-3 mt-2">
+                        <button onClick={() => setEditingPostId(null)} className="text-xs text-white/40 hover:text-white">Cancel</button>
+                        <button onClick={() => saveEdit(post.id)} className="text-xs text-[#ff4d00] font-bold">Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    post.content && <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>
+                  )}
                   
                   {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto object-contain bg-black/40" />}
                   
