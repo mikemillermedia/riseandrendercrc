@@ -5,9 +5,8 @@ import CustomCursor from './components/CustomCursor';
 import BrandLogo from './components/BrandLogo';
 
 // 1. UPDATE YOUR BRANDS HERE:
-// Add, remove, or change these names. The ticker will automatically adjust and loop!
 const BRANDS = [
-  "The Breakdown with Jasmine Martines", 
+  "The Breakdown With Jasmine Martines", 
   "She Bears Fruit Podcast", 
   "Giving While Black Podcast", 
   "15:5 Collective", 
@@ -21,12 +20,13 @@ const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative h-screen w-full bg-black text-[#F5F5F0] overflow-hidden font-sans">
+    // Changed to min-h-screen and flex-col to allow the page to naturally lengthen
+    <div className="relative min-h-screen w-full bg-black text-[#F5F5F0] font-sans flex flex-col">
       <CustomCursor />
 
-      {/* 1. CINEMATIC VIDEO BACKGROUND */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-black/60 z-10" /> {/* Dark overlay for readability */}
+      {/* 1. CINEMATIC VIDEO BACKGROUND (Changed to fixed so it stays put if you scroll) */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-black/60 z-10" />
         <video
           autoPlay
           loop
@@ -39,7 +39,7 @@ const LandingPage: React.FC = () => {
         </video>
       </div>
 
-      {/* 2. TOP NAVBAR (LOGO ONLY) */}
+      {/* 2. TOP NAVBAR */}
       <nav className="absolute top-0 left-0 w-full z-50 p-6 md:p-12">
         <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
           <BrandLogo className="h-10 md:h-16 w-auto" />
@@ -47,14 +47,14 @@ const LandingPage: React.FC = () => {
       </nav>
 
       {/* 3. CENTERED CONTENT PORTAL */}
-      <main className="relative z-20 h-full flex flex-col items-center justify-center px-6 text-center">
+      {/* Added flex-grow and padding to center it naturally while allowing scroll room */}
+      <main className="relative z-20 flex-grow flex flex-col items-center justify-center px-6 text-center pt-40 pb-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-6xl w-full flex flex-col items-center"
+          className="max-w-6xl w-full flex flex-col items-center my-auto"
         >
-          {/* Scaled down for mobile edge-to-edge issue */}
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black mb-4 md:mb-6 leading-[0.9] tracking-tighter uppercase">
             Premium Video <br /> Podcasting Studio
           </h1>
@@ -62,7 +62,6 @@ const LandingPage: React.FC = () => {
             <span className="text-[#ff4d00]">Rise In Your Purpose. Render Your Calling.</span>
           </h2>
 
-          {/* SIMPLIFIED BUTTONS */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
             <button
               onClick={() => navigate('/pricing')}
@@ -78,24 +77,21 @@ const LandingPage: React.FC = () => {
             </button>
           </div>
 
-          {/* INFINITE BRAND TICKER */}
-          <div className="w-full max-w-2xl mx-auto flex flex-col items-center opacity-80">
+          {/* INFINITE BRAND TICKER (Added heavy bottom margin here!) */}
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center opacity-80 mb-24 md:mb-32">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">
               Trusted by creators from
             </p>
-            {/* The mask-image creates the smooth fade effect on the left and right edges */}
             <div className="w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
               <motion.div
                 className="flex whitespace-nowrap items-center gap-12 sm:gap-20"
-                // Moves from 0 to -50% to seamlessly loop the duplicated array
                 animate={{ x: ["0%", "-50%"] }}
                 transition={{
                   repeat: Infinity,
                   ease: "linear",
-                  duration: 25, // Increase for slower scroll, decrease for faster
+                  duration: 25,
                 }}
               >
-                {/* We double the array so it can scroll seamlessly in an infinite loop */}
                 {[...BRANDS, ...BRANDS].map((brand, index) => (
                   <span 
                     key={index} 
@@ -112,12 +108,11 @@ const LandingPage: React.FC = () => {
       </main>
 
       {/* 4. MINIMALIST FOOTER */}
-      <footer className="absolute bottom-0 left-0 w-full z-50 p-6 md:p-12 pb-8">
+      {/* Changed to relative and mt-auto to push it to the absolute bottom of the scrollable area */}
+      <footer className="relative z-50 w-full p-6 md:p-12 pb-8 mt-auto">
         <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
           <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
-          
           <a href="https://share.google/IgqCwzByhKTVbgUZL" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">DFW Location</a>
-          
           <a href="mailto:booking@riseandrenderdfw.com" className="hover:text-white transition-colors">Contact</a>
           
           <div className="hidden md:block w-px h-4 bg-white/20"></div>
