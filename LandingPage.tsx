@@ -7,8 +7,8 @@ import BrandLogo from './components/BrandLogo';
 // 1. UPDATE YOUR BRANDS HERE:
 // Add, remove, or change these names. The ticker will automatically adjust and loop!
 const BRANDS = [
-  "She Bears Fruit", 
   "The Breakdown with Jasmine Martines", 
+  "She Bears Fruit Podcast", 
   "Giving While Black Podcast", 
   "15:5 Collective", 
 ];
