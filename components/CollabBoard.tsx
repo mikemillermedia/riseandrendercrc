@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { Briefcase, User, Trash2, Mail, MessageCircle, Share2, Heart, Repeat, X } from 'lucide-react';
+import { Briefcase, User, Trash2, Mail, MessageCircle, Share2, Heart, Repeat, X, Pencil } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -21,6 +21,11 @@ export default function CollabBoard({ user }: { user: any }) {
   const [commentText, setCommentText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [repostTarget, setRepostTarget] = useState<any>(null);
+
+  // Edit States
+  const [editingCollabId, setEditingCollabId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -70,6 +75,19 @@ export default function CollabBoard({ user }: { user: any }) {
     setRepostTarget(null);
     fetchCollabs();
     setPosting(false);
+  };
+
+  const saveEdit = async (collabId: string) => {
+    if (!editTitle.trim() || !editDescription.trim()) return;
+    try {
+      await supabase.from('collabs').update({ 
+        title: editTitle.trim(), 
+        description: editDescription.trim(), 
+        is_edited: true 
+      }).eq('id', collabId);
+      setEditingCollabId(null);
+      fetchCollabs();
+    } catch (e) { console.error(e); }
   };
 
   const toggleLike = async (collabId: string, currentLikes: any[] = []) => {
@@ -190,7 +208,6 @@ export default function CollabBoard({ user }: { user: any }) {
               )}
 
               <div className="flex gap-4">
-                {/* The "Thread Line" Column */}
                 <div className="flex flex-col items-center">
                   <div 
                     onClick={() => setSearchParams({ tab: 'activity', viewUser: collab.user_id })}
@@ -215,21 +232,50 @@ export default function CollabBoard({ user }: { user: any }) {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <span className="text-[12px] text-white/40">{new Date(collab.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                      <span className="text-[12px] text-white/40">
+                        {new Date(collab.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        {collab.is_edited && <span className="text-[10px] text-white/20 italic ml-1">(edited)</span>}
+                      </span>
                       {isMyPost && (
-                        <button onClick={() => deleteCollab(collab.id)} className="text-white/20 hover:text-red-500 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setEditingCollabId(collab.id); setEditTitle(collab.title); setEditDescription(collab.description); }} className="text-white/20 hover:text-blue-400 transition-colors">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => deleteCollab(collab.id)} className="text-white/20 hover:text-red-500 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
                   
-                  <h4 className="text-[15px] font-bold text-[#ff4d00] mb-1">{collab.title}</h4>
-                  <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">
-                    {collab.description}
-                  </p>
+                  {editingCollabId === collab.id ? (
+                    <div className="mb-3 mt-1 space-y-2">
+                      <input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="w-full bg-transparent border-b border-[#ff4d00]/50 text-[#ff4d00] font-bold focus:ring-0 text-[15px] p-0"
+                      />
+                      <textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        className="w-full bg-transparent border-b border-[#ff4d00]/50 text-[#F5F5F0]/90 focus:ring-0 text-[15px] resize-none p-0"
+                        rows={editDescription.split('\n').length > 1 ? editDescription.split('\n').length : 1}
+                      />
+                      <div className="flex justify-end gap-3 mt-2">
+                        <button onClick={() => setEditingCollabId(null)} className="text-xs text-white/40 hover:text-white">Cancel</button>
+                        <button onClick={() => saveEdit(collab.id)} className="text-xs text-[#ff4d00] font-bold">Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="text-[15px] font-bold text-[#ff4d00] mb-1">{collab.title}</h4>
+                      <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">
+                        {collab.description}
+                      </p>
+                    </>
+                  )}
 
-                  {/* Original Collab Quote Block */}
                   {collab.original_collab && (
                     <div className="mb-3 p-3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
                       <div className="flex items-center gap-2 mb-1.5">
