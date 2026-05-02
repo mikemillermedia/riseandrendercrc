@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, BookOpen } from 'lucide-react';
+import { User, Camera, Link as LinkIcon, Instagram, Heart, MessageCircle, X, BookOpen, Plus, Trash2, Video } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -17,11 +17,11 @@ export default function ProfileTab({ user }: { user: any }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   
-  // ONBOARDING LOGIC
   const [showTooltip, setShowTooltip] = useState(location.state?.onboarding === true);
 
   const [profile, setProfile] = useState<any>(null);
   const [myPosts, setMyPosts] = useState<any[]>([]); 
+  const [portfolioItems, setPortfolioItems] = useState<any[]>([]); 
   
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -47,10 +47,18 @@ export default function ProfileTab({ user }: { user: any }) {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [oneSignalId, setOneSignalId] = useState<string | null>(null); 
 
+  // PORTFOLIO STATES
+  const [showPortfolioUpload, setShowPortfolioUpload] = useState(false);
+  const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
+  const [portfolioPreview, setPortfolioPreview] = useState<string | null>(null);
+  const [portfolioRatio, setPortfolioRatio] = useState<'16:9' | '9:16' | '4:5'>('16:9');
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchUserPosts();
+      fetchPortfolio();
     }
   }, [user]);
 
@@ -81,6 +89,11 @@ export default function ProfileTab({ user }: { user: any }) {
   const fetchUserPosts = async () => {
     const { data } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', user.id).order('created_at', { ascending: false });
     if (data) setMyPosts(data);
+  };
+
+  const fetchPortfolio = async () => {
+    const { data } = await supabase.from('portfolios').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    if (data) setPortfolioItems(data);
   };
 
   const handlePushToggle = async () => {
@@ -153,6 +166,41 @@ export default function ProfileTab({ user }: { user: any }) {
     setSaving(false);
   };
 
+  const handlePortfolioUpload = async () => {
+    if (!portfolioFile) return;
+    setUploadingPortfolio(true);
+
+    try {
+      const fileExt = portfolioFile.name.split('.').pop();
+      const fileName = `portfolio/${user.id}/${Math.random()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage.from('setups').upload(fileName, portfolioFile);
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage.from('setups').getPublicUrl(fileName);
+      
+      await supabase.from('portfolios').insert([{
+        user_id: user.id,
+        media_url: publicUrl,
+        aspect_ratio: portfolioRatio
+      }]);
+
+      setPortfolioFile(null);
+      setPortfolioPreview(null);
+      setShowPortfolioUpload(false);
+      fetchPortfolio();
+    } catch (e: any) {
+      alert("Error uploading portfolio: " + e.message);
+    }
+    setUploadingPortfolio(false);
+  };
+
+  const deletePortfolioItem = async (itemId: string) => {
+    if (!window.confirm("Remove this from your portfolio?")) return;
+    await supabase.from('portfolios').delete().eq('id', itemId);
+    fetchPortfolio();
+  };
+
   const openFollowModal = async (type: 'followers' | 'following') => {
     setModalType(type);
     setShowFollowModal(true);
@@ -177,8 +225,16 @@ export default function ProfileTab({ user }: { user: any }) {
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading profile...</div>;
 
-  // HELPER: Checks if the URL ends in a video format
   const isVideo = (url: string | null) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
+
+  const getRatioClass = (ratio: string) => {
+    switch(ratio) {
+      case '16:9': return 'aspect-video';
+      case '9:16': return 'aspect-[9/16]';
+      case '4:5': return 'aspect-[4/5]';
+      default: return 'aspect-video';
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto pb-20 animate-in fade-in duration-500">
@@ -320,6 +376,108 @@ export default function ProfileTab({ user }: { user: any }) {
                 </div>
               </div>
             )}
+
+            {/* NEW PORTFOLIO SECTION */}
+            <div className="pt-8 border-t border-white/5">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-white font-bold">Portfolio</h3>
+                  <p className="text-xs text-white/40 mt-1">Showcase your best work.</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowPortfolioUpload(!showPortfolioUpload);
+                    setPortfolioFile(null);
+                    setPortfolioPreview(null);
+                  }}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${showPortfolioUpload ? 'bg-white/10 text-white' : 'bg-[#ff4d00]/10 text-[#ff4d00] hover:bg-[#ff4d00]/20'}`}
+                >
+                  {showPortfolioUpload ? 'Cancel' : <><Plus size={14} /> Add Work</>}
+                </button>
+              </div>
+
+              {showPortfolioUpload && (
+                <div className="mb-8 p-4 bg-[#1A1A1A] border border-white/5 rounded-2xl animate-in slide-in-from-top-2">
+                  <div className="flex flex-col gap-4">
+                    {!portfolioPreview ? (
+                      <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-white/10 rounded-xl hover:border-[#ff4d00]/50 hover:bg-[#ff4d00]/5 transition-all cursor-pointer">
+                        <Camera size={24} className="text-white/40 mb-2" />
+                        <span className="text-sm text-white/60 font-medium">Select a Photo or Video</span>
+                        <input type="file" accept="image/*,video/*" className="hidden" onChange={e => {
+                          if (e.target.files?.[0]) {
+                            setPortfolioFile(e.target.files[0]);
+                            setPortfolioPreview(URL.createObjectURL(e.target.files[0]));
+                          }
+                        }} />
+                      </label>
+                    ) : (
+                      <div className="relative rounded-xl overflow-hidden bg-black flex justify-center max-h-64 border border-white/10">
+                        {portfolioFile?.type.startsWith('video/') ? (
+                          <video src={portfolioPreview} controls className="max-h-64 w-auto" />
+                        ) : (
+                          <img src={portfolioPreview} className="max-h-64 w-auto object-contain" />
+                        )}
+                        <button onClick={() => {setPortfolioFile(null); setPortfolioPreview(null);}} className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full text-white hover:bg-black"><X size={16}/></button>
+                      </div>
+                    )}
+
+                    {portfolioFile && (
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-2">
+                        <div className="flex items-center gap-2 bg-black/40 p-1 rounded-lg border border-white/10">
+                          {['16:9', '4:5', '9:16'].map(ratio => (
+                            <button
+                              key={ratio}
+                              onClick={() => setPortfolioRatio(ratio as any)}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${portfolioRatio === ratio ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}
+                            >
+                              {ratio}
+                            </button>
+                          ))}
+                        </div>
+                        <button 
+                          onClick={handlePortfolioUpload} 
+                          disabled={uploadingPortfolio}
+                          className="w-full sm:w-auto bg-white text-black font-bold px-6 py-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        >
+                          {uploadingPortfolio ? 'Uploading...' : 'Upload to Portfolio'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {portfolioItems.length > 0 && (
+                <div className="columns-3 gap-1 md:gap-2 space-y-1 md:space-y-2">
+                  {portfolioItems.map(item => (
+                    <div key={item.id} className="relative group break-inside-avoid overflow-hidden rounded-md md:rounded-lg bg-white/5 border border-white/10">
+                      <div className={`w-full ${getRatioClass(item.aspect_ratio)} relative`}>
+                        {isVideo(item.media_url) ? (
+                          <>
+                            <video src={item.media_url} className="absolute inset-0 w-full h-full object-cover" muted loop playsInline onMouseEnter={e => (e.target as HTMLVideoElement).play()} onMouseLeave={e => (e.target as HTMLVideoElement).pause()} />
+                            <div className="absolute top-2 left-2 bg-black/60 p-1 rounded-md pointer-events-none">
+                              <Video size={12} className="text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <img src={item.media_url} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                        )}
+                        
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                          <button 
+                            onClick={() => deletePortfolioItem(item.id)}
+                            className="bg-red-500/20 text-red-400 p-2.5 rounded-full hover:bg-red-500 hover:text-white transition-all transform scale-90 group-hover:scale-100"
+                            title="Delete Item"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             
             {myPosts.length > 0 && (
               <div className="pt-8 border-t border-white/5">
@@ -329,7 +487,7 @@ export default function ProfileTab({ user }: { user: any }) {
                     <div 
                       key={post.id} 
                       onClick={() => setSearchParams({ tab: 'chat', postId: post.id })}
-                      className="bg-black/20 p-5 rounded-2xl border border-white/5 cursor-pointer hover:border-[#ff4d00]/50 transition-all group"
+                      className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 cursor-pointer hover:border-[#ff4d00]/50 transition-all group"
                     >
                       <p className="text-xs text-white/30 mb-2 font-medium uppercase tracking-wider group-hover:text-[#ff4d00]/70 transition-colors">
                         {new Date(post.created_at).toLocaleDateString()}
