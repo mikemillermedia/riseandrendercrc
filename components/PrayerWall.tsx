@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, AlertCircle, MessageCircle, Trash2 } from 'lucide-react';
+import { User, AlertCircle, MessageCircle, Trash2, Pencil } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -13,15 +13,19 @@ export default function PrayerWall({ user }: { user: any }) {
   const [, setSearchParams] = useSearchParams();
   const [requests, setRequests] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState(false); // NEW: Anonymous State
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
 
-  // Reply States
+  // Interaction States
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+
+  // Edit States
+  const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
+  const [editRequestContent, setEditRequestContent] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -61,17 +65,26 @@ export default function PrayerWall({ user }: { user: any }) {
       .insert([{ 
         user_id: user.id, 
         content: newRequest.trim(),
-        is_anonymous: isAnonymous // Send anonymous flag to database
+        is_anonymous: isAnonymous
       }]);
       
     if (!error) {
       setNewRequest('');
-      setIsAnonymous(false); // Reset toggle after posting
+      setIsAnonymous(false);
       fetchRequests();
     } else {
       setErrorMsg(error.message);
     }
     setPosting(false);
+  };
+
+  const saveEdit = async (requestId: string) => {
+    if (!editRequestContent.trim()) return;
+    try {
+      await supabase.from('prayer_requests').update({ content: editRequestContent.trim(), is_edited: true }).eq('id', requestId);
+      setEditingRequestId(null);
+      fetchRequests();
+    } catch (e) { console.error(e); }
   };
 
   const toggleReaction = async (requestId: string, emoji: string, currentLikes: any[]) => {
@@ -119,7 +132,7 @@ export default function PrayerWall({ user }: { user: any }) {
         <form onSubmit={handlePost} className="flex gap-4">
           <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center mt-1 border border-white/5">
             {isAnonymous ? (
-              <User size={20} className="text-white/20" /> // Show blank avatar to the user if they have anon toggled ON
+              <User size={20} className="text-white/20" />
             ) : currentUserAvatar ? (
               <img src={currentUserAvatar} className="w-full h-full object-cover" />
             ) : (
@@ -137,8 +150,6 @@ export default function PrayerWall({ user }: { user: any }) {
             />
             
             <div className="flex justify-between items-center mt-3 pt-2">
-              
-              {/* Anonymous Checkbox */}
               <label className="flex items-center gap-2 cursor-pointer text-sm text-white/40 hover:text-white transition-colors">
                 <input 
                   type="checkbox" 
@@ -168,7 +179,6 @@ export default function PrayerWall({ user }: { user: any }) {
           const comments = request.prayer_comments || [];
           const isMyPost = user?.id === request.user_id;
 
-          // Override profile details if the post is anonymous
           const isAnon = request.is_anonymous;
           const firstName = isAnon ? 'Anonymous' : (request.profiles?.first_name || 'Member');
           const lastName = isAnon ? '' : (request.profiles?.last_name || '');
@@ -177,8 +187,6 @@ export default function PrayerWall({ user }: { user: any }) {
           return (
             <div key={request.id} className="py-4 border-b border-white/10 transition-colors">
               <div className="flex gap-4">
-                
-                {/* The "Thread Line" Column */}
                 <div className="flex flex-col items-center">
                   <div 
                     onClick={() => !isAnon && setSearchParams({ tab: 'activity', viewUser: request.user_id })}
@@ -186,7 +194,6 @@ export default function PrayerWall({ user }: { user: any }) {
                   >
                     {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
                   </div>
-                  {/* Vertical line connecting avatar to comments below */}
                   {openCommentId === request.id && (
                      <div className="w-[1px] flex-grow bg-white/10 my-2" />
                   )}
@@ -204,24 +211,44 @@ export default function PrayerWall({ user }: { user: any }) {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <span className="text-[12px] text-white/40">{new Date(request.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                      {/* Allow the user to delete their own post, even if it's anonymous to others */}
+                      <span className="text-[12px] text-white/40">
+                        {new Date(request.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        {request.is_edited && <span className="text-[10px] text-white/20 italic ml-1">(edited)</span>}
+                      </span>
                       {isMyPost && (
-                        <button onClick={() => deleteRequest(request.id)} className="text-white/20 hover:text-red-500 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setEditingRequestId(request.id); setEditRequestContent(request.content); }} className="text-white/20 hover:text-blue-400 transition-colors">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => deleteRequest(request.id)} className="text-white/20 hover:text-red-500 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
                   
-                  <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">
-                    {request.content}
-                  </p>
+                  {editingRequestId === request.id ? (
+                    <div className="mb-3 mt-1">
+                      <textarea
+                        value={editRequestContent}
+                        onChange={(e) => setEditRequestContent(e.target.value)}
+                        className="w-full bg-transparent border-b border-[#ff4d00]/50 text-[#F5F5F0]/90 focus:ring-0 text-[15px] resize-none p-0"
+                        rows={editRequestContent.split('\n').length > 1 ? editRequestContent.split('\n').length : 1}
+                      />
+                      <div className="flex justify-end gap-3 mt-2">
+                        <button onClick={() => setEditingRequestId(null)} className="text-xs text-white/40 hover:text-white">Cancel</button>
+                        <button onClick={() => saveEdit(request.id)} className="text-xs text-[#ff4d00] font-bold">Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">
+                      {request.content}
+                    </p>
+                  )}
                   
                   {/* THREADS STYLE INTERACTION ROW */}
                   <div className="flex items-center gap-4 mt-1 text-white/40 flex-wrap">
-                    
-                    {/* Emoji Reactions */}
                     <div className="flex items-center gap-1 bg-white/5 rounded-full px-2 py-1">
                       {PRAYER_REACTIONS.map((emoji) => {
                         const reactionCount = likes.filter((l: any) => l.emoji === emoji).length;
@@ -242,7 +269,6 @@ export default function PrayerWall({ user }: { user: any }) {
                       })}
                     </div>
 
-                    {/* Reply Toggle */}
                     <button 
                       onClick={() => setOpenCommentId(openCommentId === request.id ? null : request.id)} 
                       className={`flex items-center gap-1.5 hover:text-white transition-colors group ml-2 ${openCommentId === request.id ? 'text-white' : ''}`}
@@ -252,7 +278,6 @@ export default function PrayerWall({ user }: { user: any }) {
                       </div>
                       {comments.length > 0 && <span className="text-[13px]">{comments.length}</span>}
                     </button>
-
                   </div>
 
                   {/* FLATTENED COMMENTS SECTION */}
