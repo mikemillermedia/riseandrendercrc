@@ -52,7 +52,11 @@ export default function ProfileTab({ user }: { user: any }) {
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
   const [portfolioPreview, setPortfolioPreview] = useState<string | null>(null);
   const [portfolioRatio, setPortfolioRatio] = useState<'16:9' | '9:16' | '4:5'>('16:9');
+  const [portfolioCaption, setPortfolioCaption] = useState(''); // NEW: Caption state
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+  
+  // LIGHTBOX MODAL STATE
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -182,11 +186,13 @@ export default function ProfileTab({ user }: { user: any }) {
       await supabase.from('portfolios').insert([{
         user_id: user.id,
         media_url: publicUrl,
-        aspect_ratio: portfolioRatio
+        aspect_ratio: portfolioRatio,
+        caption: portfolioCaption.trim() || null // Save caption
       }]);
 
       setPortfolioFile(null);
       setPortfolioPreview(null);
+      setPortfolioCaption('');
       setShowPortfolioUpload(false);
       fetchPortfolio();
     } catch (e: any) {
@@ -199,6 +205,7 @@ export default function ProfileTab({ user }: { user: any }) {
     if (!window.confirm("Remove this from your portfolio?")) return;
     await supabase.from('portfolios').delete().eq('id', itemId);
     fetchPortfolio();
+    if (selectedPortfolioItem?.id === itemId) setSelectedPortfolioItem(null);
   };
 
   const openFollowModal = async (type: 'followers' | 'following') => {
@@ -239,6 +246,42 @@ export default function ProfileTab({ user }: { user: any }) {
   return (
     <div className="max-w-2xl mx-auto pb-20 animate-in fade-in duration-500">
       
+      {/* APPLE-STYLE LIGHTBOX MODAL */}
+      {selectedPortfolioItem && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-300"
+          onClick={() => setSelectedPortfolioItem(null)} // Click outside to close
+        >
+          <div 
+            className="relative w-full max-w-4xl max-h-[90vh] flex flex-col items-center justify-center rounded-[2rem] overflow-hidden shadow-2xl bg-[#1a1a1a]/40 border border-white/10"
+            onClick={e => e.stopPropagation()} // Prevent clicks inside modal from closing it
+          >
+            <button 
+              onClick={() => setSelectedPortfolioItem(null)} 
+              className="absolute top-4 right-4 z-50 bg-black/50 p-2 rounded-full text-white/70 hover:text-white backdrop-blur-md transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="relative w-full flex-grow flex items-center justify-center overflow-hidden p-2 md:p-6">
+              {isVideo(selectedPortfolioItem.media_url) ? (
+                <video src={selectedPortfolioItem.media_url} controls autoPlay className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
+              ) : (
+                <img src={selectedPortfolioItem.media_url} className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
+              )}
+            </div>
+
+            {selectedPortfolioItem.caption && (
+              <div className="w-full p-6 bg-gradient-to-t from-black/90 to-transparent backdrop-blur-md text-center border-t border-white/5 mt-auto">
+                <p className="text-white/90 text-sm md:text-base font-medium leading-relaxed max-w-2xl mx-auto">
+                  {selectedPortfolioItem.caption}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {showFollowModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
@@ -377,7 +420,6 @@ export default function ProfileTab({ user }: { user: any }) {
               </div>
             )}
 
-            {/* NEW PORTFOLIO SECTION */}
             <div className="pt-8 border-t border-white/5">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -389,6 +431,7 @@ export default function ProfileTab({ user }: { user: any }) {
                     setShowPortfolioUpload(!showPortfolioUpload);
                     setPortfolioFile(null);
                     setPortfolioPreview(null);
+                    setPortfolioCaption('');
                   }}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${showPortfolioUpload ? 'bg-white/10 text-white' : 'bg-[#ff4d00]/10 text-[#ff4d00] hover:bg-[#ff4d00]/20'}`}
                 >
@@ -422,25 +465,33 @@ export default function ProfileTab({ user }: { user: any }) {
                     )}
 
                     {portfolioFile && (
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-2">
-                        <div className="flex items-center gap-2 bg-black/40 p-1 rounded-lg border border-white/10">
-                          {['16:9', '4:5', '9:16'].map(ratio => (
-                            <button
-                              key={ratio}
-                              onClick={() => setPortfolioRatio(ratio as any)}
-                              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${portfolioRatio === ratio ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}
-                            >
-                              {ratio}
-                            </button>
-                          ))}
+                      <div className="flex flex-col gap-3 mt-2">
+                        <input 
+                          value={portfolioCaption}
+                          onChange={e => setPortfolioCaption(e.target.value)}
+                          placeholder="Add a caption... (Optional)"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#ff4d00] focus:ring-1 focus:ring-[#ff4d00]"
+                        />
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div className="flex items-center gap-2 bg-black/40 p-1 rounded-lg border border-white/10">
+                            {['16:9', '4:5', '9:16'].map(ratio => (
+                              <button
+                                key={ratio}
+                                onClick={() => setPortfolioRatio(ratio as any)}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${portfolioRatio === ratio ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}
+                              >
+                                {ratio}
+                              </button>
+                            ))}
+                          </div>
+                          <button 
+                            onClick={handlePortfolioUpload} 
+                            disabled={uploadingPortfolio}
+                            className="w-full sm:w-auto bg-white text-black font-bold px-6 py-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+                          >
+                            {uploadingPortfolio ? 'Uploading...' : 'Upload to Portfolio'}
+                          </button>
                         </div>
-                        <button 
-                          onClick={handlePortfolioUpload} 
-                          disabled={uploadingPortfolio}
-                          className="w-full sm:w-auto bg-white text-black font-bold px-6 py-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
-                        >
-                          {uploadingPortfolio ? 'Uploading...' : 'Upload to Portfolio'}
-                        </button>
                       </div>
                     )}
                   </div>
@@ -450,7 +501,11 @@ export default function ProfileTab({ user }: { user: any }) {
               {portfolioItems.length > 0 && (
                 <div className="columns-3 gap-1 md:gap-2 space-y-1 md:space-y-2">
                   {portfolioItems.map(item => (
-                    <div key={item.id} className="relative group break-inside-avoid overflow-hidden rounded-md md:rounded-lg bg-white/5 border border-white/10">
+                    <div 
+                      key={item.id} 
+                      onClick={() => setSelectedPortfolioItem(item)} // Open Lightbox
+                      className="relative group break-inside-avoid overflow-hidden rounded-md md:rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                    >
                       <div className={`w-full ${getRatioClass(item.aspect_ratio)} relative`}>
                         {isVideo(item.media_url) ? (
                           <>
@@ -465,7 +520,10 @@ export default function ProfileTab({ user }: { user: any }) {
                         
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                           <button 
-                            onClick={() => deletePortfolioItem(item.id)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent opening the lightbox when clicking delete
+                              deletePortfolioItem(item.id);
+                            }}
                             className="bg-red-500/20 text-red-400 p-2.5 rounded-full hover:bg-red-500 hover:text-white transition-all transform scale-90 group-hover:scale-100"
                             title="Delete Item"
                           >
