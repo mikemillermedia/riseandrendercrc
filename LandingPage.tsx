@@ -6,10 +6,12 @@ import BrandLogo from './components/BrandLogo';
 
 // 1. UPDATE YOUR BRANDS HERE:
 const BRANDS = [
-  "The Breakdown With Jasmine Martines", 
-  "She Bears Fruit Podcast", 
-  "Giving While Black Podcast", 
-  "15:5 Collective", 
+  "Brand One", 
+  "Company Two", 
+  "Studio Three", 
+  "Agency Four", 
+  "Partner Five", 
+  "Client Six"
 ];
 
 const LandingPage: React.FC = () => {
@@ -20,13 +22,13 @@ const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    // Changed to min-h-screen and flex-col to allow the page to naturally lengthen
+    // Changed to min-h-screen, flex, flex-col, removed overflow-hidden to allow natural page length and scrolling
     <div className="relative min-h-screen w-full bg-black text-[#F5F5F0] font-sans flex flex-col">
       <CustomCursor />
 
-      {/* 1. CINEMATIC VIDEO BACKGROUND (Changed to fixed so it stays put if you scroll) */}
+      {/* 1. CINEMATIC VIDEO BACKGROUND (Changed from absolute to fixed so it remains perfect behind the content as you scroll) */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-black/60 z-10" />
+        <div className="absolute inset-0 bg-black/60 z-10" /> 
         <video
           autoPlay
           loop
@@ -46,14 +48,15 @@ const LandingPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* 3. CENTERED CONTENT PORTAL */}
-      {/* Added flex-grow and padding to center it naturally while allowing scroll room */}
-      <main className="relative z-20 flex-grow flex flex-col items-center justify-center px-6 text-center pt-40 pb-10">
+      {/* 3. LOWERED CONTENT PORTAL */}
+      {/* ---> HERE IS THE MAIN FIX FOR VERTICAL SPACE <--- */}
+      {/* Removed justify-center and h-full. Added flex-grow, pt-40 (for mobile), and pt-64 (for desktop) to bring the hero block down and allow a spacious natural page flow. Added bottom padding for vertical balance. */}
+      <main className="relative z-20 flex-grow flex flex-col items-center justify-start px-6 text-center pt-40 pb-10 md:pt-64 md:pb-16">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-6xl w-full flex flex-col items-center my-auto"
+          className="max-w-6xl w-full flex flex-col items-center"
         >
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black mb-4 md:mb-6 leading-[0.9] tracking-tighter uppercase">
             Premium Video <br /> Podcasting Studio
@@ -77,7 +80,7 @@ const LandingPage: React.FC = () => {
             </button>
           </div>
 
-          {/* INFINITE BRAND TICKER (Added heavy bottom margin here!) */}
+          {/* INFINITE BRAND TICKER (Added massive bottom margin here to solve cluttered feel) */}
           <div className="w-full max-w-2xl mx-auto flex flex-col items-center opacity-80 mb-24 md:mb-32">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">
               Trusted by creators from
@@ -89,7 +92,7 @@ const LandingPage: React.FC = () => {
                 transition={{
                   repeat: Infinity,
                   ease: "linear",
-                  duration: 25,
+                  duration: 25, 
                 }}
               >
                 {[...BRANDS, ...BRANDS].map((brand, index) => (
@@ -107,13 +110,15 @@ const LandingPage: React.FC = () => {
         </motion.div>
       </main>
 
-      {/* 4. MINIMALIST FOOTER */}
-      {/* Changed to relative and mt-auto to push it to the absolute bottom of the scrollable area */}
-      <footer className="relative z-50 w-full p-6 md:p-12 pb-8 mt-auto">
-        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
-          <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
-          <a href="https://share.google/IgqCwzByhKTVbgUZL" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">DFW Location</a>
-          <a href="mailto:booking@riseandrenderdfw.com" className="hover:text-white transition-colors">Contact</a>
+      {/* 4. MINIMALIST FOOTER (Updated Links) */}
+      {/* Changed to relative z-50 and mt-auto so it sits naturally at the end of the expansive page content. */}
+     <footer className="relative z-50 w-full p-6 md:p-12 pb-8 mt-auto">
+      <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
+        <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
+        
+        <a href="https://share.google/IgqCwzByhKTVbgUZL" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">DFW Location</a>
+        
+        <a href="mailto:booking@riseandrenderdfw.com" className="hover:text-white transition-colors">Contact</a>
           
           <div className="hidden md:block w-px h-4 bg-white/20"></div>
           
