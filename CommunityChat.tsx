@@ -20,7 +20,6 @@ export default function CommunityChat({ user }: { user: any }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [repostTarget, setRepostTarget] = useState<any>(null);
 
-  // Edit States
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
@@ -114,7 +113,10 @@ export default function CommunityChat({ user }: { user: any }) {
 
     try {
       if (mediaFile) {
-        const fileName = `${user.id}/${Math.random()}`;
+        // FIX: Preserving the file extension so videos register correctly
+        const fileExt = mediaFile.name.split('.').pop();
+        const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+        
         const { error: uploadError } = await supabase.storage.from('setups').upload(fileName, mediaFile);
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('setups').getPublicUrl(fileName);
@@ -309,9 +311,14 @@ export default function CommunityChat({ user }: { user: any }) {
               rows={newPost.split('\n').length > 1 ? newPost.split('\n').length : 1}
             />
             
+            {/* FIX: Conditional video tag for preview */}
             {mediaPreview && (
               <div className="mt-3 relative inline-block">
-                <img src={mediaPreview} className="rounded-xl max-h-64 border border-white/10" />
+                {mediaFile?.type.startsWith('video/') ? (
+                  <video src={mediaPreview} controls className="rounded-xl max-h-64 border border-white/10" />
+                ) : (
+                  <img src={mediaPreview} className="rounded-xl max-h-64 border border-white/10" />
+                )}
                 <button type="button" onClick={() => {setMediaFile(null); setMediaPreview(null);}} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm p-1.5 text-white rounded-full hover:bg-black transition-colors"><X size={14}/></button>
               </div>
             )}
@@ -365,6 +372,9 @@ export default function CommunityChat({ user }: { user: any }) {
           const isTargeted = targetPostId === post.id;
           const isMyPost = user?.id === post.user_id;
 
+          // HELPER: Checks if the URL ends in a video format
+          const isVideo = (url: string | null) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
+
           return (
             <div 
               key={post.id} 
@@ -379,7 +389,6 @@ export default function CommunityChat({ user }: { user: any }) {
               )}
 
               <div className="flex gap-4">
-                {/* The "Thread Line" Column */}
                 <div className="flex flex-col items-center">
                   <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer relative z-10">
                     {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
@@ -430,9 +439,15 @@ export default function CommunityChat({ user }: { user: any }) {
                     post.content && <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>
                   )}
                   
-                  {post.media_url && <img src={post.media_url} className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto object-contain bg-black/40" />}
+                  {/* FIX: Conditional video tag for feed display */}
+                  {post.media_url && (
+                    isVideo(post.media_url) ? (
+                      <video src={post.media_url} controls preload="metadata" className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto bg-black/40" />
+                    ) : (
+                      <img src={post.media_url} className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto object-contain bg-black/40" />
+                    )
+                  )}
                   
-                  {/* Flattened Repost Content */}
                   {post.original_post && (
                     <div className="mb-3 p-3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -443,11 +458,18 @@ export default function CommunityChat({ user }: { user: any }) {
                         <span className="text-xs text-white/40">· {new Date(post.original_post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <p className="text-[15px] text-white/80 whitespace-pre-wrap">{renderContentWithMentions(post.original_post.content)}</p>
-                      {post.original_post.media_url && <img src={post.original_post.media_url} className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto object-cover" />}
+                      
+                      {/* FIX: Conditional video tag for repost display */}
+                      {post.original_post.media_url && (
+                        isVideo(post.original_post.media_url) ? (
+                          <video src={post.original_post.media_url} controls preload="metadata" className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto bg-black/40" />
+                        ) : (
+                          <img src={post.original_post.media_url} className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto object-cover" />
+                        )
+                      )}
                     </div>
                   )}
 
-                  {/* THREADS STYLE INTERACTION ROW */}
                   <div className="flex items-center gap-6 mt-1 text-white/40">
                     <button onClick={() => toggleLike(post.id, postLikes)} className={`flex items-center gap-1.5 hover:text-red-500 transition-colors group ${isLiked ? 'text-red-500' : ''}`}>
                       <div className="p-1.5 rounded-full group-hover:bg-red-500/10 transition-colors -ml-1.5">
@@ -479,7 +501,6 @@ export default function CommunityChat({ user }: { user: any }) {
                     </button>
                   </div>
 
-                  {/* FLATTENED COMMENTS SECTION */}
                   {openCommentId === post.id && (
                     <div className="mt-3 space-y-4 relative animate-in fade-in slide-in-from-top-2">
                       {mentionTarget === 'comment' && <MentionDropdown />}
