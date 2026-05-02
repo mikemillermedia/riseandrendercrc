@@ -4,7 +4,7 @@ import { Heart, MessageCircle, User, ImageIcon, X, AlertCircle, Share2, Repeat, 
 import { supabase } from './supabaseClient'; 
 
 export default function CommunityChat({ user }: { user: any }) {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const targetPostId = searchParams.get('postId');
   
   const [posts, setPosts] = useState<any[]>([]);
@@ -113,7 +113,6 @@ export default function CommunityChat({ user }: { user: any }) {
 
     try {
       if (mediaFile) {
-        // FIX: Preserving the file extension so videos register correctly
         const fileExt = mediaFile.name.split('.').pop();
         const fileName = `${user.id}/${Math.random()}.${fileExt}`;
         
@@ -311,7 +310,6 @@ export default function CommunityChat({ user }: { user: any }) {
               rows={newPost.split('\n').length > 1 ? newPost.split('\n').length : 1}
             />
             
-            {/* FIX: Conditional video tag for preview */}
             {mediaPreview && (
               <div className="mt-3 relative inline-block">
                 {mediaFile?.type.startsWith('video/') ? (
@@ -372,7 +370,6 @@ export default function CommunityChat({ user }: { user: any }) {
           const isTargeted = targetPostId === post.id;
           const isMyPost = user?.id === post.user_id;
 
-          // HELPER: Checks if the URL ends in a video format
           const isVideo = (url: string | null) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
 
           return (
@@ -389,10 +386,14 @@ export default function CommunityChat({ user }: { user: any }) {
               )}
 
               <div className="flex gap-4">
+                {/* The "Thread Line" Column */}
                 <div className="flex flex-col items-center">
-                  <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer relative z-10">
+                  <div 
+                    onClick={() => setSearchParams({ tab: 'activity', viewUser: post.user_id })}
+                    className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer relative z-10 hover:border hover:border-white/20 transition-all"
+                  >
                     {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-white/20" />}
-                  </a>
+                  </div>
                   {openCommentId === post.id && (
                      <div className="w-[1px] flex-grow bg-white/10 my-2" />
                   )}
@@ -400,9 +401,12 @@ export default function CommunityChat({ user }: { user: any }) {
 
                 <div className="flex-grow min-w-0 pb-1">
                   <div className="flex justify-between items-start mb-0.5">
-                    <a href={post.profiles?.instagram_url || '#'} target={post.profiles?.instagram_url ? "_blank" : "_self"} className="group flex items-center gap-1.5 cursor-pointer">
+                    <div 
+                      onClick={() => setSearchParams({ tab: 'activity', viewUser: post.user_id })} 
+                      className="group flex items-center gap-1.5 cursor-pointer"
+                    >
                       <h3 className="font-bold text-sm text-white hover:underline">{post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}</h3>
-                    </a>
+                    </div>
                     
                     <div className="flex items-center gap-3">
                       <span className="text-[12px] text-white/40">
@@ -439,7 +443,6 @@ export default function CommunityChat({ user }: { user: any }) {
                     post.content && <p className="text-[#F5F5F0]/90 text-[15px] mb-3 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(post.content)}</p>
                   )}
                   
-                  {/* FIX: Conditional video tag for feed display */}
                   {post.media_url && (
                     isVideo(post.media_url) ? (
                       <video src={post.media_url} controls preload="metadata" className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto bg-black/40" />
@@ -451,15 +454,22 @@ export default function CommunityChat({ user }: { user: any }) {
                   {post.original_post && (
                     <div className="mb-3 p-3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center bg-white/5">
+                        <div 
+                          className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center bg-white/5 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={(e) => { e.stopPropagation(); setSearchParams({ tab: 'activity', viewUser: post.original_post.user_id }); }}
+                        >
                           {post.original_post.profiles?.avatar_url ? <img src={post.original_post.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={10} className="text-white/20" />}
                         </div>
-                        <span className="text-sm font-bold text-white">{post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}</span>
+                        <span 
+                          className="text-sm font-bold text-white cursor-pointer hover:underline"
+                          onClick={(e) => { e.stopPropagation(); setSearchParams({ tab: 'activity', viewUser: post.original_post.user_id }); }}
+                        >
+                          {post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}
+                        </span>
                         <span className="text-xs text-white/40">· {new Date(post.original_post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <p className="text-[15px] text-white/80 whitespace-pre-wrap">{renderContentWithMentions(post.original_post.content)}</p>
                       
-                      {/* FIX: Conditional video tag for repost display */}
                       {post.original_post.media_url && (
                         isVideo(post.original_post.media_url) ? (
                           <video src={post.original_post.media_url} controls preload="metadata" className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto bg-black/40" />
@@ -507,11 +517,19 @@ export default function CommunityChat({ user }: { user: any }) {
                       
                       {postComments.map((c: any) => (
                         <div key={c.id} className="flex gap-3 items-start pt-2">
-                          <div className="w-8 h-8 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          <div 
+                            className="w-8 h-8 rounded-full bg-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:border hover:border-white/20 transition-all"
+                            onClick={() => setSearchParams({ tab: 'activity', viewUser: c.user_id })}
+                          >
                             {c.profiles?.avatar_url ? <img src={c.profiles.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="text-white/20" />}
                           </div>
                           <div className="flex-grow pt-1">
-                            <p className="text-[13px] font-bold text-white mb-0.5">{c.profiles?.first_name || 'Member'}</p>
+                            <p 
+                              className="text-[13px] font-bold text-white mb-0.5 cursor-pointer hover:underline inline-block"
+                              onClick={() => setSearchParams({ tab: 'activity', viewUser: c.user_id })}
+                            >
+                              {c.profiles?.first_name || 'Member'}
+                            </p>
                             <p className="text-[14px] text-white/80 leading-snug">{renderContentWithMentions(c.content)}</p>
                           </div>
                         </div>
