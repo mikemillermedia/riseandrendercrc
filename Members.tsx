@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useSearchParams } from 'react-router-dom';
-import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon, X, BookOpen, Mail } from 'lucide-react'; // Added Mail
+import { User, MessageCircle, Heart, UserPlus, UserCheck, ArrowRight, ArrowLeft, Instagram, Link as LinkIcon, X, BookOpen, Mail, Video } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -17,8 +17,10 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
   const [loading, setLoading] = useState(true);
 
   const [selectedMember, setSelectedMember] = useState<any>(null);
-  const [memberSetup, setMemberSetup] = useState<string | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]); 
+  const [portfolioItems, setPortfolioItems] = useState<any[]>([]); // NEW: Portfolio State
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any | null>(null); // NEW: Lightbox State
+  
   const [isFollowing, setIsFollowing] = useState(false); 
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -65,16 +67,19 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     if (!member) return;
 
     setSelectedMember(member);
-    setMemberSetup(null); 
     setMemberPosts([]); 
+    setPortfolioItems([]);
     setIsFollowing(false);
 
-    const { data: setupData } = await supabase.from('posts').select('media_url').eq('user_id', member.id).not('media_url', 'is', null).order('created_at', { ascending: false }).limit(1).single();
-    if (setupData) setMemberSetup(setupData.media_url);
-
+    // Fetch Posts
     const { data: postsData = [] } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', member.id).order('created_at', { ascending: false });
     if (postsData) setMemberPosts(postsData);
 
+    // Fetch Portfolio
+    const { data: portfolioData } = await supabase.from('portfolios').select('*').eq('user_id', member.id).order('created_at', { ascending: false });
+    if (portfolioData) setPortfolioItems(portfolioData);
+
+    // Fetch Follow Data
     const { count: followers = 0 } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', member.id);
     const { count: following = 0 } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', member.id);
     setFollowersCount(followers);
@@ -138,12 +143,59 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setModalLoading(false);
   };
 
+  const isVideo = (url: string | null) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
+  
+  const getRatioClass = (ratio: string) => {
+    switch(ratio) {
+      case '16:9': return 'aspect-video';
+      case '9:16': return 'aspect-[9/16]';
+      case '4:5': return 'aspect-[4/5]';
+      default: return 'aspect-video';
+    }
+  };
+
   if (loading) return <div className="text-center py-20 text-white/40">Loading community...</div>;
 
   if (selectedMember) {
     return (
       <div className="max-w-2xl mx-auto pb-20 animate-in fade-in slide-in-from-right-4 duration-300 relative">
         
+        {/* APPLE-STYLE LIGHTBOX MODAL */}
+        {selectedPortfolioItem && (
+          <div 
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-300"
+            onClick={() => setSelectedPortfolioItem(null)} 
+          >
+            <div 
+              className="relative w-full max-w-4xl max-h-[90vh] flex flex-col items-center justify-center rounded-[2rem] overflow-hidden shadow-2xl bg-[#1a1a1a]/40 border border-white/10"
+              onClick={e => e.stopPropagation()} 
+            >
+              <button 
+                onClick={() => setSelectedPortfolioItem(null)} 
+                className="absolute top-4 right-4 z-50 bg-black/50 p-2 rounded-full text-white/70 hover:text-white backdrop-blur-md transition-colors"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="relative w-full flex-grow flex items-center justify-center overflow-hidden p-2 md:p-6">
+                {isVideo(selectedPortfolioItem.media_url) ? (
+                  <video src={selectedPortfolioItem.media_url} controls autoPlay className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
+                ) : (
+                  <img src={selectedPortfolioItem.media_url} className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
+                )}
+              </div>
+
+              {selectedPortfolioItem.caption && (
+                <div className="w-full p-6 bg-gradient-to-t from-black/90 to-transparent backdrop-blur-md text-center border-t border-white/5 mt-auto">
+                  <p className="text-white/90 text-sm md:text-base font-medium leading-relaxed max-w-2xl mx-auto">
+                    {selectedPortfolioItem.caption}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {showFollowModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
             <div className="bg-[#131313]/80 backdrop-blur-xl border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
@@ -214,7 +266,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               </button>
             </div>
 
-            {/* NEW: Action Buttons Row (Follow + Message) */}
             {currentUser && currentUser.id !== selectedMember.id && (
               <div className="flex items-center gap-3 mt-6">
                 <button 
@@ -233,7 +284,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                   )}
                 </button>
 
-                {/* The NEW Message Button */}
                 <button 
                   onClick={() => setSearchParams({ tab: 'messages', userId: selectedMember.id })}
                   className="flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg bg-white/10 text-white hover:bg-white/20 border border-white/5"
@@ -272,7 +322,35 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                 </a>
               </div>
             )}
-            {memberSetup && (<div className="pt-6 border-t border-white/5"><h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-3">Showcase Setup</h3><img src={memberSetup} alt="Setup Showcase" className="w-full rounded-xl object-cover border border-white/5" /></div>)}
+
+            {/* NEW: Clean, 2/3 Column Masonry Portfolio Grid */}
+            {portfolioItems.length > 0 && (
+              <div className="pt-6 border-t border-white/5">
+                <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-4">Portfolio</h3>
+                <div className="columns-2 sm:columns-3 gap-2 space-y-2">
+                  {portfolioItems.map(item => (
+                    <div 
+                      key={item.id} 
+                      onClick={() => setSelectedPortfolioItem(item)}
+                      className="relative group break-inside-avoid overflow-hidden rounded-md md:rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/30 transition-all"
+                    >
+                      <div className={`w-full ${getRatioClass(item.aspect_ratio)} relative`}>
+                        {isVideo(item.media_url) ? (
+                          <>
+                            <video src={item.media_url} className="absolute inset-0 w-full h-full object-cover" muted loop playsInline onMouseEnter={e => (e.target as HTMLVideoElement).play()} onMouseLeave={e => (e.target as HTMLVideoElement).pause()} />
+                            <div className="absolute top-2 left-2 bg-black/60 p-1 rounded-md pointer-events-none">
+                              <Video size={12} className="text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <img src={item.media_url} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {memberPosts.length > 0 && (
               <div className="pt-6 border-t border-white/5">
@@ -282,7 +360,13 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                     <div key={post.id} onClick={() => setSearchParams({ tab: 'chat', postId: post.id })} className="bg-black/20 p-5 rounded-2xl border border-white/5 cursor-pointer hover:border-[#ff4d00]/50 transition-all group">
                       <p className="text-xs text-white/30 mb-2 font-medium uppercase tracking-wider group-hover:text-[#ff4d00]/70 transition-colors">{new Date(post.created_at).toLocaleDateString()}</p>
                       <p className="text-white/90 text-sm md:text-base mb-4 whitespace-pre-wrap leading-relaxed">{post.content}</p>
-                      {post.media_url && <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />}
+                      {post.media_url && (
+                        isVideo(post.media_url) ? (
+                          <video src={post.media_url} controls preload="metadata" className="w-full max-h-64 rounded-xl mb-4 border border-white/5 bg-black/40" />
+                        ) : (
+                          <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
+                        )
+                      )}
                       <div className="flex gap-4 text-white/40">
                         <div className="flex items-center gap-1.5"><Heart size={16} className={post.post_likes?.length > 0 ? "text-[#ff4d00]" : ""} /> <span className="text-xs font-bold">{post.post_likes?.length || 0}</span></div>
                         <div className="flex items-center gap-1.5"><MessageCircle size={16} /> <span className="text-xs font-bold">{post.comments?.length || 0}</span></div>
