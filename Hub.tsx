@@ -192,19 +192,22 @@ export default function Hub() {
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
       {/* MOBILE HEADER & GLOBAL TOP RIGHT ICONS */}
-      <div className="flex items-center justify-between px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50 md:hidden">
-        <div className="flex items-center font-black uppercase tracking-widest">
-         <span className="text-white mr-1">Rise & Render</span> <span className="text-[#ff4d00]">Community</span>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50 md:hidden">
+        
+        {/* NEW: Smaller, single-line text formatting */}
+        <div className="flex items-center font-black uppercase tracking-wider text-[13px] sm:text-sm whitespace-nowrap overflow-hidden mr-2">
+         <span className="text-white mr-1">Rise & Render</span> 
+         <span className="text-[#ff4d00]">Community</span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* MOBILE NOTIFICATION BELL */}
           <div className="relative" ref={notifMenuRef}>
             <button 
               onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
               className="relative p-2 text-white/80 hover:text-white transition-colors"
             >
-              <Bell size={24} />
+              <Bell size={22} />
               {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />
               )}
