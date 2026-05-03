@@ -52,7 +52,7 @@ export default function ProfileTab({ user }: { user: any }) {
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
   const [portfolioPreview, setPortfolioPreview] = useState<string | null>(null);
   const [portfolioRatio, setPortfolioRatio] = useState<'16:9' | '9:16' | '4:5'>('16:9');
-  const [portfolioCaption, setPortfolioCaption] = useState(''); // NEW: Caption state
+  const [portfolioCaption, setPortfolioCaption] = useState(''); 
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
   
   // LIGHTBOX MODAL STATE
@@ -187,7 +187,7 @@ export default function ProfileTab({ user }: { user: any }) {
         user_id: user.id,
         media_url: publicUrl,
         aspect_ratio: portfolioRatio,
-        caption: portfolioCaption.trim() || null // Save caption
+        caption: portfolioCaption.trim() || null 
       }]);
 
       setPortfolioFile(null);
@@ -250,11 +250,11 @@ export default function ProfileTab({ user }: { user: any }) {
       {selectedPortfolioItem && (
         <div 
           className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-300"
-          onClick={() => setSelectedPortfolioItem(null)} // Click outside to close
+          onClick={() => setSelectedPortfolioItem(null)} 
         >
           <div 
             className="relative w-full max-w-4xl max-h-[90vh] flex flex-col items-center justify-center rounded-[2rem] overflow-hidden shadow-2xl bg-[#1a1a1a]/40 border border-white/10"
-            onClick={e => e.stopPropagation()} // Prevent clicks inside modal from closing it
+            onClick={e => e.stopPropagation()} 
           >
             <button 
               onClick={() => setSelectedPortfolioItem(null)} 
@@ -265,7 +265,7 @@ export default function ProfileTab({ user }: { user: any }) {
             
             <div className="relative w-full flex-grow flex items-center justify-center overflow-hidden p-2 md:p-6">
               {isVideo(selectedPortfolioItem.media_url) ? (
-                <video src={selectedPortfolioItem.media_url} controls autoPlay className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
+                <video src={selectedPortfolioItem.media_url} controls autoPlay loop playsInline className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
               ) : (
                 <img src={selectedPortfolioItem.media_url} className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
               )}
@@ -420,6 +420,7 @@ export default function ProfileTab({ user }: { user: any }) {
               </div>
             )}
 
+            {/* PORTFOLIO SECTION */}
             <div className="pt-8 border-t border-white/5">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -456,7 +457,7 @@ export default function ProfileTab({ user }: { user: any }) {
                     ) : (
                       <div className="relative rounded-xl overflow-hidden bg-black flex justify-center max-h-64 border border-white/10">
                         {portfolioFile?.type.startsWith('video/') ? (
-                          <video src={portfolioPreview} controls className="max-h-64 w-auto" />
+                          <video src={portfolioPreview} controls loop playsInline className="max-h-64 w-auto" />
                         ) : (
                           <img src={portfolioPreview} className="max-h-64 w-auto object-contain" />
                         )}
@@ -503,8 +504,8 @@ export default function ProfileTab({ user }: { user: any }) {
                   {portfolioItems.map(item => (
                     <div 
                       key={item.id} 
-                      onClick={() => setSelectedPortfolioItem(item)} // Open Lightbox
-                      className="relative group break-inside-avoid overflow-hidden rounded-md md:rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                      onClick={() => setSelectedPortfolioItem(item)} 
+                      className="relative group break-inside-avoid overflow-hidden rounded-md md:rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/30 transition-all"
                     >
                       <div className={`w-full ${getRatioClass(item.aspect_ratio)} relative`}>
                         {isVideo(item.media_url) ? (
@@ -521,7 +522,7 @@ export default function ProfileTab({ user }: { user: any }) {
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                           <button 
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent opening the lightbox when clicking delete
+                              e.stopPropagation(); 
                               deletePortfolioItem(item.id);
                             }}
                             className="bg-red-500/20 text-red-400 p-2.5 rounded-full hover:bg-red-500 hover:text-white transition-all transform scale-90 group-hover:scale-100"
@@ -557,7 +558,7 @@ export default function ProfileTab({ user }: { user: any }) {
                       )}
                       {post.media_url && (
                         isVideo(post.media_url) ? (
-                          <video src={post.media_url} controls preload="metadata" className="w-full max-h-64 rounded-xl mb-4 border border-white/5 bg-black/40" />
+                          <video src={post.media_url} controls loop playsInline preload="metadata" className="w-full max-h-64 rounded-xl mb-4 border border-white/5 bg-black/40" />
                         ) : (
                           <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
                         )
