@@ -152,10 +152,6 @@ export default function Hub() {
       <button onClick={() => { setActiveTab('activity'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'activity' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Activity size={20} /> Latest Activity
       </button>
-      
-      <button onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Mail size={20} /> Inbox
-      </button>
 
       <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Briefcase size={20} /> Kingdom Collabs
@@ -194,14 +190,15 @@ export default function Hub() {
       {/* MOBILE HEADER & GLOBAL TOP RIGHT ICONS */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50 md:hidden">
         
-        {/* NEW: Smaller, single-line text formatting */}
         <div className="flex items-center font-black uppercase tracking-wider text-[13px] sm:text-sm whitespace-nowrap overflow-hidden mr-2">
          <span className="text-white mr-1">Rise & Render</span> 
          <span className="text-[#ff4d00]">Community</span>
         </div>
         
+        {/* NEW: Left-to-Right layout (Bell -> Mail -> Menu) */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {/* MOBILE NOTIFICATION BELL */}
+          
+          {/* 1. MOBILE NOTIFICATION BELL */}
           <div className="relative" ref={notifMenuRef}>
             <button 
               onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
@@ -259,6 +256,18 @@ export default function Hub() {
             </AnimatePresence>
           </div>
 
+          {/* 2. MOBILE INBOX BUTTON */}
+          <button 
+            onClick={() => {
+              setActiveTab('messages');
+              if (showWelcomeTooltip) dismissTooltip(); 
+            }}
+            className="relative p-2 text-white/80 hover:text-white transition-colors"
+          >
+            <Mail size={22} />
+          </button>
+
+          {/* 3. MOBILE HAMBURGER MENU */}
           <button 
             onClick={() => {
               setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -323,62 +332,75 @@ export default function Hub() {
 
       <div className="flex-grow relative">
         
-        {/* DESKTOP NOTIFICATION BELL (Top Right of Content Area) */}
-        <div className="hidden md:block absolute top-6 right-8 z-[100]" ref={notifMenuRef}>
+        {/* DESKTOP HEADER ICONS (Top Right of Content Area) */}
+        <div className="hidden md:flex absolute top-6 right-8 z-[100] items-center gap-3">
+          
+          {/* DESKTOP NOTIFICATION BELL */}
+          <div className="relative" ref={notifMenuRef}>
+            <button 
+              onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
+              className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all shadow-lg"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />
+              )}
+            </button>
+
+            {/* NOTIFICATION MENU DROPDOWN (DESKTOP) */}
+            <AnimatePresence>
+              {showNotificationsMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute top-full right-0 mt-3 w-80 max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 origin-top-right"
+                >
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
+                  {loadingNotifs ? (
+                    <div className="p-4 text-center text-xs text-white/40">Loading...</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
+                  ) : (
+                    notifications.map(notif => (
+                      <div 
+                        key={notif.id} 
+                        onClick={() => {
+                          setShowNotificationsMenu(false);
+                          if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
+                          else if (notif.type === 'new_follower') setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
+                          else if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                        }}
+                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <p className="text-sm text-white/90 leading-snug">
+                            <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
+                            {notif.type === 'new_follower' && ' followed you.'}
+                            {notif.type === 'new_post' && ' published a post.'}
+                            {notif.type === 'new_dm' && ' sent a message.'}
+                          </p>
+                          <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* DESKTOP INBOX BUTTON */}
           <button 
-            onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
+            onClick={() => setActiveTab('messages')}
             className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all shadow-lg"
           >
-            <Bell size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />
-            )}
+            <Mail size={20} />
           </button>
 
-          {/* NOTIFICATION MENU DROPDOWN (DESKTOP) */}
-          <AnimatePresence>
-            {showNotificationsMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute top-full right-0 mt-3 w-80 max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 origin-top-right"
-              >
-                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
-                {loadingNotifs ? (
-                  <div className="p-4 text-center text-xs text-white/40">Loading...</div>
-                ) : notifications.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
-                ) : (
-                  notifications.map(notif => (
-                    <div 
-                      key={notif.id} 
-                      onClick={() => {
-                        setShowNotificationsMenu(false);
-                        if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                        else if (notif.type === 'new_follower') setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                        else if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
-                      }}
-                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <p className="text-sm text-white/90 leading-snug">
-                          <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
-                          {notif.type === 'new_follower' && ' followed you.'}
-                          {notif.type === 'new_post' && ' published a post.'}
-                          {notif.type === 'new_dm' && ' sent a message.'}
-                        </p>
-                        <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* MAIN CONTENT AREA */}
