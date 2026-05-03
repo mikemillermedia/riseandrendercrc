@@ -18,8 +18,8 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
 
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]); 
-  const [portfolioItems, setPortfolioItems] = useState<any[]>([]); // NEW: Portfolio State
-  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any | null>(null); // NEW: Lightbox State
+  const [portfolioItems, setPortfolioItems] = useState<any[]>([]); 
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any | null>(null); 
   
   const [isFollowing, setIsFollowing] = useState(false); 
   const [followLoading, setFollowLoading] = useState(false);
@@ -71,15 +71,12 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
     setPortfolioItems([]);
     setIsFollowing(false);
 
-    // Fetch Posts
     const { data: postsData = [] } = await supabase.from('posts').select('*, post_likes(user_id), comments(*)').eq('user_id', member.id).order('created_at', { ascending: false });
     if (postsData) setMemberPosts(postsData);
 
-    // Fetch Portfolio
     const { data: portfolioData } = await supabase.from('portfolios').select('*').eq('user_id', member.id).order('created_at', { ascending: false });
     if (portfolioData) setPortfolioItems(portfolioData);
 
-    // Fetch Follow Data
     const { count: followers = 0 } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', member.id);
     const { count: following = 0 } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', member.id);
     setFollowersCount(followers);
@@ -179,7 +176,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               
               <div className="relative w-full flex-grow flex items-center justify-center overflow-hidden p-2 md:p-6">
                 {isVideo(selectedPortfolioItem.media_url) ? (
-                  <video src={selectedPortfolioItem.media_url} controls autoPlay className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
+                  <video src={selectedPortfolioItem.media_url} controls autoPlay loop playsInline className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
                 ) : (
                   <img src={selectedPortfolioItem.media_url} className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-2xl" />
                 )}
@@ -323,7 +320,6 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
               </div>
             )}
 
-            {/* NEW: Clean, 2/3 Column Masonry Portfolio Grid */}
             {portfolioItems.length > 0 && (
               <div className="pt-6 border-t border-white/5">
                 <h3 className="text-white/40 font-bold uppercase tracking-widest text-xs mb-4">Portfolio</h3>
@@ -362,7 +358,7 @@ export default function Members({ setActiveTab }: { setActiveTab: (tab: string) 
                       <p className="text-white/90 text-sm md:text-base mb-4 whitespace-pre-wrap leading-relaxed">{post.content}</p>
                       {post.media_url && (
                         isVideo(post.media_url) ? (
-                          <video src={post.media_url} controls preload="metadata" className="w-full max-h-64 rounded-xl mb-4 border border-white/5 bg-black/40" />
+                          <video src={post.media_url} controls loop playsInline preload="metadata" className="w-full max-h-64 rounded-xl mb-4 border border-white/5 bg-black/40" />
                         ) : (
                           <img src={post.media_url} className="w-full max-h-64 object-cover rounded-xl mb-4 border border-white/5" />
                         )
