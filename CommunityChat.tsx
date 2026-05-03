@@ -282,6 +282,8 @@ export default function CommunityChat({ user }: { user: any }) {
 
   if (loading) return <div className="text-center py-20 text-white/40">Loading threads...</div>;
 
+  const isVideo = (url: string | null) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
+
   return (
     <div className="animate-in fade-in duration-500 max-w-2xl mx-auto pb-32">
       {error && (
@@ -313,7 +315,7 @@ export default function CommunityChat({ user }: { user: any }) {
             {mediaPreview && (
               <div className="mt-3 relative inline-block">
                 {mediaFile?.type.startsWith('video/') ? (
-                  <video src={mediaPreview} controls className="rounded-xl max-h-64 border border-white/10" />
+                  <video src={mediaPreview} controls loop playsInline className="rounded-xl max-h-64 border border-white/10" />
                 ) : (
                   <img src={mediaPreview} className="rounded-xl max-h-64 border border-white/10" />
                 )}
@@ -369,8 +371,6 @@ export default function CommunityChat({ user }: { user: any }) {
           const isLiked = postLikes.some((l: any) => l.user_id === user?.id);
           const isTargeted = targetPostId === post.id;
           const isMyPost = user?.id === post.user_id;
-
-          const isVideo = (url: string | null) => url?.match(/\.(mp4|webm|ogg|mov)$/i);
 
           return (
             <div 
@@ -445,7 +445,7 @@ export default function CommunityChat({ user }: { user: any }) {
                   
                   {post.media_url && (
                     isVideo(post.media_url) ? (
-                      <video src={post.media_url} controls preload="metadata" className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto bg-black/40" />
+                      <video src={post.media_url} controls loop playsInline preload="metadata" className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto bg-black/40" />
                     ) : (
                       <img src={post.media_url} className="mb-3 rounded-xl border border-white/10 max-h-[500px] w-auto object-contain bg-black/40" />
                     )
@@ -472,7 +472,7 @@ export default function CommunityChat({ user }: { user: any }) {
                       
                       {post.original_post.media_url && (
                         isVideo(post.original_post.media_url) ? (
-                          <video src={post.original_post.media_url} controls preload="metadata" className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto bg-black/40" />
+                          <video src={post.original_post.media_url} controls loop playsInline preload="metadata" className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto bg-black/40" />
                         ) : (
                           <img src={post.original_post.media_url} className="mt-2 rounded-lg border border-white/10 max-h-48 w-auto object-cover" />
                         )
