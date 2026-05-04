@@ -131,8 +131,8 @@ export default function CommunityChat({ user }: { user: any }) {
       
       if (postError) throw postError;
 
+      // NOTIFY FOLLOWERS OF NEW POST
       const { data: followers } = await supabase.from('follows').select('follower_id').eq('following_id', user.id);
-      
       if (followers && followers.length > 0) {
         const notifications = followers.map(f => ({
           user_id: f.follower_id, 
@@ -141,6 +141,16 @@ export default function CommunityChat({ user }: { user: any }) {
           post_id: newPostData.id 
         }));
         await supabase.from('notifications').insert(notifications);
+      }
+
+      // NOTIFY TARGET OF REPOST
+      if (repostTarget && repostTarget.user_id !== user.id) {
+        await supabase.from('notifications').insert([{
+          user_id: repostTarget.user_id,
+          actor_id: user.id,
+          type: 'repost',
+          post_id: newPostData.id
+        }]);
       }
 
       setNewPost('');
@@ -171,6 +181,17 @@ export default function CommunityChat({ user }: { user: any }) {
         await supabase.from('post_likes').delete().match({ post_id: postId, user_id: user.id });
       } else {
         await supabase.from('post_likes').insert([{ post_id: postId, user_id: user.id }]);
+        
+        // NOTIFY POST OWNER
+        const post = posts.find(p => p.id === postId);
+        if (post && post.user_id !== user.id) {
+          await supabase.from('notifications').insert([{
+            user_id: post.user_id,
+            actor_id: user.id,
+            type: 'post_like',
+            post_id: postId
+          }]);
+        }
       }
       fetchPosts();
     } catch (e) { console.error(e); }
@@ -180,6 +201,18 @@ export default function CommunityChat({ user }: { user: any }) {
     if (!commentText.trim() || !user) return;
     try {
       await supabase.from('comments').insert([{ post_id: postId, user_id: user.id, content: commentText.trim() }]);
+      
+      // NOTIFY POST OWNER
+      const post = posts.find(p => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        await supabase.from('notifications').insert([{
+          user_id: post.user_id,
+          actor_id: user.id,
+          type: 'new_comment',
+          post_id: postId
+        }]);
+      }
+
       setCommentText('');
       fetchPosts();
     } catch (e) { console.error(e); }
@@ -191,6 +224,17 @@ export default function CommunityChat({ user }: { user: any }) {
       await navigator.clipboard.writeText(url);
       setCopiedId(postId);
       setTimeout(() => setCopiedId(null), 2000); 
+
+      // NOTIFY POST OWNER
+      const post = posts.find(p => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        await supabase.from('notifications').insert([{
+          user_id: post.user_id,
+          actor_id: user.id,
+          type: 'post_share',
+          post_id: postId
+        }]);
+      }
     } catch (err) {
       console.error('Failed to copy link', err);
     }
