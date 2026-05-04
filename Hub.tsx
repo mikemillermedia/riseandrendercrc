@@ -29,8 +29,9 @@ export default function Hub() {
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null); 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // NOTIFICATION STATES
+  // NOTIFICATION & INBOX STATES
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0); // NEW: Unread DM Count
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
@@ -98,8 +99,10 @@ export default function Hub() {
     }
   }, [user]);
 
+  // Fetch unread bell notifications AND unread messages
   useEffect(() => {
     if (user) {
+      // 1. Fetch general notifications (Likes, Follows, Reposts, etc)
       const fetchUnread = async () => {
         const { count } = await supabase
           .from('notifications')
@@ -108,10 +111,23 @@ export default function Hub() {
           .eq('is_read', false);
         setUnreadCount(count || 0);
       };
-      fetchUnread();
-    }
-  }, [user, showNotificationsMenu]); 
+      
+      // 2. Fetch unread Direct Messages specifically for the Inbox number badge
+      const fetchUnreadDMs = async () => {
+        const { count } = await supabase
+          .from('direct_messages') // Change to 'messages' if that is your table name
+          .select('*', { count: 'exact', head: true })
+          .eq('receiver_id', user.id)
+          .eq('is_read', false);
+        setUnreadMessageCount(count || 0);
+      };
 
+      fetchUnread();
+      fetchUnreadDMs();
+    }
+  }, [user, showNotificationsMenu, activeTab]); 
+
+  // Fetch full notifications list when the menu is opened
   useEffect(() => {
     if (showNotificationsMenu && user) {
       const fetchAndMarkRead = async () => {
@@ -121,7 +137,7 @@ export default function Hub() {
           .select('*, actor:actor_id(first_name, last_name, avatar_url)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(20); 
+          .limit(30); 
           
         if (data) setNotifications(data);
         setLoadingNotifs(false);
@@ -267,7 +283,7 @@ export default function Hub() {
       <div className="flex-grow relative">
         
         {/* DESKTOP HEADER ICONS */}
-        <div className="hidden md:flex absolute top-6 right-8 z-[100] items-center gap-3">
+        <div className="hidden md:flex absolute top-6 right-8 z-[100] items-center gap-4">
           <div className="relative" ref={desktopNotifRef}>
             <button 
               onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
@@ -298,9 +314,10 @@ export default function Hub() {
                         key={notif.id} 
                         onClick={() => {
                           setShowNotificationsMenu(false);
-                          if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                          else if (notif.type === 'new_follower') setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                          else if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                          if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                          else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
+                          else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
+                          else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
                         }}
                         className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                       >
@@ -313,6 +330,10 @@ export default function Hub() {
                             {notif.type === 'new_follower' && ' followed you.'}
                             {notif.type === 'new_post' && ' published a post.'}
                             {notif.type === 'new_dm' && ' sent a message.'}
+                            {notif.type === 'post_like' && ' liked your post.'}
+                            {notif.type === 'post_share' && ' shared your post.'}
+                            {notif.type === 'repost' && ' reposted your thread.'}
+                            {notif.type === 'new_prayer' && ' posted a prayer request.'}
                           </p>
                           <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
                         </div>
@@ -326,9 +347,14 @@ export default function Hub() {
 
           <button 
             onClick={() => setActiveTab('messages')}
-            className={`relative p-2.5 rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-lg ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'bg-white/5 text-white/80 hover:text-white'}`}
+            className={`relative p-2.5 rounded-full border hover:bg-white/10 transition-all shadow-lg ${activeTab === 'messages' ? 'border-[#ff4d00] bg-[#ff4d00]/10 text-[#ff4d00]' : 'border-white/10 bg-white/5 text-white/80 hover:text-white'}`}
           >
             <Mail size={20} />
+            {unreadMessageCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-[#131313]">
+                {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+              </span>
+            )}
           </button>
 
           <button 
@@ -440,14 +466,14 @@ export default function Hub() {
             {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff4d00] rounded-full border border-[#1a1a1a]" />}
           </button>
 
-          {/* MOBILE NOTIFICATION DROPDOWN (Opens Upwards, positioned higher for pill) */}
+          {/* MOBILE NOTIFICATION DROPDOWN (CENTERED OVER PILL) */}
           <AnimatePresence>
             {showNotificationsMenu && (
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                className="fixed bottom-[90px] left-4 right-4 max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[110] origin-bottom"
+                className="fixed bottom-[80px] left-1/2 -translate-x-1/2 w-[calc(100vw-32px)] max-w-[340px] max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[110] origin-bottom"
               >
                 <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
                 {loadingNotifs ? (
@@ -460,9 +486,10 @@ export default function Hub() {
                       key={notif.id} 
                       onClick={() => {
                         setShowNotificationsMenu(false);
-                        if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                        else if (notif.type === 'new_follower') setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                        else if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                        if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                        else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
+                        else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
+                        else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
                       }}
                       className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                     >
@@ -475,6 +502,10 @@ export default function Hub() {
                           {notif.type === 'new_follower' && ' followed you.'}
                           {notif.type === 'new_post' && ' published a post.'}
                           {notif.type === 'new_dm' && ' sent a message.'}
+                          {notif.type === 'post_like' && ' liked your post.'}
+                          {notif.type === 'post_share' && ' shared your post.'}
+                          {notif.type === 'repost' && ' reposted your thread.'}
+                          {notif.type === 'new_prayer' && ' posted a prayer request.'}
                         </p>
                         <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
                       </div>
@@ -497,9 +528,14 @@ export default function Hub() {
         {/* 3. INBOX (Mail) */}
         <button 
           onClick={() => { setActiveTab('messages'); setShowNotificationsMenu(false); }} 
-          className={`p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
+          className={`relative p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
         >
           <Mail size={20} strokeWidth={1.5} />
+          {unreadMessageCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white border border-[#1a1a1a]">
+              {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+            </span>
+          )}
         </button>
 
         {/* 4. PROFILE AVATAR */}
