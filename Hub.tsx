@@ -153,10 +153,6 @@ export default function Hub() {
         <Activity size={20} /> Latest Activity
       </button>
 
-      <button onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Mail size={20} /> Inbox
-      </button>
-
       <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Briefcase size={20} /> Kingdom Collabs
       </button>
@@ -221,7 +217,6 @@ export default function Hub() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  // Changed from absolute to fixed with a dynamic calc width to prevent left-side clipping
                   className="fixed top-[70px] right-4 w-[calc(100vw-32px)] max-w-[340px] max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[100] origin-top-right"
                 >
                   <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
