@@ -10,7 +10,6 @@ import Members from './Members';
 import DirectMessages from './components/DirectMessages'; 
 import CollabBoard from './components/CollabBoard'; 
 import freeKitImage from './The Content Creator Studio Kit.jpg';
-import BrandLogo from '../components/BrandLogo';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -27,7 +26,7 @@ export default function Hub() {
 
   const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null); // NEW: Fetches user avatar for UI
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null); 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // NOTIFICATION STATES
@@ -89,7 +88,6 @@ export default function Hub() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Fetch avatar for the bottom bar and desktop header
   useEffect(() => {
     if (user) {
       const fetchProfile = async () => {
@@ -100,7 +98,6 @@ export default function Hub() {
     }
   }, [user]);
 
-  // Fetch unread count actively
   useEffect(() => {
     if (user) {
       const fetchUnread = async () => {
@@ -115,7 +112,6 @@ export default function Hub() {
     }
   }, [user, showNotificationsMenu]); 
 
-  // Fetch notifications only when the menu is opened
   useEffect(() => {
     if (showNotificationsMenu && user) {
       const fetchAndMarkRead = async () => {
@@ -142,7 +138,6 @@ export default function Hub() {
     }
   }, [showNotificationsMenu, user]);
 
-  // Click outside listener for notification menu (checks both mobile and desktop refs)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -199,16 +194,14 @@ export default function Hub() {
   return (
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
-      {/* MOBILE HEADER (CLEANED UP) */}
+      {/* MOBILE HEADER */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50 md:hidden">
-        
         <div className="flex items-center font-black uppercase tracking-wider text-[13px] sm:text-sm whitespace-nowrap overflow-hidden mr-2">
          <span className="text-white mr-1">Rise & Render</span> 
          <span className="text-[#ff4d00]">Community</span>
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          {/* MOBILE HAMBURGER MENU */}
           <button 
             onClick={() => {
               setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -250,7 +243,7 @@ export default function Hub() {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-[73px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 p-4 flex flex-col gap-2 z-40">
+        <div className="md:hidden absolute top-[65px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 p-4 flex flex-col gap-2 z-40">
           <NavLinks />
           <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors mt-4">
             <LogOut size={20} /> Sign Out
@@ -273,10 +266,8 @@ export default function Hub() {
 
       <div className="flex-grow relative">
         
-        {/* DESKTOP HEADER ICONS (Top Right of Content Area) */}
+        {/* DESKTOP HEADER ICONS */}
         <div className="hidden md:flex absolute top-6 right-8 z-[100] items-center gap-3">
-          
-          {/* DESKTOP NOTIFICATION BELL */}
           <div className="relative" ref={desktopNotifRef}>
             <button 
               onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
@@ -288,7 +279,6 @@ export default function Hub() {
               )}
             </button>
 
-            {/* NOTIFICATION MENU DROPDOWN (DESKTOP) */}
             <AnimatePresence>
               {showNotificationsMenu && (
                 <motion.div
@@ -334,7 +324,6 @@ export default function Hub() {
             </AnimatePresence>
           </div>
 
-          {/* DESKTOP INBOX BUTTON */}
           <button 
             onClick={() => setActiveTab('messages')}
             className={`relative p-2.5 rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-lg ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'bg-white/5 text-white/80 hover:text-white'}`}
@@ -342,7 +331,6 @@ export default function Hub() {
             <Mail size={20} />
           </button>
 
-          {/* DESKTOP PROFILE AVATAR */}
           <button 
             onClick={() => setActiveTab('profile')}
             className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all shadow-lg ${activeTab === 'profile' ? 'border-[#ff4d00]' : 'border-transparent hover:border-white/50'}`}
@@ -353,11 +341,9 @@ export default function Hub() {
               <div className="w-full h-full bg-white/5 flex items-center justify-center"><User size={20} className="text-white/60" /></div>
             )}
           </button>
-
         </div>
 
         {/* MAIN CONTENT AREA */}
-        {/* Adjusted bottom padding on mobile (pb-28) to ensure content clears the floating bottom bar */}
         <div className="p-6 md:p-12 max-w-5xl mx-auto w-full pt-10 md:pt-16 pb-28 md:pb-12">
           {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
           {activeTab === 'messages' && <DirectMessages user={user} />}
@@ -441,27 +427,27 @@ export default function Hub() {
         </div>
       </div>
 
-      {/* NEW FLOATING MOBILE BOTTOM NAVIGATION BAR */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#131313]/90 backdrop-blur-2xl border-t border-white/10 z-[100] px-6 py-3 pb-6 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+      {/* NEW FLOATING MOBILE BOTTOM NAVIGATION BAR (PILL SHAPE) */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-6 py-2.5 rounded-full flex items-center justify-center gap-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
         
         {/* 1. NOTIFICATIONS (Bell) */}
         <div className="relative" ref={mobileNotifRef}>
           <button 
             onClick={() => setShowNotificationsMenu(!showNotificationsMenu)} 
-            className={`relative p-2 transition-all duration-300 ${showNotificationsMenu ? 'text-[#ff4d00] scale-110' : 'text-white/60 hover:text-white'}`}
+            className={`relative p-2 transition-all duration-300 ${showNotificationsMenu ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
           >
-            <Bell size={26} />
-            {unreadCount > 0 && <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />}
+            <Bell size={20} strokeWidth={1.5} />
+            {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff4d00] rounded-full border border-[#1a1a1a]" />}
           </button>
 
-          {/* MOBILE NOTIFICATION DROPDOWN (Opens Upwards) */}
+          {/* MOBILE NOTIFICATION DROPDOWN (Opens Upwards, positioned higher for pill) */}
           <AnimatePresence>
             {showNotificationsMenu && (
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                className="fixed bottom-[80px] left-4 right-4 max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[110] origin-bottom"
+                className="fixed bottom-[90px] left-4 right-4 max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[110] origin-bottom"
               >
                 <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
                 {loadingNotifs ? (
@@ -503,28 +489,28 @@ export default function Hub() {
         {/* 2. CHAT FEED (MessageSquare) */}
         <button 
           onClick={() => { setActiveTab('chat'); setShowNotificationsMenu(false); }} 
-          className={`p-2 transition-all duration-300 ${activeTab === 'chat' ? 'text-[#ff4d00] scale-110' : 'text-white/60 hover:text-white'}`}
+          className={`p-2 transition-all duration-300 ${activeTab === 'chat' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
         >
-          <MessageSquare size={26} />
+          <MessageSquare size={20} strokeWidth={1.5} />
         </button>
 
         {/* 3. INBOX (Mail) */}
         <button 
           onClick={() => { setActiveTab('messages'); setShowNotificationsMenu(false); }} 
-          className={`p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-[#ff4d00] scale-110' : 'text-white/60 hover:text-white'}`}
+          className={`p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
         >
-          <Mail size={26} />
+          <Mail size={20} strokeWidth={1.5} />
         </button>
 
         {/* 4. PROFILE AVATAR */}
         <button 
           onClick={() => { setActiveTab('profile'); setShowNotificationsMenu(false); }} 
-          className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-all duration-300 ${activeTab === 'profile' ? 'border-[#ff4d00] scale-110' : 'border-transparent'}`}
+          className={`w-7 h-7 rounded-full overflow-hidden border transition-all duration-300 ${activeTab === 'profile' ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
         >
           {currentUserProfile?.avatar_url ? (
             <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-white/10 flex items-center justify-center"><User size={18} className="text-white/60" /></div>
+            <div className="w-full h-full bg-white/10 flex items-center justify-center"><User size={14} strokeWidth={1.5} className="text-white/80" /></div>
           )}
         </button>
 
