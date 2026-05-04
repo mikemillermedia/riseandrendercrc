@@ -175,6 +175,23 @@ export default function Hub() {
     navigate('/');
   };
 
+  // NEW: Handle Notification Click (Delete from UI and DB)
+  const handleNotificationClick = async (notif: any) => {
+    setShowNotificationsMenu(false);
+    
+    // Immediately remove from UI for snappy feel
+    setNotifications(prev => prev.filter(n => n.id !== notif.id));
+    
+    // Delete from database
+    await supabase.from('notifications').delete().eq('id', notif.id);
+
+    // Route user to correct spot
+    if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+    else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
+    else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
+    else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
+  };
+
   if (!user) return <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex items-center justify-center">Loading Hub...</div>;
 
   const NavLinks = () => (
@@ -185,6 +202,10 @@ export default function Hub() {
 
       <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Briefcase size={20} /> Kingdom Collabs
+      </button>
+
+      <button onClick={() => { setActiveTab('prayer'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'prayer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <HeartHandshake size={20} /> Prayer Wall
       </button>
       
       <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'chat' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
@@ -311,13 +332,7 @@ export default function Hub() {
                     notifications.map(notif => (
                       <div 
                         key={notif.id} 
-                        onClick={() => {
-                          setShowNotificationsMenu(false);
-                          if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
-                          else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
-                          else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                          else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                        }}
+                        onClick={() => handleNotificationClick(notif)}
                         className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                       >
                         <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -345,13 +360,6 @@ export default function Hub() {
               )}
             </AnimatePresence>
           </div>
-
-          <button 
-            onClick={() => setActiveTab('prayer')}
-            className={`relative p-2.5 rounded-full border hover:bg-white/10 transition-all shadow-lg ${activeTab === 'prayer' ? 'border-[#ff4d00] bg-[#ff4d00]/10 text-[#ff4d00]' : 'border-white/10 bg-white/5 text-white/80 hover:text-white'}`}
-          >
-            <HeartHandshake size={20} />
-          </button>
 
           <button 
             onClick={() => setActiveTab('messages')}
@@ -461,7 +469,7 @@ export default function Hub() {
         </div>
       </div>
 
-      {/* NEW: MOBILE NOTIFICATION DROPDOWN */}
+      {/* NEW: MOBILE NOTIFICATION DROPDOWN (FOOLPROOF CENTERING) */}
       <AnimatePresence>
         {showNotificationsMenu && (
           <div className="md:hidden fixed inset-x-0 bottom-[90px] z-[110] flex justify-center px-4 pointer-events-none">
@@ -481,13 +489,7 @@ export default function Hub() {
                 notifications.map(notif => (
                   <div 
                     key={notif.id} 
-                    onClick={() => {
-                      setShowNotificationsMenu(false);
-                      if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
-                      else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
-                      else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                      else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                    }}
+                    onClick={() => handleNotificationClick(notif)}
                     className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
