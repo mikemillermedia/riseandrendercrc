@@ -175,7 +175,7 @@ export default function Hub() {
     navigate('/');
   };
 
-  // NEW: Handle Notification Click (Delete from UI and DB)
+  // RESTORED: Notification click handler to delete it immediately
   const handleNotificationClick = async (notif: any) => {
     setShowNotificationsMenu(false);
     
@@ -469,7 +469,7 @@ export default function Hub() {
         </div>
       </div>
 
-      {/* NEW: MOBILE NOTIFICATION DROPDOWN (FOOLPROOF CENTERING) */}
+      {/* MOBILE NOTIFICATION DROPDOWN */}
       <AnimatePresence>
         {showNotificationsMenu && (
           <div className="md:hidden fixed inset-x-0 bottom-[90px] z-[110] flex justify-center px-4 pointer-events-none">
@@ -518,7 +518,7 @@ export default function Hub() {
         )}
       </AnimatePresence>
 
-      {/* NEW FLOATING MOBILE BOTTOM NAVIGATION BAR (PILL SHAPE - 5 ICONS) */}
+      {/* FLOATING MOBILE BOTTOM NAVIGATION BAR */}
       <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100vw-40px)] max-w-[360px] bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-6 py-2.5 rounded-full flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
         
         {/* 1. NOTIFICATIONS (Bell) */}
