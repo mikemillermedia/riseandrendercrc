@@ -131,19 +131,7 @@ export default function CommunityChat({ user }: { user: any }) {
       
       if (postError) throw postError;
 
-      // NOTIFY FOLLOWERS OF NEW POST
-      const { data: followers } = await supabase.from('follows').select('follower_id').eq('following_id', user.id);
-      if (followers && followers.length > 0) {
-        const notifications = followers.map(f => ({
-          user_id: f.follower_id, 
-          actor_id: user.id,      
-          type: 'new_post',
-          post_id: newPostData.id 
-        }));
-        await supabase.from('notifications').insert(notifications);
-      }
-
-      // NOTIFY TARGET OF REPOST
+      // NOTIFY TARGET OF REPOST ONLY (Removed global 'new_post' follower notification)
       if (repostTarget && repostTarget.user_id !== user.id) {
         await supabase.from('notifications').insert([{
           user_id: repostTarget.user_id,
