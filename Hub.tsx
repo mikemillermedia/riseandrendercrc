@@ -153,6 +153,10 @@ export default function Hub() {
         <Activity size={20} /> Latest Activity
       </button>
 
+      <button onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
+        <Mail size={20} /> Inbox
+      </button>
+
       <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Briefcase size={20} /> Kingdom Collabs
       </button>
@@ -195,7 +199,7 @@ export default function Hub() {
          <span className="text-[#ff4d00]">Community</span>
         </div>
         
-        {/* NEW: Left-to-Right layout (Bell -> Mail -> Menu) */}
+        {/* Left-to-Right layout (Bell -> Mail -> Menu) */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           
           {/* 1. MOBILE NOTIFICATION BELL */}
@@ -210,14 +214,15 @@ export default function Hub() {
               )}
             </button>
 
-            {/* NOTIFICATION MENU DROPDOWN (MOBILE) */}
+            {/* NOTIFICATION MENU DROPDOWN (MOBILE FIXED FIX) */}
             <AnimatePresence>
               {showNotificationsMenu && (
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-full right-0 mt-2 w-80 max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[100]"
+                  // Changed from absolute to fixed with a dynamic calc width to prevent left-side clipping
+                  className="fixed top-[70px] right-4 w-[calc(100vw-32px)] max-w-[340px] max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[100] origin-top-right"
                 >
                   <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
                   {loadingNotifs ? (
@@ -286,7 +291,7 @@ export default function Hub() {
               initial={{ opacity: 0, y: -10, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute top-16 right-4 w-64 bg-[#ff4d00] p-5 rounded-2xl shadow-[0_10px_40px_rgba(255,77,0,0.4)] border border-orange-400/50 origin-top-right"
+              className="absolute top-16 right-4 w-64 bg-[#ff4d00] p-5 rounded-2xl shadow-[0_10px_40px_rgba(255,77,0,0.4)] border border-orange-400/50 origin-top-right z-[90]"
             >
               <div className="absolute -top-3 right-5 text-[#ff4d00]">
                 <svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor">
