@@ -186,10 +186,6 @@ export default function Hub() {
       <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Briefcase size={20} /> Kingdom Collabs
       </button>
-
-      <button onClick={() => { setActiveTab('prayer'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'prayer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <HeartHandshake size={20} /> Prayer Wall
-      </button>
       
       <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'chat' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <MessageSquare size={20} /> Community Chat
@@ -337,6 +333,8 @@ export default function Hub() {
                             {notif.type === 'post_share' && ' shared your post.'}
                             {notif.type === 'repost' && ' reposted your thread.'}
                             {notif.type === 'new_prayer' && ' posted a prayer request.'}
+                            {notif.type === 'new_prayer_reaction' && ' reacted to your prayer request.'}
+                            {notif.type === 'new_prayer_comment' && ' commented on your prayer request.'}
                           </p>
                           <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
                         </div>
@@ -347,6 +345,13 @@ export default function Hub() {
               )}
             </AnimatePresence>
           </div>
+
+          <button 
+            onClick={() => setActiveTab('prayer')}
+            className={`relative p-2.5 rounded-full border hover:bg-white/10 transition-all shadow-lg ${activeTab === 'prayer' ? 'border-[#ff4d00] bg-[#ff4d00]/10 text-[#ff4d00]' : 'border-white/10 bg-white/5 text-white/80 hover:text-white'}`}
+          >
+            <HeartHandshake size={20} />
+          </button>
 
           <button 
             onClick={() => setActiveTab('messages')}
@@ -456,7 +461,7 @@ export default function Hub() {
         </div>
       </div>
 
-      {/* NEW: MOBILE NOTIFICATION DROPDOWN (FOOLPROOF CENTERING) */}
+      {/* NEW: MOBILE NOTIFICATION DROPDOWN */}
       <AnimatePresence>
         {showNotificationsMenu && (
           <div className="md:hidden fixed inset-x-0 bottom-[90px] z-[110] flex justify-center px-4 pointer-events-none">
@@ -498,6 +503,8 @@ export default function Hub() {
                         {notif.type === 'post_share' && ' shared your post.'}
                         {notif.type === 'repost' && ' reposted your thread.'}
                         {notif.type === 'new_prayer' && ' posted a prayer request.'}
+                        {notif.type === 'new_prayer_reaction' && ' reacted to your prayer request.'}
+                        {notif.type === 'new_prayer_comment' && ' commented on your prayer request.'}
                       </p>
                       <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
                     </div>
@@ -509,8 +516,8 @@ export default function Hub() {
         )}
       </AnimatePresence>
 
-      {/* NEW FLOATING MOBILE BOTTOM NAVIGATION BAR (PILL SHAPE) */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-6 py-2.5 rounded-full flex items-center justify-center gap-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+      {/* NEW FLOATING MOBILE BOTTOM NAVIGATION BAR (PILL SHAPE - 5 ICONS) */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100vw-40px)] max-w-[360px] bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-6 py-2.5 rounded-full flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
         
         {/* 1. NOTIFICATIONS (Bell) */}
         <div className="relative" ref={mobileNotifRef}>
@@ -531,7 +538,15 @@ export default function Hub() {
           <MessageSquare size={20} strokeWidth={1.5} />
         </button>
 
-        {/* 3. INBOX (Mail) */}
+        {/* 3. PRAYER WALL (HeartHandshake) */}
+        <button 
+          onClick={() => { setActiveTab('prayer'); setShowNotificationsMenu(false); }} 
+          className={`p-2 transition-all duration-300 ${activeTab === 'prayer' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
+        >
+          <HeartHandshake size={20} strokeWidth={1.5} />
+        </button>
+
+        {/* 4. INBOX (Mail) */}
         <button 
           onClick={() => { setActiveTab('messages'); setShowNotificationsMenu(false); }} 
           className={`relative p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
@@ -544,7 +559,7 @@ export default function Hub() {
           )}
         </button>
 
-        {/* 4. PROFILE AVATAR */}
+        {/* 5. PROFILE AVATAR */}
         <button 
           onClick={() => { setActiveTab('profile'); setShowNotificationsMenu(false); }} 
           className={`w-7 h-7 rounded-full overflow-hidden border transition-all duration-300 ${activeTab === 'profile' ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
