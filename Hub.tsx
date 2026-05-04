@@ -36,7 +36,6 @@ export default function Hub() {
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   
-  // Updated Refs to handle the detached mobile dropdown
   const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
@@ -154,11 +153,10 @@ export default function Hub() {
     }
   }, [showNotificationsMenu, user]);
 
-  // Updated click outside logic to check all three possible click areas
+  // Handle clicking outside the menus
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
       const inDesktop = desktopNotifRef.current?.contains(target);
       const inMobileBell = mobileNotifRef.current?.contains(target);
       const inMobileDropdown = mobileDropdownRef.current?.contains(target);
@@ -458,54 +456,56 @@ export default function Hub() {
         </div>
       </div>
 
-      {/* NEW: MOBILE NOTIFICATION DROPDOWN (Now completely detached to prevent backdrop clipping) */}
+      {/* NEW: MOBILE NOTIFICATION DROPDOWN (FOOLPROOF CENTERING) */}
       <AnimatePresence>
         {showNotificationsMenu && (
-          <motion.div
-            ref={mobileDropdownRef}
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="md:hidden fixed bottom-[90px] left-1/2 -translate-x-1/2 w-[calc(100vw-32px)] max-w-[340px] max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[110] origin-bottom"
-          >
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
-            {loadingNotifs ? (
-              <div className="p-4 text-center text-xs text-white/40">Loading...</div>
-            ) : notifications.length === 0 ? (
-              <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
-            ) : (
-              notifications.map(notif => (
-                <div 
-                  key={notif.id} 
-                  onClick={() => {
-                    setShowNotificationsMenu(false);
-                    if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
-                    else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
-                    else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                    else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                  }}
-                  className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
+          <div className="md:hidden fixed inset-x-0 bottom-[90px] z-[110] flex justify-center px-4 pointer-events-none">
+            <motion.div
+              ref={mobileDropdownRef}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="w-full max-w-[340px] max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 origin-bottom pointer-events-auto"
+            >
+              <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
+              {loadingNotifs ? (
+                <div className="p-4 text-center text-xs text-white/40">Loading...</div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
+              ) : (
+                notifications.map(notif => (
+                  <div 
+                    key={notif.id} 
+                    onClick={() => {
+                      setShowNotificationsMenu(false);
+                      if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                      else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
+                      else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
+                      else if (notif.actor_id) setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
+                    }}
+                    className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                      {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <p className="text-sm text-white/90 leading-snug">
+                        <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
+                        {notif.type === 'new_follower' && ' followed you.'}
+                        {notif.type === 'new_post' && ' published a post.'}
+                        {notif.type === 'new_dm' && ' sent a message.'}
+                        {notif.type === 'post_like' && ' liked your post.'}
+                        {notif.type === 'post_share' && ' shared your post.'}
+                        {notif.type === 'repost' && ' reposted your thread.'}
+                        {notif.type === 'new_prayer' && ' posted a prayer request.'}
+                      </p>
+                      <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="text-sm text-white/90 leading-snug">
-                      <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
-                      {notif.type === 'new_follower' && ' followed you.'}
-                      {notif.type === 'new_post' && ' published a post.'}
-                      {notif.type === 'new_dm' && ' sent a message.'}
-                      {notif.type === 'post_like' && ' liked your post.'}
-                      {notif.type === 'post_share' && ' shared your post.'}
-                      {notif.type === 'repost' && ' reposted your thread.'}
-                      {notif.type === 'new_prayer' && ' posted a prayer request.'}
-                    </p>
-                    <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </motion.div>
+                ))
+              )}
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
