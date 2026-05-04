@@ -60,15 +60,32 @@ export default function PrayerWall({ user }: { user: any }) {
     if (!newRequest.trim()) return;
     
     setPosting(true);
-    const { error } = await supabase
+    const { data: newPrayerData, error } = await supabase
       .from('prayer_requests')
       .insert([{ 
         user_id: user.id, 
         content: newRequest.trim(),
         is_anonymous: isAnonymous
-      }]);
+      }])
+      .select()
+      .single();
       
     if (!error) {
+      // NOTIFY ALL FOLLOWERS OF THE NEW PRAYER REQUEST
+      // We only notify followers if it is NOT anonymous to protect privacy
+      if (!isAnonymous) {
+        const { data: followers } = await supabase.from('follows').select('follower_id').eq('following_id', user.id);
+        if (followers && followers.length > 0) {
+          const notifications = followers.map(f => ({
+            user_id: f.follower_id, 
+            actor_id: user.id,      
+            type: 'new_prayer',
+            post_id: null // Prayer requests aren't chat posts, so we don't link to a specific postId
+          }));
+          await supabase.from('notifications').insert(notifications);
+        }
+      }
+
       setNewRequest('');
       setIsAnonymous(false);
       fetchRequests();
@@ -90,10 +107,22 @@ export default function PrayerWall({ user }: { user: any }) {
   const toggleReaction = async (requestId: string, emoji: string, currentLikes: any[]) => {
     if (!user) return;
     const existingLike = currentLikes.find(like => like.user_id === user.id && like.emoji === emoji);
+    
     if (existingLike) {
       await supabase.from('prayer_likes').delete().match({ id: existingLike.id });
     } else {
       await supabase.from('prayer_likes').insert([{ request_id: requestId, user_id: user.id, emoji: emoji }]);
+      
+      // NOTIFY PRAYER REQUEST OWNER
+      const request = requests.find(r => r.id === requestId);
+      if (request && request.user_id !== user.id) {
+        await supabase.from('notifications').insert([{
+          user_id: request.user_id,
+          actor_id: user.id,
+          type: 'new_prayer_reaction', // You might need to add this text to your Hub.tsx to render it nicely!
+          post_id: null 
+        }]);
+      }
     }
     fetchRequests();
   };
@@ -102,6 +131,18 @@ export default function PrayerWall({ user }: { user: any }) {
     if (!commentText.trim() || !user) return;
     try {
       await supabase.from('prayer_comments').insert([{ request_id: requestId, user_id: user.id, content: commentText.trim() }]);
+      
+      // NOTIFY PRAYER REQUEST OWNER
+      const request = requests.find(r => r.id === requestId);
+      if (request && request.user_id !== user.id) {
+        await supabase.from('notifications').insert([{
+          user_id: request.user_id,
+          actor_id: user.id,
+          type: 'new_prayer_comment', // You might need to add this text to your Hub.tsx to render it nicely!
+          post_id: null 
+        }]);
+      }
+
       setCommentText('');
       fetchRequests();
     } catch (e) { console.error(e); }
