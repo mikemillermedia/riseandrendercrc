@@ -27,6 +27,7 @@ export default function Hub() {
 
   const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null); // NEW: Fetches user avatar for UI
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // NOTIFICATION STATES
@@ -35,7 +36,8 @@ export default function Hub() {
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   
-  const notifMenuRef = useRef<HTMLDivElement>(null);
+  const desktopNotifRef = useRef<HTMLDivElement>(null);
+  const mobileNotifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const hasSeenTooltip = localStorage.getItem('hasSeenHubTooltip');
@@ -87,6 +89,17 @@ export default function Hub() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Fetch avatar for the bottom bar and desktop header
+  useEffect(() => {
+    if (user) {
+      const fetchProfile = async () => {
+        const { data } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single();
+        if (data) setCurrentUserProfile(data);
+      };
+      fetchProfile();
+    }
+  }, [user]);
+
   // Fetch unread count actively
   useEffect(() => {
     if (user) {
@@ -100,7 +113,7 @@ export default function Hub() {
       };
       fetchUnread();
     }
-  }, [user, showNotificationsMenu]); // Update when menu closes/opens
+  }, [user, showNotificationsMenu]); 
 
   // Fetch notifications only when the menu is opened
   useEffect(() => {
@@ -112,7 +125,7 @@ export default function Hub() {
           .select('*, actor:actor_id(first_name, last_name, avatar_url)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(20); // Keep menu lean
+          .limit(20); 
           
         if (data) setNotifications(data);
         setLoadingNotifs(false);
@@ -129,10 +142,13 @@ export default function Hub() {
     }
   }, [showNotificationsMenu, user]);
 
-  // Click outside listener for notification menu
+  // Click outside listener for notification menu (checks both mobile and desktop refs)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target as Node)) {
+      if (
+        (desktopNotifRef.current && !desktopNotifRef.current.contains(event.target as Node)) &&
+        (mobileNotifRef.current && !mobileNotifRef.current.contains(event.target as Node))
+      ) {
         setShowNotificationsMenu(false);
       }
     };
@@ -165,10 +181,6 @@ export default function Hub() {
         <MessageSquare size={20} /> Community Chat
       </button>
       
-      <button onClick={() => { setActiveTab('profile'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <User size={20} /> My Profile
-      </button>
-      
       <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <Folder size={20} /> The Vault
       </button>
@@ -187,7 +199,7 @@ export default function Hub() {
   return (
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
       
-      {/* MOBILE HEADER & GLOBAL TOP RIGHT ICONS */}
+      {/* MOBILE HEADER (CLEANED UP) */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50 md:hidden">
         
         <div className="flex items-center font-black uppercase tracking-wider text-[13px] sm:text-sm whitespace-nowrap overflow-hidden mr-2">
@@ -195,79 +207,8 @@ export default function Hub() {
          <span className="text-[#ff4d00]">Community</span>
         </div>
         
-        {/* Left-to-Right layout (Bell -> Mail -> Menu) */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          
-          {/* 1. MOBILE NOTIFICATION BELL */}
-          <div className="relative" ref={notifMenuRef}>
-            <button 
-              onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
-              className="relative p-2 text-white/80 hover:text-white transition-colors"
-            >
-              <Bell size={22} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />
-              )}
-            </button>
-
-            {/* NOTIFICATION MENU DROPDOWN (MOBILE FIXED FIX) */}
-            <AnimatePresence>
-              {showNotificationsMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="fixed top-[70px] right-4 w-[calc(100vw-32px)] max-w-[340px] max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[100] origin-top-right"
-                >
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
-                  {loadingNotifs ? (
-                    <div className="p-4 text-center text-xs text-white/40">Loading...</div>
-                  ) : notifications.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
-                  ) : (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => {
-                          setShowNotificationsMenu(false);
-                          if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
-                          else if (notif.type === 'new_follower') setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
-                          else if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
-                        }}
-                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                          {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
-                        </div>
-                        <div className="flex-grow min-w-0">
-                          <p className="text-sm text-white/90 leading-snug">
-                            <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
-                            {notif.type === 'new_follower' && ' followed you.'}
-                            {notif.type === 'new_post' && ' published a post.'}
-                            {notif.type === 'new_dm' && ' sent a message.'}
-                          </p>
-                          <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* 2. MOBILE INBOX BUTTON */}
-          <button 
-            onClick={() => {
-              setActiveTab('messages');
-              if (showWelcomeTooltip) dismissTooltip(); 
-            }}
-            className="relative p-2 text-white/80 hover:text-white transition-colors"
-          >
-            <Mail size={22} />
-          </button>
-
-          {/* 3. MOBILE HAMBURGER MENU */}
+          {/* MOBILE HAMBURGER MENU */}
           <button 
             onClick={() => {
               setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -336,7 +277,7 @@ export default function Hub() {
         <div className="hidden md:flex absolute top-6 right-8 z-[100] items-center gap-3">
           
           {/* DESKTOP NOTIFICATION BELL */}
-          <div className="relative" ref={notifMenuRef}>
+          <div className="relative" ref={desktopNotifRef}>
             <button 
               onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
               className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all shadow-lg"
@@ -396,15 +337,28 @@ export default function Hub() {
           {/* DESKTOP INBOX BUTTON */}
           <button 
             onClick={() => setActiveTab('messages')}
-            className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all shadow-lg"
+            className={`relative p-2.5 rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-lg ${activeTab === 'messages' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'bg-white/5 text-white/80 hover:text-white'}`}
           >
             <Mail size={20} />
+          </button>
+
+          {/* DESKTOP PROFILE AVATAR */}
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all shadow-lg ${activeTab === 'profile' ? 'border-[#ff4d00]' : 'border-transparent hover:border-white/50'}`}
+          >
+            {currentUserProfile?.avatar_url ? (
+              <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-white/5 flex items-center justify-center"><User size={20} className="text-white/60" /></div>
+            )}
           </button>
 
         </div>
 
         {/* MAIN CONTENT AREA */}
-        <div className="p-6 md:p-12 max-w-5xl mx-auto w-full pt-10 md:pt-16">
+        {/* Adjusted bottom padding on mobile (pb-28) to ensure content clears the floating bottom bar */}
+        <div className="p-6 md:p-12 max-w-5xl mx-auto w-full pt-10 md:pt-16 pb-28 md:pb-12">
           {activeTab === 'activity' && <Members setActiveTab={setActiveTab} />}
           {activeTab === 'messages' && <DirectMessages user={user} />}
           {activeTab === 'collabs' && <CollabBoard user={user} />}
@@ -485,6 +439,95 @@ export default function Hub() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* NEW FLOATING MOBILE BOTTOM NAVIGATION BAR */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#131313]/90 backdrop-blur-2xl border-t border-white/10 z-[100] px-6 py-3 pb-6 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        
+        {/* 1. NOTIFICATIONS (Bell) */}
+        <div className="relative" ref={mobileNotifRef}>
+          <button 
+            onClick={() => setShowNotificationsMenu(!showNotificationsMenu)} 
+            className={`relative p-2 transition-all duration-300 ${showNotificationsMenu ? 'text-[#ff4d00] scale-110' : 'text-white/60 hover:text-white'}`}
+          >
+            <Bell size={26} />
+            {unreadCount > 0 && <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />}
+          </button>
+
+          {/* MOBILE NOTIFICATION DROPDOWN (Opens Upwards) */}
+          <AnimatePresence>
+            {showNotificationsMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                className="fixed bottom-[80px] left-4 right-4 max-h-[60vh] overflow-y-auto bg-[#1a1a1a]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-2 z-[110] origin-bottom"
+              >
+                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
+                {loadingNotifs ? (
+                  <div className="p-4 text-center text-xs text-white/40">Loading...</div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
+                ) : (
+                  notifications.map(notif => (
+                    <div 
+                      key={notif.id} 
+                      onClick={() => {
+                        setShowNotificationsMenu(false);
+                        if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
+                        else if (notif.type === 'new_follower') setSearchParams({ tab: 'activity', viewUser: notif.actor_id });
+                        else if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
+                      }}
+                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <p className="text-sm text-white/90 leading-snug">
+                          <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
+                          {notif.type === 'new_follower' && ' followed you.'}
+                          {notif.type === 'new_post' && ' published a post.'}
+                          {notif.type === 'new_dm' && ' sent a message.'}
+                        </p>
+                        <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 2. CHAT FEED (MessageSquare) */}
+        <button 
+          onClick={() => { setActiveTab('chat'); setShowNotificationsMenu(false); }} 
+          className={`p-2 transition-all duration-300 ${activeTab === 'chat' ? 'text-[#ff4d00] scale-110' : 'text-white/60 hover:text-white'}`}
+        >
+          <MessageSquare size={26} />
+        </button>
+
+        {/* 3. INBOX (Mail) */}
+        <button 
+          onClick={() => { setActiveTab('messages'); setShowNotificationsMenu(false); }} 
+          className={`p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-[#ff4d00] scale-110' : 'text-white/60 hover:text-white'}`}
+        >
+          <Mail size={26} />
+        </button>
+
+        {/* 4. PROFILE AVATAR */}
+        <button 
+          onClick={() => { setActiveTab('profile'); setShowNotificationsMenu(false); }} 
+          className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-all duration-300 ${activeTab === 'profile' ? 'border-[#ff4d00] scale-110' : 'border-transparent'}`}
+        >
+          {currentUserProfile?.avatar_url ? (
+            <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-white/10 flex items-center justify-center"><User size={18} className="text-white/60" /></div>
+          )}
+        </button>
+
       </div>
     </div>
   );
