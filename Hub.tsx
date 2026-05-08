@@ -40,6 +40,36 @@ export default function Hub() {
   const mobileNotifRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
 
+  // --- DYNAMIC NATIVE SEO LOGIC ---
+  useEffect(() => {
+    const tabTitles: { [key: string]: string } = {
+      activity: 'Latest Activity',
+      messages: 'Messages',
+      collabs: 'Kingdom Collabs',
+      prayer: 'Prayer Wall',
+      chat: 'Community Chat',
+      profile: 'My Profile',
+      guide: 'App Guide',
+      vault: 'The Vault'
+    };
+
+    const pageTitle = tabTitles[activeTab] || 'Community Hub';
+    document.title = `${pageTitle} | Rise & Render`;
+
+    let metaDescription = document.querySelector('meta[name="description"]');
+    const descriptionText = "The private ecosystem for faith-driven creators. Connect, collaborate, and master your craft within the Rise & Render community.";
+
+    if (metaDescription) {
+      metaDescription.setAttribute("content", descriptionText);
+    } else {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute("name", "description");
+      metaDescription.setAttribute("content", descriptionText);
+      document.head.appendChild(metaDescription);
+    }
+  }, [activeTab]);
+  // --------------------------------
+
   useEffect(() => {
     const hasSeenTooltip = localStorage.getItem('hasSeenHubTooltip');
     if (!hasSeenTooltip) {
@@ -175,17 +205,11 @@ export default function Hub() {
     navigate('/');
   };
 
-  // RESTORED: Notification click handler to delete it immediately
   const handleNotificationClick = async (notif: any) => {
     setShowNotificationsMenu(false);
-    
-    // Immediately remove from UI for snappy feel
     setNotifications(prev => prev.filter(n => n.id !== notif.id));
-    
-    // Delete from database
     await supabase.from('notifications').delete().eq('id', notif.id);
 
-    // Route user to correct spot
     if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
     else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
     else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
@@ -520,8 +544,6 @@ export default function Hub() {
 
       {/* FLOATING MOBILE BOTTOM NAVIGATION BAR */}
       <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100vw-40px)] max-w-[360px] bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-6 py-2.5 rounded-full flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-        
-        {/* 1. NOTIFICATIONS (Bell) */}
         <div className="relative" ref={mobileNotifRef}>
           <button 
             onClick={() => setShowNotificationsMenu(!showNotificationsMenu)} 
@@ -531,24 +553,18 @@ export default function Hub() {
             {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff4d00] rounded-full border border-[#1a1a1a]" />}
           </button>
         </div>
-
-        {/* 2. CHAT FEED (MessageSquare) */}
         <button 
           onClick={() => { setActiveTab('chat'); setShowNotificationsMenu(false); }} 
           className={`p-2 transition-all duration-300 ${activeTab === 'chat' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
         >
           <MessageSquare size={20} strokeWidth={1.5} />
         </button>
-
-        {/* 3. PRAYER WALL (HeartHandshake) */}
         <button 
           onClick={() => { setActiveTab('prayer'); setShowNotificationsMenu(false); }} 
           className={`p-2 transition-all duration-300 ${activeTab === 'prayer' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
         >
           <HeartHandshake size={20} strokeWidth={1.5} />
         </button>
-
-        {/* 4. INBOX (Mail) */}
         <button 
           onClick={() => { setActiveTab('messages'); setShowNotificationsMenu(false); }} 
           className={`relative p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
@@ -560,8 +576,6 @@ export default function Hub() {
             </span>
           )}
         </button>
-
-        {/* 5. PROFILE AVATAR */}
         <button 
           onClick={() => { setActiveTab('profile'); setShowNotificationsMenu(false); }} 
           className={`w-7 h-7 rounded-full overflow-hidden border transition-all duration-300 ${activeTab === 'profile' ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
@@ -572,7 +586,6 @@ export default function Hub() {
             <div className="w-full h-full bg-white/10 flex items-center justify-center"><User size={14} strokeWidth={1.5} className="text-white/80" /></div>
           )}
         </button>
-
       </div>
     </div>
   );
