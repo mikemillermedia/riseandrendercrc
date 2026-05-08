@@ -18,6 +18,24 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // --- NATIVE SEO LOGIC ---
+  useEffect(() => {
+    document.title = "Rise & Render | Community Login";
+    
+    let metaDescription = document.querySelector('meta[name="description"]');
+    const descriptionText = "Sign in or create a free account for the Rise & Render Community. Connect, collaborate, and access premium tools built exclusively for faith-driven creators.";
+    
+    if (metaDescription) {
+      metaDescription.setAttribute("content", descriptionText);
+    } else {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute("name", "description");
+      metaDescription.setAttribute("content", descriptionText);
+      document.head.appendChild(metaDescription);
+    }
+  }, []);
+  // ------------------------
+
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
