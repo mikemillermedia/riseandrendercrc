@@ -53,6 +53,23 @@ const PricingPage: React.FC = () => {
     window.scrollTo(0, 0);
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
     window.addEventListener('scroll', handleScroll);
+
+    // --- NATIVE SEO LOGIC ---
+    document.title = "Rise & Render | Studio Pricing & Packages";
+    
+    let metaDescription = document.querySelector('meta[name="description"]');
+    const descriptionText = "Build your custom podcast studio package. From a la carte studio time to full-service Signature Partnerships, get an instant estimate for your content needs.";
+    
+    if (metaDescription) {
+      metaDescription.setAttribute("content", descriptionText);
+    } else {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute("name", "description");
+      metaDescription.setAttribute("content", descriptionText);
+      document.head.appendChild(metaDescription);
+    }
+    // ------------------------
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
