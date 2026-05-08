@@ -41,6 +41,23 @@ const LandingPage: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // --- NATIVE SEO LOGIC ---
+    document.title = "Rise & Render | Premium Video Podcasting Studio DFW";
+    
+    let metaDescription = document.querySelector('meta[name="description"]');
+    const descriptionText = "Dallas/Fort Worth's premier video podcasting studio. Rise in your purpose. Render your calling. Book your studio session or join our exclusive creator community today.";
+    
+    if (metaDescription) {
+      metaDescription.setAttribute("content", descriptionText);
+    } else {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute("name", "description");
+      metaDescription.setAttribute("content", descriptionText);
+      document.head.appendChild(metaDescription);
+    }
+    // ------------------------
+
   }, []);
 
   return (
