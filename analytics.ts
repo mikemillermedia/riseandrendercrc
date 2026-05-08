@@ -5,7 +5,7 @@ export const loadAnalytics = () => {
   if (document.getElementById('google-analytics-script')) return;
 
   // 2. Replace this with your actual Google Analytics Measurement ID
-  const TRACKING_ID = 'G-XXXXXXXXXX'; 
+  const TRACKING_ID = 'G-X95Y8Z072K'; 
 
   // 3. Create the script tag dynamically
   const script = document.createElement('script');
