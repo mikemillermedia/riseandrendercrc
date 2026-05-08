@@ -171,6 +171,22 @@ const PricingPage: React.FC = () => {
     return `https://form.jotform.com/261096943415057?package=${encodeURIComponent(packageName + ' Retainer')}&addons=All%20Inclusive&total=Custom`;
   };
 
+  // --- NEW: TRACKING FUNCTION FOR SIGN UPS ---
+  const handleSubscribeClick = (tierName: string) => {
+    // 1. Tell Google Analytics someone clicked Subscribe
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'generate_lead', {
+        event_category: 'subscription',
+        event_label: tierName,
+      });
+    }
+
+    // 2. Tell Facebook someone clicked Subscribe
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'Lead', { content_name: tierName });
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] text-[#F5F5F0] overflow-x-hidden">
       <CustomCursor />
@@ -310,6 +326,7 @@ const PricingPage: React.FC = () => {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               href={getSignatureUrl("The Ascent")} target="_blank" rel="noopener noreferrer"
+              onClick={() => handleSubscribeClick("The Ascent")}
               className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
             >
               Apply Now
@@ -331,6 +348,7 @@ const PricingPage: React.FC = () => {
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.98 }}
               href={getSignatureUrl("The Summit")} target="_blank" rel="noopener noreferrer"
+              onClick={() => handleSubscribeClick("The Summit")}
               className="w-full block text-center bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors shadow-lg"
             >
               Apply Now
@@ -355,6 +373,7 @@ const PricingPage: React.FC = () => {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               href={getSignatureUrl("The Horizon")} target="_blank" rel="noopener noreferrer"
+              onClick={() => handleSubscribeClick("The Horizon")}
               className="w-full block text-center bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
             >
               Apply Now
@@ -618,6 +637,7 @@ const PricingPage: React.FC = () => {
                 href={generateCalculatorUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => handleSubscribeClick("Custom Calculator Package")}
                 className="w-full flex items-center justify-center gap-3 bg-[#ff4d00] text-black px-6 py-4.5 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-[0_10px_30px_rgba(255,77,0,0.3)] text-base relative z-10"
               >
                 Submit Application <ArrowRight size={18} />
