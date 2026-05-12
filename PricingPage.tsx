@@ -265,10 +265,32 @@ const PricingPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="text-xl md:text-3xl text-[#F5F5F0]/90 mb-12 font-medium max-w-3xl mx-auto leading-tight"
+            className="text-xl md:text-3xl text-[#F5F5F0]/90 mb-8 font-medium max-w-3xl mx-auto leading-tight"
           >
             We don’t just record podcasts. We help you clarify your message, create high-impact content, and build real authority.
           </motion.p>
+
+          {/* NEW BUTTONS */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full"
+          >
+            <button
+              onClick={() => document.getElementById('partnerships')?.scrollIntoView({ behavior: 'smooth' })}
+              className="w-full sm:w-64 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_10px_30px_rgba(255,77,0,0.3)]"
+            >
+              Book Studio
+            </button>
+            <button
+              onClick={() => document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' })}
+              className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105"
+            >
+              Pricing Breakdown
+            </button>
+          </motion.div>
+
         </motion.div>
       </section>
 
@@ -314,6 +336,7 @@ const PricingPage: React.FC = () => {
 
       {/* SIGNATURE RETAINER PACKAGES */}
       <motion.section
+        id="partnerships"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
@@ -407,6 +430,7 @@ const PricingPage: React.FC = () => {
 
       {/* INTERACTIVE PRICING CALCULATOR */}
       <motion.section
+        id="calculator"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
@@ -680,3 +704,5 @@ const PricingPage: React.FC = () => {
 };
 
 export default PricingPage;
+
+
