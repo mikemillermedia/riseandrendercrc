@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Star } from 'lucide-react';
 import CustomCursor from './components/CustomCursor';
 import BrandLogo from './components/BrandLogo';
 
@@ -144,10 +145,10 @@ const LandingPage: React.FC = () => {
             </button>
           </motion.div>
 
-          {/* INFINITE BRAND TICKER (Faster speed, huge bottom margin added here) */}
+          {/* INFINITE BRAND TICKER */}
           <motion.div 
             variants={itemVariants}
-            className="w-full max-w-2xl mx-auto flex flex-col items-center opacity-80 mb-32 md:mb-48"
+            className="w-full max-w-2xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-32"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">
               Trusted by creators from
@@ -159,7 +160,7 @@ const LandingPage: React.FC = () => {
                 transition={{
                   repeat: Infinity,
                   ease: "linear",
-                  duration: 12, // QUICKER SCROLL (Lower number = faster)
+                  duration: 12, 
                 }}
               >
                 {[...BRANDS, ...BRANDS].map((brand, index) => (
@@ -171,6 +172,66 @@ const LandingPage: React.FC = () => {
                   </span>
                 ))}
               </motion.div>
+            </div>
+          </motion.div>
+
+          {/* SPOTLIGHT GOOGLE REVIEW */}
+          <motion.div
+            variants={itemVariants}
+            className="w-full max-w-4xl mx-auto mb-32 relative group"
+          >
+            {/* Ambient orange glow behind the review */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d00]/20 via-transparent to-transparent rounded-[2.5rem] blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-700" />
+            
+            <div className="relative bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-8 md:p-14 rounded-[2.5rem] text-left shadow-2xl overflow-hidden cursor-default transition-all duration-500 hover:border-white/20">
+              {/* Decorative top-right accent */}
+              <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#ff4d00]/10 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 mb-6">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={22} className="text-[#ff4d00] fill-[#ff4d00]" />
+                    ))}
+                  </div>
+                  
+                  {/* MAIN QUOTE HOOK */}
+                  <h3 className="text-2xl md:text-3xl font-bold text-white leading-snug md:leading-tight mb-4">
+                    "10/10 recommended! I loved working with this studio. Not only was it <span className="text-[#ff4d00]">easy to just show up and record</span> for the day, but the space was very clean, tidy and stunning in person. The <span className="text-[#ff4d00]">video quality is top tier</span>, and you can tell everything is being done professionally."
+                  </h3>
+                  
+                  {/* DETAILED PRAISE */}
+                  <p className="text-white/70 text-sm md:text-base leading-relaxed mb-8">
+                    "I loved that they have a bathroom in the space so you don't have to go far if you need it, and there's a place to hang and steam your clothes if you're doing outfit changes. I definitely recommend working with this company!"
+                  </p>
+                  
+                  <div className="flex items-center gap-4">
+                    {/* Placeholder Avatar */}
+                    <div className="w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden">
+                      <span className="text-white/50 font-bold">C</span>
+                    </div>
+                    <div>
+                      {/* CLIENT NAME */}
+                      <p className="text-white font-black uppercase tracking-widest text-sm">Candace J</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" className="w-3.5 h-3.5" />
+                        <p className="text-white/50 text-xs font-medium">Verified Google Review</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subtle CTA next to the review to drive clicks */}
+                <div className="hidden lg:flex flex-col items-center justify-center p-8 border-l border-white/10 ml-4 pl-12 shrink-0">
+                  <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-4">Ready to level up?</p>
+                  <button 
+                    onClick={() => navigate('/pricing')}
+                    className="bg-transparent hover:bg-white text-white hover:text-black border border-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all"
+                  >
+                    View Pricing
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
 
