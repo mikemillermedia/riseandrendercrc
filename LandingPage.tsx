@@ -135,7 +135,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/pricing')}
               className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105"
             >
-              Studio Bookings
+              Studio Pricing
             </button>
             <button
               onClick={() => navigate('/login')}
