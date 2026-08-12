@@ -42,9 +42,10 @@ const itemVariants = {
   },
 };
 
+// FIX: Changed "visible" to "show" so the children elements render correctly
 const sectionVariants = {
   hidden: { opacity: 0, y: 50, scale: 0.95 },
-  visible: { 
+  show: { 
     opacity: 1, 
     y: 0, 
     scale: 1, 
@@ -233,7 +234,7 @@ const CombinedPage: React.FC = () => {
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
       <CustomCursor />
 
-      {/* 1. CINEMATIC VIDEO BACKGROUND (Fixed for the hero effect) */}
+      {/* 1. CINEMATIC VIDEO BACKGROUND */}
       <motion.div 
         initial={{ opacity: 0, scale: 1.05 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -264,7 +265,6 @@ const CombinedPage: React.FC = () => {
           <BrandLogo className="h-10 md:h-16 w-auto" />
         </div>
         
-        {/* Added Navigation links for unified page */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#F5F5F0]/80">
           <motion.button whileHover={{ scale: 1.05 }} onClick={() => navigate('/login')} className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full transition-all border border-white/10 backdrop-blur-md">
             Hub Login
@@ -273,7 +273,7 @@ const CombinedPage: React.FC = () => {
       </motion.nav>
 
       {/* 3. CENTERED CONTENT PORTAL (Landing Page Hero) */}
-      <main className="relative z-20 flex-grow flex flex-col items-center justify-start px-6 text-center pt-32 pb-16">
+      <main className="relative z-20 flex-grow flex flex-col items-center justify-start px-6 text-center pt-32 pb-0">
         
         <div className="h-16 md:h-32 flex-shrink-0" />
 
@@ -333,7 +333,7 @@ const CombinedPage: React.FC = () => {
                 transition={{
                   repeat: Infinity,
                   ease: "linear",
-                  duration: 15, // slightly slower for more brands
+                  duration: 15,
                 }}
               >
                 {[...BRANDS, ...BRANDS].map((brand, index) => (
@@ -348,10 +348,10 @@ const CombinedPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* SMALLER SPOTLIGHT GOOGLE REVIEW */}
+          {/* SPOTLIGHT GOOGLE REVIEW */}
           <motion.div
             variants={itemVariants}
-            className="w-full max-w-3xl mx-auto mb-20 relative group"
+            className="w-full max-w-3xl mx-auto relative group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d00]/20 via-transparent to-transparent rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-700" />
             
@@ -366,12 +366,10 @@ const CombinedPage: React.FC = () => {
                     ))}
                   </div>
                   
-                  {/* SMALLER QUOTE HOOK */}
                   <h3 className="text-xl md:text-2xl font-bold text-white leading-snug md:leading-tight mb-3">
                     "10/10 recommended! I loved working with this studio. Not only was it <span className="text-[#ff4d00]">easy to just show up and record</span> for the day, but the space was very clean, tidy and stunning in person. The <span className="text-[#ff4d00]">video quality is top tier</span>, and you can tell everything is being done professionally."
                   </h3>
                   
-                  {/* SMALLER DETAILED PRAISE */}
                   <p className="text-white/70 text-xs md:text-sm leading-relaxed mb-6">
                     "I loved that they have a bathroom in the space so you don't have to go far if you need it, and there's a place to hang and steam your clothes if you're doing outfit changes. I definitely recommend working with this company!"
                   </p>
@@ -405,11 +403,14 @@ const CombinedPage: React.FC = () => {
         </motion.div>
       </main>
 
+      {/* FIX: SMOOTH FADE TRANSITION BETWEEN VIDEO AND DARK BACKGROUND */}
+      <div className="relative z-20 w-full h-32 md:h-64 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1 mt-10" />
+
       {/* --- PRICING & SYSTEM SECTIONS BEGIN HERE --- */}
-      <div id="pricing-section" className="relative z-30 bg-[#0a0a0a] rounded-t-[3rem] border-t border-white/10 pt-10">
+      <div id="pricing-section" className="relative z-30 bg-[#0a0a0a] pt-10">
         
-        {/* FIX: [transform:translateZ(0)] added below to trap the stars/particles inside the section */}
-        <div className="absolute inset-0 z-0 overflow-hidden rounded-t-[3rem] pointer-events-none [transform:translateZ(0)]">
+        {/* Subtle Fluid/Depth Background for Pricing Section */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none [transform:translateZ(0)]">
           <FluidBackground />
           <motion.div
             animate={{ x: [0, 80, 0, -80, 0], y: [0, -80, 0, 80, 0] }}
@@ -423,7 +424,7 @@ const CombinedPage: React.FC = () => {
         {/* THE RISE PODCAST SYSTEM */}
         <motion.section
           initial="hidden"
-          whileInView="visible"
+          whileInView="show" // FIX: Changed from visible to show
           viewport={{ once: true, margin: "-100px" }}
           variants={sectionVariants}
           className="py-24 relative z-10"
@@ -464,7 +465,7 @@ const CombinedPage: React.FC = () => {
         <motion.section
           id="partnerships"
           initial="hidden"
-          whileInView="visible"
+          whileInView="show" // FIX: Changed from visible to show
           viewport={{ once: true, margin: "-100px" }}
           variants={sectionVariants}
           className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10"
@@ -556,7 +557,7 @@ const CombinedPage: React.FC = () => {
         <motion.section
           id="calculator"
           initial="hidden"
-          whileInView="visible"
+          whileInView="show" // FIX: Changed from visible to show
           viewport={{ once: true, margin: "-100px" }}
           variants={sectionVariants}
           className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-16"
@@ -661,7 +662,7 @@ const CombinedPage: React.FC = () => {
                               <p className={`text-sm font-black mt-2.5 ${isSelected ? 'text-[#ff4d00]' : 'text-white/80'}`}>
                                 +${addon.price} 
                                 <span className="text-xs font-normal">
-                                  {addon.type === 'per_clip' ? ' / clip' : addon.type === 'per_episode' ? ' / episode' : ' / session'}
+                                  {addon.type === 'per_clip' ? ' / clip' : addon.type === 'per_episode' ? ' / session'}
                                 </span>
                               </p>
                             </div>
