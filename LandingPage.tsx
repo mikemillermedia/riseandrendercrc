@@ -427,7 +427,7 @@ const CombinedPage: React.FC = () => {
               <p className="text-[#F5F5F0]/60 max-w-xl mx-auto">Our 5-pillar framework for total content dominance.</p>
             </motion.div>
 
-            {/* FIX: Explicit stagger block for the grid items */}
+            {/* Explicit stagger block for the grid items */}
             <motion.div 
               initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
               variants={staggerGrid}
