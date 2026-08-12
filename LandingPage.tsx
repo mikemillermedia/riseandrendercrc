@@ -37,7 +37,22 @@ const itemVariants = {
   },
 };
 
-const CombinedPage: React.FC = () => {
+// --- SCROLL ANIMATION VARIANTS (Pricing Section) ---
+const staggerGrid = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+};
+
+const pricingItemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } 
+  }
+};
+
+const LandingPage: React.FC = () => {
   const navigate = useNavigate();
 
   // --- SCROLL & PARALLAX STATE ---
@@ -665,7 +680,7 @@ const CombinedPage: React.FC = () => {
                               <p className={`text-sm font-black mt-2.5 ${isSelected ? 'text-[#ff4d00]' : 'text-white/80'}`}>
                                 +${addon.price} 
                                 <span className="text-xs font-normal">
-                                  {addon.type === 'per_clip' ? ' / clip' : addon.type === 'per_episode' ? ' / session'}
+                                  {addon.type === 'per_clip' ? ' / clip' : addon.type === 'per_episode' ? ' / episode' : ' / session'}
                                 </span>
                               </p>
                             </div>
@@ -854,4 +869,4 @@ const CombinedPage: React.FC = () => {
   );
 };
 
-export default CombinedPage;
+export default LandingPage;
