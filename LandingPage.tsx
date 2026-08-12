@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, Clock, 
+  Star, CheckCircle2, TrendingUp, Video, Scissors, Share2, Palette, 
   Calculator, ArrowRight, PlayCircle, Image as ImageIcon, Plus, Minus, FileText, 
   Headphones, Monitor, Radio, Camera, Crown 
 } from 'lucide-react';
@@ -20,40 +20,35 @@ const BRANDS = [
   "We Going Up"
 ];
 
-// --- LUXURY ANIMATION VARIANTS ---
+// --- LUXURY ANIMATION VARIANTS (Landing Page Hero) ---
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.4,
-    },
+    transition: { staggerChildren: 0.15, delayChildren: 0.4 },
   },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 40, filter: "blur(12px)" },
   show: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
+    opacity: 1, y: 0, filter: "blur(0px)",
     transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
-// FIX: Changed "visible" to "show" so the children elements render correctly
-const sectionVariants = {
-  hidden: { opacity: 0, y: 50, scale: 0.95 },
+// --- SCROLL ANIMATION VARIANTS (Pricing Section) ---
+const staggerGrid = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+};
+
+const pricingItemVariants = {
+  hidden: { opacity: 0, y: 30 },
   show: { 
     opacity: 1, 
     y: 0, 
-    scale: 1, 
-    transition: { 
-      duration: 0.8, 
-      ease: [0.22, 1, 0.36, 1],
-      staggerChildren: 0.1 
-    } 
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } 
   }
 };
 
@@ -81,7 +76,6 @@ const CombinedPage: React.FC = () => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
     window.addEventListener('scroll', handleScroll);
 
-    // --- NATIVE SEO LOGIC ---
     document.title = "Rise & Render | Premium Video Podcasting Studio & Pricing";
     
     let metaDescription = document.querySelector('meta[name="description"]');
@@ -403,7 +397,7 @@ const CombinedPage: React.FC = () => {
         </motion.div>
       </main>
 
-      {/* FIX: SMOOTH FADE TRANSITION BETWEEN VIDEO AND DARK BACKGROUND */}
+      {/* SMOOTH FADE TRANSITION BETWEEN VIDEO AND DARK BACKGROUND */}
       <div className="relative z-20 w-full h-32 md:h-64 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1 mt-10" />
 
       {/* --- PRICING & SYSTEM SECTIONS BEGIN HERE --- */}
@@ -422,20 +416,23 @@ const CombinedPage: React.FC = () => {
         </div>
 
         {/* THE RISE PODCAST SYSTEM */}
-        <motion.section
-          initial="hidden"
-          whileInView="show" // FIX: Changed from visible to show
-          viewport={{ once: true, margin: "-100px" }}
-          variants={sectionVariants}
-          className="py-24 relative z-10"
-        >
+        <section className="py-24 relative z-10">
           <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <div className="text-center mb-16">
+            <motion.div 
+              initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+              variants={pricingItemVariants}
+              className="text-center mb-16"
+            >
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Rise Podcast System™</h2>
               <p className="text-[#F5F5F0]/60 max-w-xl mx-auto">Our 5-pillar framework for total content dominance.</p>
-            </div>
+            </motion.div>
 
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* FIX: Explicit stagger block for the grid items */}
+            <motion.div 
+              initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+              variants={staggerGrid}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
               {[{ icon: TrendingUp, title: "1. Strategy", lines: ["• Podcast positioning", "• Episode structure", "• Content calendar", "• Growth roadmap"] },
                 { icon: Video, title: "2. Production", lines: ["• 4K multi-camera recording", "• Professional lighting", "• Studio audio engineering", "• On-site support"] },
                 { icon: Scissors, title: "3. Post-Production", lines: ["• Full episode edit", "• Hook optimization", "• Audio mastering", "• Visual captions"] },
@@ -444,7 +441,7 @@ const CombinedPage: React.FC = () => {
               ].map((item, idx) => (
                 <motion.div 
                   key={idx}
-                  variants={itemVariants}
+                  variants={pricingItemVariants}
                   whileHover={{ y: -5, borderColor: 'rgba(255, 77, 0, 0.3)' }} 
                   className={`bg-[#0a0a0a]/80 backdrop-blur-md p-8 rounded-3xl border border-white/5 hover:bg-[#131313]/90 transition-all duration-300 ${item.colspan ? `lg:col-span-${item.colspan} flex flex-col md:flex-row items-start md:items-center gap-8` : ''}`}
                 >
@@ -459,27 +456,28 @@ const CombinedPage: React.FC = () => {
               ))}
             </motion.div>
           </div>
-        </motion.section>
+        </section>
 
         {/* SIGNATURE RETAINER PACKAGES */}
-        <motion.section
-          id="partnerships"
-          initial="hidden"
-          whileInView="show" // FIX: Changed from visible to show
-          viewport={{ once: true, margin: "-100px" }}
-          variants={sectionVariants}
-          className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10"
-        >
-          <div className="text-center mb-16">
+        <section id="partnerships" className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10">
+          <motion.div 
+            initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+            variants={pricingItemVariants}
+            className="text-center mb-16"
+          >
             <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6">Signature <span className="text-[#ff4d00]">Partnerships</span></h2>
             <p className="text-xl text-[#F5F5F0]/80 max-w-2xl mx-auto leading-relaxed">
               For creators and business owners who want us to handle everything. Pricing starts at $1,500/month.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          <motion.div 
+            initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+            variants={staggerGrid}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch"
+          >
             {/* I. The Ascent */}
-            <motion.div variants={itemVariants} whileHover={{ y: -10 }} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl">
+            <motion.div variants={pricingItemVariants} whileHover={{ y: -10 }} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl">
               <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">I. The Ascent</h3>
               <p className="text-4xl font-black text-[#ff4d00] mb-6">$1,500<span className="text-sm text-white/40 font-medium">/mo</span></p>
               <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
@@ -500,7 +498,7 @@ const CombinedPage: React.FC = () => {
             </motion.div>
 
             {/* II. The Summit */}
-            <motion.div variants={itemVariants} whileHover={{ y: -10 }} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col transition-all shadow-[0_0_40px_rgba(255,77,0,0.2)] relative transform lg:-translate-y-4">
+            <motion.div variants={pricingItemVariants} whileHover={{ y: -10 }} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col transition-all shadow-[0_0_40px_rgba(255,77,0,0.2)] relative transform lg:-translate-y-4">
               <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-xs font-black uppercase px-4 py-1.5 rounded-bl-xl">Most Popular</div>
               <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">II. The Summit</h3>
               <p className="text-4xl font-black text-[#ff4d00] mb-6">$3,000<span className="text-sm text-white/40 font-medium">/mo</span></p>
@@ -522,7 +520,7 @@ const CombinedPage: React.FC = () => {
             </motion.div>
 
             {/* III. The Horizon */}
-            <motion.div variants={itemVariants} whileHover={{ y: -10 }} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl relative">
+            <motion.div variants={pricingItemVariants} whileHover={{ y: -10 }} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col hover:border-[#ff4d00]/30 transition-all shadow-xl relative">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight">III. The Horizon</h3>
                 <Crown size={20} className="text-yellow-500" />
@@ -545,8 +543,8 @@ const CombinedPage: React.FC = () => {
                 Apply Now
               </motion.a>
             </motion.div>
-          </div>
-        </motion.section>
+          </motion.div>
+        </section>
 
         {/* DIVIDER */}
         <div className="max-w-6xl mx-auto px-6 relative z-10">
@@ -554,15 +552,12 @@ const CombinedPage: React.FC = () => {
         </div>
 
         {/* INTERACTIVE PRICING CALCULATOR */}
-        <motion.section
-          id="calculator"
-          initial="hidden"
-          whileInView="show" // FIX: Changed from visible to show
-          viewport={{ once: true, margin: "-100px" }}
-          variants={sectionVariants}
-          className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-16"
-        >
-          <div className="text-center mb-16">
+        <section id="calculator" className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-16">
+          <motion.div 
+            initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+            variants={pricingItemVariants}
+            className="text-center mb-16"
+          >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/20 text-[#ff4d00] text-sm font-bold uppercase tracking-widest mb-6">
               <Calculator size={16} /> A La Carte Studio Time
             </div>
@@ -570,11 +565,15 @@ const CombinedPage: React.FC = () => {
             <p className="text-xl text-[#F5F5F0]/70 max-w-2xl mx-auto leading-relaxed">
               Just need a single session? Select your studio time and creative add-ons below to generate a real-time estimate.
             </p>
-          </div>
+          </motion.div>
 
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             {/* LEFT COLUMN: SELECTIONS */}
-            <motion.div variants={itemVariants} className="flex-1 space-y-12 w-full">
+            <motion.div 
+              initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+              variants={pricingItemVariants} 
+              className="flex-1 space-y-12 w-full"
+            >
               {/* Step 1: Base Time */}
               <div>
                 <h3 className="text-2xl font-black uppercase tracking-wide text-white mb-8 flex items-center gap-3">
@@ -699,7 +698,11 @@ const CombinedPage: React.FC = () => {
             </motion.div>
 
             {/* RIGHT COLUMN: THE RECEIPT / ESTIMATE */}
-            <motion.div variants={itemVariants} className="lg:w-[420px] lg:sticky lg:top-32 w-full">
+            <motion.div 
+              initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+              variants={pricingItemVariants} 
+              className="lg:w-[420px] lg:sticky lg:top-32 w-full"
+            >
               <div className="bg-[#131313]/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-9 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-[#ff4d00]/10 via-transparent to-transparent pointer-events-none" />
                 
@@ -807,7 +810,7 @@ const CombinedPage: React.FC = () => {
               </div>
             </motion.div>
           </div>
-        </motion.section>
+        </section>
 
         {/* 4. MINIMALIST FOOTER */}
         <motion.footer 
