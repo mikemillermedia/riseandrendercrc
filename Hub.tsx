@@ -589,3 +589,4 @@ export default function Hub() {
       </div>
     </div>
   );
+}
