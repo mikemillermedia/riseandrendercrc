@@ -22,6 +22,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          {/* THE MISSING ROUTE HAS BEEN ADDED BELOW */}
+          <Route path="/hub" element={<Hub />} />
         </Routes>
       </BrowserRouter>
       
