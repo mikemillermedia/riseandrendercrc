@@ -1,11 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+Import React, { useEffect, useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { 
-  LogOut, HeartHandshake, MessageSquare, User, Menu, X, 
-  Download, Folder, Activity, Bell, HelpCircle, Mail, 
-  Briefcase, Share2, Camera, UploadCloud, Sparkles 
-} from 'lucide-react'; 
+import { LogOut, HeartHandshake, MessageSquare, User, Menu, X, Download, Folder, Activity, Bell, HelpCircle, Mail, Briefcase, Share2 } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import PrayerWall from './components/PrayerWall';
 import ProfileTab from './ProfileTab';
@@ -54,15 +50,14 @@ export default function Hub() {
       chat: 'Community Chat',
       profile: 'My Profile',
       guide: 'App Guide',
-      vault: 'The Vault',
-      audit: 'Studio Audit'
+      vault: 'The Vault'
     };
 
     const pageTitle = tabTitles[activeTab] || 'Community Hub';
     document.title = `${pageTitle} | Rise & Render`;
 
     let metaDescription = document.querySelector('meta[name="description"]');
-    const descriptionText = "Equipping faith-based creators to rise in their God-given purpose and render their calling with excellence.";
+    const descriptionText = "The private ecosystem for faith-driven creators. Connect, collaborate, and master your craft within the Rise & Render community.";
 
     if (metaDescription) {
       metaDescription.setAttribute("content", descriptionText);
@@ -239,10 +234,6 @@ export default function Hub() {
       
       <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'chat' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
         <MessageSquare size={20} /> Community Chat
-      </button>
-
-      <button onClick={() => { setActiveTab('audit'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'audit' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Camera size={20} /> Studio Audit
       </button>
       
       <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
@@ -434,13 +425,9 @@ export default function Hub() {
               
               <div className="space-y-6">
                 <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
-                  <h3 className="text-xl font-black text-[#ff4d00] mb-4">Our Mission</h3>
-                  <blockquote className="border-l-4 border-[#ff4d00] pl-4 mb-4 italic text-white/90">
-                    "Arise, shine, for your light has come, and the glory of the Lord rises upon you." <br/>
-                    <span className="text-sm text-white/50 not-italic mt-1 block">— Isaiah 60:1</span>
-                  </blockquote>
+                  <h3 className="text-xl font-black text-[#ff4d00] mb-4">Welcome to the Community</h3>
                   <p className="text-white/80 leading-relaxed text-sm md:text-base">
-                    Rise & Render equips faith-based content creators with the tools, strategies, and studio setups they need to amplify their message. We provide the resources and expert guidance to help you rise in your God-given purpose and render your calling with excellence.
+                    The Rise & Render Community is a dedicated space to help you master your craft and connect with like-minded believers. Update your profile with your setup, bio, and favorite Bible reading so others can get to know you!
                   </p>
                 </div>
 
@@ -476,75 +463,6 @@ export default function Hub() {
                     <li><strong>Mobile Studio:</strong> We dispatch our cameras, lighting, and audio gear directly to your home/office.</li>
                     <li><strong>Remote Consulting:</strong> Strategic 1-on-1 guidance to architect your perfect content engine, anywhere in the world.</li>
                   </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'audit' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-3xl md:text-4xl font-black uppercase tracking-widest mb-2">AI Studio Analyzer</h1>
-              <p className="text-[#F5F5F0]/60 mb-8">Upload a photo of your space for instant, AI-generated lighting and framing advice.</p>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* THE FREE AI UPLOAD SECTION */}
-                <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-[#ff4d00]/20 text-[#ff4d00] rounded-lg"><Sparkles size={24} /></div>
-                    <h3 className="text-xl font-black text-white">Free AI Audit</h3>
-                  </div>
-                  <p className="text-white/60 text-sm mb-6">Drop a photo of your current home or office setup. Our AI will analyze your lighting, background depth, and camera angle instantly.</p>
-                  
-                  <div className="border-2 border-dashed border-white/20 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:border-[#ff4d00]/50 transition-colors cursor-pointer flex-grow bg-black/20">
-                    <UploadCloud size={40} className="text-white/40 mb-3" />
-                    <p className="font-bold text-white mb-1">Click to upload photo</p>
-                    <p className="text-xs text-white/40">PNG, JPG up to 10MB</p>
-                  </div>
-                  {/* Note: In the next phase, you will tie an onChange handler here to send the image to your AI backend */}
-                </div>
-
-                {/* THE PAID CONSULTATION UPSELL */}
-                <div className="bg-gradient-to-br from-[#ff4d00]/10 to-transparent border border-[#ff4d00]/30 p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-3xl" />
-                  
-                  <div>
-                    <div className="inline-block px-3 py-1 bg-[#ff4d00] text-white text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
-                      Expert Review
-                    </div>
-                    <h3 className="text-2xl font-black text-white mb-2">1-on-1 Strategy Session</h3>
-                    <p className="text-white/80 text-sm mb-6 leading-relaxed">
-                      AI gives general advice; I give you a blueprint. Get a 60-minute personal consultation where we dissect your space, pick the exact gear for your budget, and architect a studio that amplifies your ministry.
-                    </p>
-                    
-                    <ul className="space-y-3 mb-8">
-                      <li className="flex items-start gap-2 text-sm text-white/70">
-                        <span className="text-[#ff4d00] font-bold">✓</span> Pre-call space and gear review
-                      </li>
-                      <li className="flex items-start gap-2 text-sm text-white/70">
-                        <span className="text-[#ff4d00] font-bold">✓</span> 60-minute video consultation
-                      </li>
-                      <li className="flex items-start gap-2 text-sm text-white/70">
-                        <span className="text-[#ff4d00] font-bold">✓</span> Custom gear shopping list
-                      </li>
-                      <li className="flex items-start gap-2 text-sm text-white/70">
-                        <span className="text-[#ff4d00] font-bold">✓</span> Full video recording of our session
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mt-auto">
-                    <div className="flex items-end gap-2 mb-4">
-                      <span className="text-3xl font-black text-white">$197</span>
-                      <span className="text-xs text-white/40 mb-1">or 4 interest-free payments with Klarna</span>
-                    </div>
-                    {/* Placeholder for Stripe Checkout */}
-                    <button 
-                      onClick={() => alert("Stripe checkout integration coming soon!")}
-                      className="w-full py-4 bg-[#ff4d00] hover:bg-[#e64500] text-white font-black uppercase tracking-widest rounded-xl transition-colors shadow-[0_0_20px_rgba(255,77,0,0.3)]"
-                    >
-                      Book Consultation
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
