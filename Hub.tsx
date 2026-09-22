@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   LogOut, HeartHandshake, MessageSquare, User, Menu, X, 
   Download, Folder, Activity, Bell, HelpCircle, Mail, 
-  Briefcase, Share2, Camera, UploadCloud, Sparkles 
+  Briefcase, Share2, Camera, UploadCloud, Sparkles, Loader2 
 } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import PrayerWall from './components/PrayerWall';
@@ -40,6 +40,11 @@ export default function Hub() {
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   
+  // AI STUDIO AUDIT STATES
+  const [auditImage, setAuditImage] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [auditResult, setAuditResult] = useState<string | null>(null);
+
   const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
@@ -101,6 +106,23 @@ export default function Hub() {
         alert('Link copied to clipboard!');
       }
     } catch (err) { console.log('Share canceled', err); }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create a local URL to show the image instantly
+      const imageUrl = URL.createObjectURL(file);
+      setAuditImage(imageUrl);
+      setIsAnalyzing(true);
+      setAuditResult(null);
+
+      // Simulate an AI backend call taking 3.5 seconds
+      setTimeout(() => {
+        setIsAnalyzing(false);
+        setAuditResult("AI Analysis Complete: The natural light from the window is creating harsh shadows on the subject's face. The background feels slightly cluttered, reducing subject separation. Recommendation: Add a softbox light 45 degrees to the opposite side to balance the shadows, and move the camera 2 feet closer to create a shallower depth of field. To get specific gear recommendations and a custom blueprint, book a 1-on-1 strategy session.");
+      }, 3500);
+    }
   };
 
   useEffect(() => {
@@ -488,19 +510,53 @@ export default function Hub() {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* THE FREE AI UPLOAD SECTION */}
-                <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col">
+                <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col group relative overflow-hidden">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-[#ff4d00]/20 text-[#ff4d00] rounded-lg"><Sparkles size={24} /></div>
                     <h3 className="text-xl font-black text-white">Free AI Audit</h3>
                   </div>
                   <p className="text-white/60 text-sm mb-6">Drop a photo of your current home or office setup. Our AI will analyze your lighting, background depth, and camera angle instantly.</p>
                   
-                  <div className="border-2 border-dashed border-white/20 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:border-[#ff4d00]/50 transition-colors cursor-pointer flex-grow bg-black/20">
-                    <UploadCloud size={40} className="text-white/40 mb-3" />
-                    <p className="font-bold text-white mb-1">Click to upload photo</p>
-                    <p className="text-xs text-white/40">PNG, JPG up to 10MB</p>
+                  {/* IMAGE UPLOAD WIDGET */}
+                  <div className="relative border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-center hover:border-[#ff4d00]/50 transition-colors cursor-pointer flex-grow bg-black/20 overflow-hidden min-h-[200px]">
+                    
+                    <input 
+                      type="file" 
+                      accept="image/png, image/jpeg, image/webp" 
+                      onChange={handleImageUpload} 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                      title="Upload a photo of your studio"
+                    />
+
+                    {auditImage ? (
+                      <div className="absolute inset-0 w-full h-full z-10">
+                        <img src={auditImage} alt="Studio Upload" className="w-full h-full object-cover opacity-30" />
+                        
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 p-6 backdrop-blur-sm">
+                          {isAnalyzing ? (
+                            <motion.div initial={{opacity: 0, scale: 0.9}} animate={{opacity: 1, scale: 1}} className="flex flex-col items-center">
+                              <Loader2 size={40} className="text-[#ff4d00] animate-spin mb-4" />
+                              <p className="font-bold text-white mb-1">AI is analyzing your space...</p>
+                              <p className="text-xs text-white/60">Scanning lighting, depth, and framing.</p>
+                            </motion.div>
+                          ) : auditResult ? (
+                            <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="bg-[#1a1a1a]/95 p-5 rounded-xl border border-[#ff4d00]/30 w-full max-h-full overflow-y-auto shadow-2xl">
+                              <p className="text-sm text-white/90 text-left leading-relaxed">{auditResult}</p>
+                              <button onClick={(e) => { e.preventDefault(); setAuditImage(null); setAuditResult(null); }} className="mt-4 text-xs text-[#ff4d00] font-bold hover:underline relative z-30">
+                                Upload a different photo
+                              </button>
+                            </motion.div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-8 flex flex-col items-center">
+                        <UploadCloud size={40} className="text-white/40 mb-3 group-hover:text-[#ff4d00] transition-colors" />
+                        <p className="font-bold text-white mb-1">Click or tap to upload photo</p>
+                        <p className="text-xs text-white/40">PNG, JPG up to 10MB</p>
+                      </div>
+                    )}
                   </div>
-                  {/* Note: In the next phase, you will tie an onChange handler here to send the image to your AI backend */}
                 </div>
 
                 {/* THE PAID CONSULTATION UPSELL */}
@@ -625,7 +681,7 @@ export default function Hub() {
       </AnimatePresence>
 
       {/* FLOATING MOBILE BOTTOM NAVIGATION BAR */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100vw-40px)] max-w-[360px] bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-6 py-2.5 rounded-full flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100vw-30px)] max-w-[380px] bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 z-[100] px-5 py-2.5 rounded-full flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
         <div className="relative" ref={mobileNotifRef}>
           <button 
             onClick={() => setShowNotificationsMenu(!showNotificationsMenu)} 
@@ -647,6 +703,15 @@ export default function Hub() {
         >
           <HeartHandshake size={20} strokeWidth={1.5} />
         </button>
+        
+        {/* NEW AI CAMERA ICON FOR MOBILE */}
+        <button 
+          onClick={() => { setActiveTab('audit'); setShowNotificationsMenu(false); }} 
+          className={`p-2 transition-all duration-300 ${activeTab === 'audit' ? 'text-[#ff4d00] scale-110' : 'text-white/40 hover:text-white/80'}`}
+        >
+          <Camera size={20} strokeWidth={1.5} />
+        </button>
+
         <button 
           onClick={() => { setActiveTab('messages'); setShowNotificationsMenu(false); }} 
           className={`relative p-2 transition-all duration-300 ${activeTab === 'messages' ? 'text-white scale-110' : 'text-white/40 hover:text-white/80'}`}
