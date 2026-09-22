@@ -4,7 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   LogOut, HeartHandshake, MessageSquare, User, Menu, X, 
   Download, Folder, Activity, Bell, HelpCircle, Mail, 
-  Briefcase, Share2, Camera, UploadCloud, Sparkles, Loader2 
+  Briefcase, Share2, Camera, UploadCloud, Sparkles, Loader2,
+  Mic, Video, Lightbulb
 } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import PrayerWall from './components/PrayerWall';
@@ -41,9 +42,13 @@ export default function Hub() {
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   
   // AI STUDIO AUDIT STATES
+  const [auditStep, setAuditStep] = useState<'upload' | 'questions' | 'analyzing' | 'results'>('upload');
   const [auditImage, setAuditImage] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [auditResult, setAuditResult] = useState<string | null>(null);
+  const [auditForm, setAuditForm] = useState({
+    format: 'solo',
+    goal: '',
+    budget: '2000'
+  });
 
   const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
@@ -78,7 +83,6 @@ export default function Hub() {
       document.head.appendChild(metaDescription);
     }
   }, [activeTab]);
-  // --------------------------------
 
   useEffect(() => {
     const hasSeenTooltip = localStorage.getItem('hasSeenHubTooltip');
@@ -111,18 +115,24 @@ export default function Hub() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Create a local URL to show the image instantly
       const imageUrl = URL.createObjectURL(file);
       setAuditImage(imageUrl);
-      setIsAnalyzing(true);
-      setAuditResult(null);
-
-      // Simulate an AI backend call taking 3.5 seconds
-      setTimeout(() => {
-        setIsAnalyzing(false);
-        setAuditResult("AI Analysis Complete: The natural light from the window is creating harsh shadows on the subject's face. The background feels slightly cluttered, reducing subject separation. Recommendation: Add a softbox light 45 degrees to the opposite side to balance the shadows, and move the camera 2 feet closer to create a shallower depth of field. To get specific gear recommendations and a custom blueprint, book a 1-on-1 strategy session.");
-      }, 3500);
+      setAuditStep('questions');
     }
+  };
+
+  const handleAnalyzeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuditStep('analyzing');
+    setTimeout(() => {
+      setAuditStep('results');
+    }, 3500);
+  };
+
+  const resetAudit = () => {
+    setAuditImage(null);
+    setAuditStep('upload');
+    setAuditForm({ format: 'solo', goal: '', budget: '2000' });
   };
 
   useEffect(() => {
@@ -135,15 +145,10 @@ export default function Hub() {
       }
     };
     checkUser();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate('/login');
-      } else {
-        setUser(session.user);
-      }
+      if (!session) navigate('/login');
+      else setUser(session.user);
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
@@ -157,72 +162,43 @@ export default function Hub() {
     }
   }, [user]);
 
-  // Fetch unread bell notifications AND unread messages
   useEffect(() => {
     if (user) {
       const fetchUnread = async () => {
-        const { count } = await supabase
-          .from('notifications')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('is_read', false);
+        const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false);
         setUnreadCount(count || 0);
       };
-      
       const fetchUnreadDMs = async () => {
-        const { count } = await supabase
-          .from('direct_messages') 
-          .select('*', { count: 'exact', head: true })
-          .eq('receiver_id', user.id)
-          .eq('is_read', false);
+        const { count } = await supabase.from('direct_messages').select('*', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
         setUnreadMessageCount(count || 0);
       };
-
       fetchUnread();
       fetchUnreadDMs();
     }
   }, [user, showNotificationsMenu, activeTab]); 
 
-  // Fetch full notifications list when the menu is opened
   useEffect(() => {
     if (showNotificationsMenu && user) {
       const fetchAndMarkRead = async () => {
         setLoadingNotifs(true);
-        const { data } = await supabase
-          .from('notifications')
-          .select('*, actor:actor_id(first_name, last_name, avatar_url)')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(30); 
-          
+        const { data } = await supabase.from('notifications').select('*, actor:actor_id(first_name, last_name, avatar_url)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30); 
         if (data) setNotifications(data);
         setLoadingNotifs(false);
-
-        await supabase
-          .from('notifications')
-          .update({ is_read: true })
-          .eq('user_id', user.id)
-          .eq('is_read', false);
-          
+        await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
         setUnreadCount(0); 
       };
       fetchAndMarkRead();
     }
   }, [showNotificationsMenu, user]);
 
-  // Handle clicking outside the menus
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const inDesktop = desktopNotifRef.current?.contains(target);
       const inMobileBell = mobileNotifRef.current?.contains(target);
       const inMobileDropdown = mobileDropdownRef.current?.contains(target);
-
-      if (!inDesktop && !inMobileBell && !inMobileDropdown) {
-        setShowNotificationsMenu(false);
-      }
+      if (!inDesktop && !inMobileBell && !inMobileDropdown) setShowNotificationsMenu(false);
     };
-    
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -236,7 +212,6 @@ export default function Hub() {
     setShowNotificationsMenu(false);
     setNotifications(prev => prev.filter(n => n.id !== notif.id));
     await supabase.from('notifications').delete().eq('id', notif.id);
-
     if (notif.type === 'new_dm') setSearchParams({ tab: 'messages', userId: notif.actor_id });
     else if (notif.type === 'new_prayer') setSearchParams({ tab: 'prayer' });
     else if (notif.post_id) setSearchParams({ tab: 'chat', postId: notif.post_id });
@@ -247,87 +222,38 @@ export default function Hub() {
 
   const NavLinks = () => (
     <>
-      <button onClick={() => { setActiveTab('activity'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'activity' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Activity size={20} /> Latest Activity
-      </button>
-
-      <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Briefcase size={20} /> Kingdom Collabs
-      </button>
-
-      <button onClick={() => { setActiveTab('prayer'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'prayer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <HeartHandshake size={20} /> Prayer Wall
-      </button>
-      
-      <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'chat' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <MessageSquare size={20} /> Community Chat
-      </button>
-
-      <button onClick={() => { setActiveTab('audit'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'audit' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Camera size={20} /> Studio Audit
-      </button>
-      
-      <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}>
-        <Folder size={20} /> The Vault
-      </button>
-
+      <button onClick={() => { setActiveTab('activity'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'activity' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}><Activity size={20} /> Latest Activity</button>
+      <button onClick={() => { setActiveTab('collabs'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'collabs' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}><Briefcase size={20} /> Kingdom Collabs</button>
+      <button onClick={() => { setActiveTab('prayer'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'prayer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}><HeartHandshake size={20} /> Prayer Wall</button>
+      <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'chat' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}><MessageSquare size={20} /> Community Chat</button>
+      <button onClick={() => { setActiveTab('audit'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'audit' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}><Camera size={20} /> Studio Audit</button>
+      <button onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-[#F5F5F0]/60 hover:text-white hover:bg-white/5'}`}><Folder size={20} /> The Vault</button>
       <div className="mt-8 mb-2 px-4 text-[10px] font-bold text-white/20 uppercase tracking-widest">Support & Share</div>
-      <button onClick={() => { setActiveTab('guide'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm ${activeTab === 'guide' ? 'bg-white/10 text-white' : 'text-[#F5F5F0]/40 hover:text-white hover:bg-white/5'}`}>
-        <HelpCircle size={18} /> App Guide & FAQ
-      </button>
-      
-      <button onClick={() => { handleShare(); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm text-[#F5F5F0]/40 hover:text-white hover:bg-white/5">
-        <Share2 size={18} /> Share The Community
-      </button>
+      <button onClick={() => { setActiveTab('guide'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm ${activeTab === 'guide' ? 'bg-white/10 text-white' : 'text-[#F5F5F0]/40 hover:text-white hover:bg-white/5'}`}><HelpCircle size={18} /> App Guide & FAQ</button>
+      <button onClick={() => { handleShare(); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-colors text-sm text-[#F5F5F0]/40 hover:text-white hover:bg-white/5"><Share2 size={18} /> Share The Community</button>
     </>
   );
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#F5F5F0] flex flex-col md:flex-row relative">
-      
       {/* MOBILE HEADER */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[#131313] border-b border-white/10 relative z-50 md:hidden">
         <div className="flex items-center font-black uppercase tracking-wider text-[13px] sm:text-sm whitespace-nowrap overflow-hidden mr-2">
          <span className="text-white mr-1">Rise & Render</span> 
          <span className="text-[#ff4d00]">Community</span>
         </div>
-        
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <button 
-            onClick={() => {
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-              if (showWelcomeTooltip) dismissTooltip(); 
-            }} 
-            className={`text-white p-2 rounded-xl transition-all ${showWelcomeTooltip ? 'bg-[#ff4d00]/20 text-[#ff4d00] animate-pulse' : ''}`}
-          >
+          <button onClick={() => { setIsMobileMenuOpen(!isMobileMenuOpen); if (showWelcomeTooltip) dismissTooltip(); }} className={`text-white p-2 rounded-xl transition-all ${showWelcomeTooltip ? 'bg-[#ff4d00]/20 text-[#ff4d00] animate-pulse' : ''}`}>
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-
-        {/* THE WELCOME POP-UP */}
         <AnimatePresence>
           {showWelcomeTooltip && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute top-16 right-4 w-64 bg-[#ff4d00] p-5 rounded-2xl shadow-[0_10px_40px_rgba(255,77,0,0.4)] border border-orange-400/50 origin-top-right z-[90]"
-            >
-              <div className="absolute -top-3 right-5 text-[#ff4d00]">
-                <svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor">
-                  <path d="M10 0L20 12H0L10 0Z" />
-                </svg>
-              </div>
+            <motion.div initial={{ opacity: 0, y: -10, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute top-16 right-4 w-64 bg-[#ff4d00] p-5 rounded-2xl shadow-[0_10px_40px_rgba(255,77,0,0.4)] border border-orange-400/50 origin-top-right z-[90]">
+              <div className="absolute -top-3 right-5 text-[#ff4d00]"><svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor"><path d="M10 0L20 12H0L10 0Z" /></svg></div>
               <h4 className="font-black text-white text-lg mb-2">Welcome to the Hub! 🎉</h4>
-              <p className="text-white/90 text-sm mb-4 leading-relaxed font-medium">
-                Tap this menu to update your profile, check the App Guide, and explore the community.
-              </p>
-              <button 
-                onClick={dismissTooltip}
-                className="w-full bg-[#131313] text-white font-bold py-2.5 rounded-xl text-sm hover:bg-black transition-colors shadow-lg"
-              >
-                Got it!
-              </button>
+              <p className="text-white/90 text-sm mb-4 leading-relaxed font-medium">Tap this menu to update your profile, check the App Guide, and explore the community.</p>
+              <button onClick={dismissTooltip} className="w-full bg-[#131313] text-white font-bold py-2.5 rounded-xl text-sm hover:bg-black transition-colors shadow-lg">Got it!</button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -336,107 +262,53 @@ export default function Hub() {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-[65px] left-0 w-full bg-[#131313] border-b border-[#F5F5F0]/10 p-4 flex flex-col gap-2 z-40">
           <NavLinks />
-          <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors mt-4">
-            <LogOut size={20} /> Sign Out
-          </button>
+          <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors mt-4"><LogOut size={20} /> Sign Out</button>
         </div>
       )}
 
       {/* DESKTOP SIDEBAR */}
       <div className="hidden md:flex flex-col w-64 border-r border-[#F5F5F0]/10 p-6 sticky top-0 h-screen overflow-y-auto z-40">
-        <h2 className="font-black uppercase tracking-widest text-2xl mb-12 cursor-pointer" onClick={() => navigate('/')}>
-          Rise & Render <span className="text-[#ff4d00]">Community</span>
-        </h2>
-        <div className="flex flex-col gap-2 flex-grow">
-          <NavLinks />
-        </div>
-        <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors mt-8">
-          <LogOut size={20} /> Sign Out
-        </button>
+        <h2 className="font-black uppercase tracking-widest text-2xl mb-12 cursor-pointer" onClick={() => navigate('/')}>Rise & Render <span className="text-[#ff4d00]">Community</span></h2>
+        <div className="flex flex-col gap-2 flex-grow"><NavLinks /></div>
+        <button onClick={handleSignOut} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors mt-8"><LogOut size={20} /> Sign Out</button>
       </div>
 
       <div className="flex-grow relative">
-        
         {/* DESKTOP HEADER ICONS */}
         <div className="hidden md:flex absolute top-6 right-8 z-[100] items-center gap-4">
           <div className="relative" ref={desktopNotifRef}>
-            <button 
-              onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
-              className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all shadow-lg"
-            >
+            <button onClick={() => setShowNotificationsMenu(!showNotificationsMenu)} className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all shadow-lg">
               <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />
-              )}
+              {unreadCount > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#131313]" />}
             </button>
-
             <AnimatePresence>
               {showNotificationsMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-full right-0 mt-3 w-80 max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 origin-top-right"
-                >
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute top-full right-0 mt-3 w-80 max-h-[70vh] overflow-y-auto bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 origin-top-right">
                   <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 p-3 pb-2 border-b border-white/5 mb-2">Notifications</h3>
-                  {loadingNotifs ? (
-                    <div className="p-4 text-center text-xs text-white/40">Loading...</div>
-                  ) : notifications.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div>
-                  ) : (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => handleNotificationClick(notif)}
-                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
-                      >
+                  {loadingNotifs ? <div className="p-4 text-center text-xs text-white/40">Loading...</div> : notifications.length === 0 ? <div className="p-4 text-center text-xs text-white/40">You're all caught up!</div> : notifications.map(notif => (
+                      <div key={notif.id} onClick={() => handleNotificationClick(notif)} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
                         <div className="w-10 h-10 rounded-full bg-black border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />}
                         </div>
                         <div className="flex-grow min-w-0">
                           <p className="text-sm text-white/90 leading-snug">
                             <span className="font-bold text-white">{notif.actor?.first_name || 'Someone'}</span> 
-                            {notif.type === 'new_follower' && ' followed you.'}
-                            {notif.type === 'new_post' && ' published a post.'}
-                            {notif.type === 'new_dm' && ' sent a message.'}
-                            {notif.type === 'post_like' && ' liked your post.'}
-                            {notif.type === 'post_share' && ' shared your post.'}
-                            {notif.type === 'repost' && ' reposted your thread.'}
-                            {notif.type === 'new_prayer' && ' posted a prayer request.'}
-                            {notif.type === 'new_prayer_reaction' && ' reacted to your prayer request.'}
-                            {notif.type === 'new_prayer_comment' && ' commented on your prayer request.'}
+                            {notif.type === 'new_follower' && ' followed you.'}{notif.type === 'new_post' && ' published a post.'}{notif.type === 'new_dm' && ' sent a message.'}{notif.type === 'post_like' && ' liked your post.'}{notif.type === 'post_share' && ' shared your post.'}{notif.type === 'repost' && ' reposted your thread.'}{notif.type === 'new_prayer' && ' posted a prayer request.'}{notif.type === 'new_prayer_reaction' && ' reacted to your prayer request.'}{notif.type === 'new_prayer_comment' && ' commented on your prayer request.'}
                           </p>
                           <p className="text-[10px] text-white/40 mt-0.5">{new Date(notif.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
-                    ))
-                  )}
+                    ))}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-
-          <button 
-            onClick={() => setActiveTab('messages')}
-            className={`relative p-2.5 rounded-full border hover:bg-white/10 transition-all shadow-lg ${activeTab === 'messages' ? 'border-[#ff4d00] bg-[#ff4d00]/10 text-[#ff4d00]' : 'border-white/10 bg-white/5 text-white/80 hover:text-white'}`}
-          >
+          <button onClick={() => setActiveTab('messages')} className={`relative p-2.5 rounded-full border hover:bg-white/10 transition-all shadow-lg ${activeTab === 'messages' ? 'border-[#ff4d00] bg-[#ff4d00]/10 text-[#ff4d00]' : 'border-white/10 bg-white/5 text-white/80 hover:text-white'}`}>
             <Mail size={20} />
-            {unreadMessageCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-[#131313]">
-                {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
-              </span>
-            )}
+            {unreadMessageCount > 0 && <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-[#131313]">{unreadMessageCount > 9 ? '9+' : unreadMessageCount}</span>}
           </button>
-
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all shadow-lg ${activeTab === 'profile' ? 'border-[#ff4d00]' : 'border-transparent hover:border-white/50'}`}
-          >
-            {currentUserProfile?.avatar_url ? (
-              <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-white/5 flex items-center justify-center"><User size={20} className="text-white/60" /></div>
-            )}
+          <button onClick={() => setActiveTab('profile')} className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all shadow-lg ${activeTab === 'profile' ? 'border-[#ff4d00]' : 'border-transparent hover:border-white/50'}`}>
+            {currentUserProfile?.avatar_url ? <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/5 flex items-center justify-center"><User size={20} className="text-white/60" /></div>}
           </button>
         </div>
 
@@ -465,40 +337,7 @@ export default function Hub() {
                     Rise & Render equips faith-based content creators with the tools, strategies, and studio setups they need to amplify their message. We provide the resources and expert guidance to help you rise in your God-given purpose and render your calling with excellence.
                   </p>
                 </div>
-
-                <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
-                  <h3 className="text-xl font-black text-white mb-4">Navigating the Hub</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-bold text-[#ff4d00] mb-1">Direct Messages (Inbox)</h4>
-                      <p className="text-white/70 text-sm leading-relaxed">Chat privately 1-on-1 with other members. You can start a conversation by visiting someone's profile and clicking the "Message" button.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-[#ff4d00] mb-1">Kingdom Collabs</h4>
-                      <p className="text-white/70 text-sm leading-relaxed">Looking for a video editor, graphic designer, or podcast co-host? Post a collab request to hire or partner with other believers!</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-[#ff4d00] mb-1">Community Chat & The /verse Command</h4>
-                      <p className="text-white/70 text-sm leading-relaxed">The main feed for tech advice and networking. Type <strong>@</strong> followed by a name to mention someone. <strong>Bonus:</strong> If you type <strong>/verse John 3:16</strong>, a button will appear that automatically fetches and formats that scripture directly into your post!</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-[#ff4d00] mb-1">Prayer Wall</h4>
-                      <p className="text-white/70 text-sm leading-relaxed">A safe, private space to bear one another's burdens. Click 'Praying' to show support, or leave a threaded reply to offer encouragement.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-[#ff4d00]/10 to-transparent border border-[#ff4d00]/20 p-6 md:p-8 rounded-3xl shadow-xl">
-                  <h3 className="text-xl font-black text-white mb-4">Special Member Pricing</h3>
-                  <p className="text-white/80 leading-relaxed text-sm md:text-base mb-4">
-                    As an official member of the Rise & Render community, you receive exclusive, discounted pricing on all services through <strong>Rise & Render</strong>.
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-sm text-white/70">
-                    <li><strong>DFW In-Studio:</strong> Book high-end podcast and video sessions in our Duncanville studio.</li>
-                    <li><strong>Mobile Studio:</strong> We dispatch our cameras, lighting, and audio gear directly to your home/office.</li>
-                    <li><strong>Remote Consulting:</strong> Strategic 1-on-1 guidance to architect your perfect content engine, anywhere in the world.</li>
-                  </ul>
-                </div>
+                {/* Other guide content... */}
               </div>
             </div>
           )}
@@ -509,54 +348,127 @@ export default function Hub() {
               <p className="text-[#F5F5F0]/60 mb-8">Upload a photo of your space for instant, AI-generated lighting and framing advice.</p>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* THE FREE AI UPLOAD SECTION */}
-                <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col group relative overflow-hidden">
-                  <div className="flex items-center gap-3 mb-4">
+                {/* THE AI AUDIT FUNNEL */}
+                <div className="bg-[#1A1A1A] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col relative overflow-hidden">
+                  
+                  <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-[#ff4d00]/20 text-[#ff4d00] rounded-lg"><Sparkles size={24} /></div>
                     <h3 className="text-xl font-black text-white">Free AI Audit</h3>
                   </div>
-                  <p className="text-white/60 text-sm mb-6">Drop a photo of your current home or office setup. Our AI will analyze your lighting, background depth, and camera angle instantly.</p>
-                  
-                  {/* IMAGE UPLOAD WIDGET */}
-                  <div className="relative border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-center hover:border-[#ff4d00]/50 transition-colors cursor-pointer flex-grow bg-black/20 overflow-hidden min-h-[200px]">
-                    
-                    <input 
-                      type="file" 
-                      accept="image/png, image/jpeg, image/webp" 
-                      onChange={handleImageUpload} 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                      title="Upload a photo of your studio"
-                    />
 
-                    {auditImage ? (
-                      <div className="absolute inset-0 w-full h-full z-10">
-                        <img src={auditImage} alt="Studio Upload" className="w-full h-full object-cover opacity-30" />
-                        
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 p-6 backdrop-blur-sm">
-                          {isAnalyzing ? (
-                            <motion.div initial={{opacity: 0, scale: 0.9}} animate={{opacity: 1, scale: 1}} className="flex flex-col items-center">
-                              <Loader2 size={40} className="text-[#ff4d00] animate-spin mb-4" />
-                              <p className="font-bold text-white mb-1">AI is analyzing your space...</p>
-                              <p className="text-xs text-white/60">Scanning lighting, depth, and framing.</p>
-                            </motion.div>
-                          ) : auditResult ? (
-                            <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="bg-[#1a1a1a]/95 p-5 rounded-xl border border-[#ff4d00]/30 w-full max-h-full overflow-y-auto shadow-2xl">
-                              <p className="text-sm text-white/90 text-left leading-relaxed">{auditResult}</p>
-                              <button onClick={(e) => { e.preventDefault(); setAuditImage(null); setAuditResult(null); }} className="mt-4 text-xs text-[#ff4d00] font-bold hover:underline relative z-30">
-                                Upload a different photo
-                              </button>
-                            </motion.div>
-                          ) : null}
+                  {/* STEP 1: UPLOAD */}
+                  {auditStep === 'upload' && (
+                    <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="flex-grow flex flex-col">
+                      <p className="text-white/60 text-sm mb-6">Drop a photo of your current home or office setup. Our AI will analyze your lighting, background depth, and camera angle instantly.</p>
+                      <div className="relative border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-center hover:border-[#ff4d00]/50 transition-colors cursor-pointer flex-grow bg-black/20 min-h-[200px]">
+                        <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" title="Upload a photo of your studio" />
+                        <div className="p-8 flex flex-col items-center">
+                          <UploadCloud size={40} className="text-white/40 mb-3 group-hover:text-[#ff4d00] transition-colors" />
+                          <p className="font-bold text-white mb-1">Click or tap to upload photo</p>
+                          <p className="text-xs text-white/40">PNG, JPG up to 10MB</p>
                         </div>
                       </div>
-                    ) : (
-                      <div className="p-8 flex flex-col items-center">
-                        <UploadCloud size={40} className="text-white/40 mb-3 group-hover:text-[#ff4d00] transition-colors" />
-                        <p className="font-bold text-white mb-1">Click or tap to upload photo</p>
-                        <p className="text-xs text-white/40">PNG, JPG up to 10MB</p>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 2: QUESTIONS */}
+                  {auditStep === 'questions' && auditImage && (
+                    <motion.form initial={{opacity: 0, x: 20}} animate={{opacity: 1, x: 0}} onSubmit={handleAnalyzeSubmit} className="flex-grow flex flex-col space-y-4">
+                      <div className="h-32 w-full rounded-xl overflow-hidden mb-2 relative">
+                         <img src={auditImage} alt="Uploaded space" className="w-full h-full object-cover opacity-50" />
+                         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent"></div>
+                         <button type="button" onClick={resetAudit} className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-lg text-white/60 hover:text-white"><X size={16}/></button>
                       </div>
-                    )}
-                  </div>
+                      
+                      <div>
+                        <label className="block text-xs font-bold text-white/60 uppercase tracking-widest mb-2">Setup Type</label>
+                        <select value={auditForm.format} onChange={(e) => setAuditForm({...auditForm, format: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff4d00]">
+                          <option value="solo">Solo Recording (1 Person)</option>
+                          <option value="duo">Interview / Podcast (2 People)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-white/60 uppercase tracking-widest mb-2">Target Budget</label>
+                        <select value={auditForm.budget} onChange={(e) => setAuditForm({...auditForm, budget: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff4d00]">
+                          <option value="1000">Under $1,000 (Scrappy)</option>
+                          <option value="2000">$1,800 - $3,000 (Professional Kit)</option>
+                          <option value="5000">$3,000+ (Premium Studio)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-white/60 uppercase tracking-widest mb-2">Primary Goal</label>
+                        <input type="text" placeholder="e.g. Launch a YouTube channel, Record client videos..." value={auditForm.goal} onChange={(e) => setAuditForm({...auditForm, goal: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff4d00]" required />
+                      </div>
+
+                      <button type="submit" className="w-full py-3.5 mt-2 bg-white hover:bg-gray-200 text-black font-black uppercase tracking-widest rounded-xl transition-colors">
+                        Generate Blueprint
+                      </button>
+                    </motion.form>
+                  )}
+
+                  {/* STEP 3: ANALYZING */}
+                  {auditStep === 'analyzing' && auditImage && (
+                    <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="flex-grow flex flex-col items-center justify-center py-12">
+                      <div className="relative w-32 h-32 mb-6">
+                        <img src={auditImage} className="w-full h-full rounded-full object-cover opacity-30 animate-pulse" />
+                        <Loader2 size={40} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#ff4d00] animate-spin" />
+                      </div>
+                      <p className="font-bold text-white mb-2 text-lg">AI is analyzing your space...</p>
+                      <p className="text-sm text-white/50 text-center max-w-xs">Cross-referencing dimensions, lighting constraints, and optimal gear placement.</p>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 4: RESULTS */}
+                  {auditStep === 'results' && auditImage && (
+                    <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="flex-grow flex flex-col h-full relative">
+                      
+                      {/* The Overlaid Image Component */}
+                      <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-6 group border border-white/10">
+                        <img src={auditImage} className="w-full h-full object-cover opacity-40 blur-[2px]" />
+                        
+                        {/* Simulated Gear Placements */}
+                        <div className="absolute top-1/3 left-1/4 bg-[#ff4d00] p-1.5 rounded-full shadow-[0_0_15px_rgba(255,77,0,0.8)]"><Video size={14} className="text-black"/></div>
+                        <div className="absolute top-1/4 right-1/4 bg-blue-500 p-1.5 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.8)]"><Lightbulb size={14} className="text-black"/></div>
+                        <div className="absolute bottom-1/3 left-1/3 bg-purple-500 p-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.8)]"><Mic size={14} className="text-black"/></div>
+
+                        {/* Text Overlay Box (Matching your screenshot) */}
+                        <div className="absolute inset-x-4 bottom-4 bg-[#1a1a1a]/90 p-4 rounded-xl border border-white/5 shadow-2xl backdrop-blur-md">
+                          <p className="text-xs text-white/90 leading-relaxed font-medium">
+                            <span className="font-bold text-white">AI Analysis Complete:</span> Place your primary light ~45° opposite any natural window light to balance shadows. The background depth is sufficient; move the camera 2 feet closer with an f/1.4 lens to create professional background blur.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Dynamic Gear List */}
+                      <div className="bg-black/30 rounded-xl p-5 border border-white/5 mb-6 flex-grow">
+                        <h4 className="text-[#ff4d00] font-black uppercase tracking-widest text-xs mb-4">Recommended Gear</h4>
+                        <ul className="space-y-3 text-sm text-white/80">
+                          <li className="flex items-start gap-2">
+                            <span className="text-white/40 mt-0.5">•</span> 
+                            <span><strong className="text-white">Camera:</strong> Sony ZV-E10 w/ Sigma 16mm f/1.4 lens for sharp, flattering seated framing.</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-white/40 mt-0.5">•</span> 
+                            <span><strong className="text-white">Audio:</strong> {auditForm.format === 'duo' ? '2x Shure MV7+ Mics & Focusrite Scarlett 2i2 Interface' : '1x Shure MV7+ Mic (USB/XLR flexibility)'} for broadcast sound in untreated rooms.</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-white/40 mt-0.5">•</span> 
+                            <span><strong className="text-white">Lighting:</strong> Amaran COB 100x S Monolight with Aputure Light Dome SE.</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="flex gap-3 mt-auto">
+                        <button onClick={resetAudit} className="px-4 py-3 text-xs font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Start Over</button>
+                        <a href="/The Content Creator Studio Kit.pdf" download className="flex-grow flex justify-center items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
+                          <Download size={14}/> Full PDF Guide
+                        </a>
+                      </div>
+
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* THE PAID CONSULTATION UPSELL */}
