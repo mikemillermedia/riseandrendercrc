@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Star, CheckCircle2, Video, Scissors, Share2, Palette, 
   Calculator, ArrowRight, Image as ImageIcon, Plus, Minus, FileText, 
   Headphones, Monitor, Radio, Camera, Crown, Wrench, FileVideo, Home
 } from 'lucide-react';
-import CustomCursor from './components/CustomCursor';
+// Temporarily commenting these out to isolate the crash:
+// import CustomCursor from './components/CustomCursor';
+// import FluidBackground from './components/FluidBackground';
 import BrandLogo from './components/BrandLogo';
-import FluidBackground from './components/FluidBackground';
 
 const BRANDS = [
   "She Bears Fruit Podcast", 
@@ -87,12 +87,12 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
-      <CustomCursor />
+      {/* <CustomCursor /> */}
 
       {/* 1. CINEMATIC VIDEO BACKGROUND */}
       <div className="fixed inset-0 z-0 bg-[#0a0a0a]">
-        <div className="absolute inset-0 bg-black/60 z-10" />
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-80">
+        <div className="absolute inset-0 bg-black/70 z-10" />
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60">
           <source src="/studio-bg.mp4" type="video/mp4" />
         </video>
       </div>
@@ -109,8 +109,8 @@ const LandingPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* 3. HERO SECTION (REMOVED FRAMER MOTION TO FIX INVISIBLE TEXT BUG) */}
-      <main className="relative z-20 flex-grow flex flex-col items-center justify-start px-6 text-center pt-40 md:pt-48 pb-0">
+      {/* 3. HERO SECTION (Forced high z-index and removed all animations) */}
+      <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-48 pb-20">
         <div className="max-w-6xl w-full flex flex-col items-center">
           
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black mb-4 md:mb-6 leading-[0.9] tracking-tighter uppercase text-white drop-shadow-2xl">
@@ -131,21 +131,19 @@ const LandingPage: React.FC = () => {
             </button>
           </div>
 
-          {/* INFINITE BRAND TICKER */}
-          <div className="w-full max-w-2xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-32">
+          {/* BRANDS STATIC LIST */}
+          <div className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-32">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6 drop-shadow-md">Trusted by creators from</p>
-            <div className="w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
-              <motion.div className="flex whitespace-nowrap items-center gap-12 sm:gap-20" animate={{ x: ["0%", "-50%"] }} transition={{ repeat: Infinity, ease: "linear", duration: 15 }}>
-                {[...BRANDS, ...BRANDS].map((brand, index) => (
-                  <span key={index} className="text-white/60 font-black uppercase tracking-widest text-sm md:text-base drop-shadow-sm">{brand}</span>
-                ))}
-              </motion.div>
+            <div className="flex flex-wrap justify-center gap-8 md:gap-12">
+              {BRANDS.map((brand, index) => (
+                <span key={index} className="text-white/60 font-black uppercase tracking-widest text-xs md:text-sm drop-shadow-sm text-center">{brand}</span>
+              ))}
             </div>
           </div>
 
           {/* SPOTLIGHT REVIEW */}
           <div className="w-full max-w-3xl mx-auto relative group mb-20">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d00]/20 via-transparent to-transparent rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-700" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d00]/20 via-transparent to-transparent rounded-[2rem] blur-2xl opacity-40" />
             <div className="relative bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-10 rounded-[2rem] text-left shadow-2xl overflow-hidden">
               <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#ff4d00]/10 rounded-full blur-3xl pointer-events-none" />
               <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
@@ -175,14 +173,11 @@ const LandingPage: React.FC = () => {
         </div>
       </main>
 
-      {/* SMOOTH FADE TO BLACK FOR PRICING SECTION */}
-      <div className="relative z-20 w-full h-48 md:h-64 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
+      <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
 
       {/* PRICING & SYSTEM SECTION */}
-      <div id="pricing-section" className="relative z-30 bg-[#0a0a0a] w-full pt-10">
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <FluidBackground />
-        </div>
+      <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-10">
+        {/* <FluidBackground /> */}
 
         {/* DONE FOR YOU RETAINERS */}
         <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full">
