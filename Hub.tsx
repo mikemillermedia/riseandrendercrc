@@ -6,9 +6,14 @@ import {
   MessageSquare, Image as ImageIcon, Heart, MessageCircle, MoreHorizontal, Share2 
 } from 'lucide-react';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Safely grab environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Only create the client if the keys exist, preventing a total app crash
+const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey) 
+  : null;
 
 // --- MOCK DATA FOR THE FEED ---
 const MOCK_POSTS = [
@@ -48,57 +53,72 @@ export default function Hub() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('blueprint');
   
-  // States for user data and security
   const [userId, setUserId] = useState<string | null>(null);
   const [blueprint, setBlueprint] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Feed state
   const [newPostText, setNewPostText] = useState('');
 
   useEffect(() => {
     const checkSessionAndFetchData = async () => {
-      // 1. Check Session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/login');
-        return;
-      }
-      setUserId(session.user.id);
+      try {
+        if (!supabase) {
+          console.error("Supabase is not configured. Missing environment variables.");
+          setIsLoading(false);
+          return;
+        }
 
-      // 2. Fetch their specific Blueprint from Supabase
-      const { data, error } = await supabase
-        .from('blueprints')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single(); 
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.log("No active session found, routing to login.");
+          navigate('/login');
+          return;
+        }
 
-      if (data) {
-        setBlueprint(data);
-      } else {
-        setBlueprint(null); 
+        setUserId(session.user.id);
+
+        const { data, error } = await supabase
+          .from('blueprints')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single(); 
+
+        if (error) {
+          console.log("No blueprint found or table missing. User gets locked state.", error.message);
+          setBlueprint(null);
+        } else if (data) {
+          setBlueprint(data);
+        }
+      } catch (err) {
+        console.error("An unexpected error occurred during fetch:", err);
+        setBlueprint(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkSessionAndFetchData();
   }, [navigate]);
 
   const toggleGearItem = async (index: number) => {
-    if (!blueprint) return;
+    if (!blueprint || !supabase) return;
     const updatedGear = [...blueprint.gear_list];
     updatedGear[index].checked = !updatedGear[index].checked;
     setBlueprint({ ...blueprint, gear_list: updatedGear });
     
-    await supabase
-      .from('blueprints')
-      .update({ gear_list: updatedGear })
-      .eq('id', blueprint.id);
+    try {
+      await supabase
+        .from('blueprints')
+        .update({ gear_list: updatedGear })
+        .eq('id', blueprint.id);
+    } catch (err) {
+      console.error("Failed to update gear list", err);
+    }
   };
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      if (supabase) await supabase.auth.signOut();
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
@@ -147,8 +167,8 @@ export default function Hub() {
         ) : (
           <>
             {/* ========================================= */}
-            /* BLUEPRINT TAB (With Paywall & Hotline)     */
-            /* ========================================= */}
+            {/* BLUEPRINT TAB (With Paywall & Hotline)    */}
+            {/* ========================================= */}
             {activeTab === 'blueprint' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative max-w-6xl">
                 <h1 className="text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
@@ -259,8 +279,8 @@ export default function Hub() {
             )}
 
             {/* ========================================= */}
-            /* KINGDOM NETWORK TAB (Threads Style Feed)   */
-            /* ========================================= */}
+            {/* KINGDOM NETWORK TAB (Threads Style Feed)  */}
+            {/* ========================================= */}
             {activeTab === 'community' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
                 <div className="text-center mb-10">
@@ -302,16 +322,13 @@ export default function Hub() {
                   {MOCK_POSTS.map((post) => (
                     <div key={post.id} className="bg-transparent group">
                       <div className="flex gap-4">
-                        {/* Avatar Column */}
                         <div className="flex flex-col items-center">
                           <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center shrink-0">
                             <span className="text-white/70 font-bold text-sm">{post.avatar}</span>
                           </div>
-                          {/* Thread line connecting posts (optional styling flair) */}
                           <div className="w-[1.5px] h-full bg-white/5 mt-2 group-last:hidden"></div>
                         </div>
 
-                        {/* Content Column */}
                         <div className="flex-1 pb-6">
                           <div className="flex justify-between items-start mb-1">
                             <div className="flex items-center gap-2">
@@ -333,7 +350,6 @@ export default function Hub() {
                             </div>
                           )}
 
-                          {/* Action Bar */}
                           <div className="flex items-center gap-6 mt-3">
                             <button className="flex items-center gap-2 text-white/40 hover:text-red-400 transition-colors group/btn">
                               <div className="p-1.5 rounded-full group-hover/btn:bg-red-400/10">
