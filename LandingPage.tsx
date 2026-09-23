@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, Palette, FileVideo, Home
+  Star, CheckCircle2, Palette, FileVideo, Home, 
+  TrendingUp, FileText, Wrench, Compass
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -15,7 +16,7 @@ const BRANDS = [
   "We Going Up"
 ];
 
-// SAFE ANIMATION VARIANTS (No blur filters)
+// SAFE ANIMATION VARIANTS
 const staggerContainer = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
@@ -113,7 +114,7 @@ const LandingPage: React.FC = () => {
         </div>
       </motion.nav>
 
-      {/* HERO SECTION WITH STAGGERED MOTION */}
+      {/* HERO SECTION */}
       <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-48 pb-20">
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-6xl w-full flex flex-col items-center">
           
@@ -180,9 +181,41 @@ const LandingPage: React.FC = () => {
       {/* GRADIENT TRANSITION */}
       <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
 
-      {/* PRICING & SYSTEM SECTION */}
+      {/* PROCESS & PRICING SECTION */}
       <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-10">
         
+        {/* THE 4-STEP SANCTUARY PROCESS */}
+        <section className="py-12 relative z-10 w-full">
+          <div className="max-w-7xl mx-auto px-6 md:px-12">
+            
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp} className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Sanctuary Process</h2>
+              <p className="text-[#F5F5F0]/60 max-w-xl mx-auto">Our 4-step framework to transform your space into a frictionless production powerhouse.</p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { icon: Compass, title: "1. Strategy", lines: ["Space Assessment", "Content Goals", "Budget Mapping", "Tech Audit"] },
+                { icon: FileText, title: "2. The Blueprint", lines: ["Custom Gear List", "Acoustic Treatment", "Lighting Layout", "Camera Settings"] },
+                { icon: Wrench, title: "3. Installation", lines: ["Wire Hiding", "Equipment Mounting", "Audio Tuning", "1-on-1 Training"] },
+                { icon: TrendingUp, title: "4. Execution", lines: ["Hit Record", "Frictionless Workflow", "Post-Production", "Audience Growth"] }
+              ].map((item, idx) => (
+                <motion.div 
+                  key={idx}
+                  initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
+                  className="bg-[#0a0a0a]/80 backdrop-blur-md p-8 rounded-3xl border border-white/5 hover:bg-[#131313]/90 transition-all duration-300 hover:-translate-y-2 hover:border-[#ff4d00]/30 shadow-lg"
+                >
+                  <item.icon className="w-10 h-10 text-[#ff4d00] mb-6" />
+                  <h3 className="text-xl font-bold text-white mb-3 uppercase">{item.title}</h3>
+                  <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
+                    {item.lines.map((line, lidx) => <li key={lidx}>• {line}</li>)}
+                  </ul>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* RETAINERS */}
         <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
