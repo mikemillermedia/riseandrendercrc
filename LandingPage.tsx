@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, Palette, FileVideo, Home, 
-  TrendingUp, FileText, Wrench, Compass
+  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass 
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -31,11 +30,6 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [showBackToTop, setShowBackToTop] = useState(false);
 
-  const [selectedBase, setSelectedBase] = useState<'consultation' | 'onsite'>('consultation');
-  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
-  const [promoCode, setPromoCode] = useState('');
-  const [promoMessage, setPromoMessage] = useState('');
-
   useEffect(() => {
     window.scrollTo(0, 0);
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -43,53 +37,6 @@ const LandingPage: React.FC = () => {
     document.title = "Rise & Render | Premium Content Creation Consultancy";
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const scrollToPricing = () => document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
-
-  const toggleAddon = (id: string) => {
-    setSelectedAddons(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]);
-  };
-
-  const handleApplyPromo = () => {
-    if (promoCode.trim().toLowerCase() === 'kingdom') {
-      setPromoMessage('Success! 10% Off applied.');
-    } else {
-      setPromoMessage('Invalid discount code.');
-    }
-  };
-
-  const basePackages = {
-    consultation: {
-      id: 'consultation',
-      name: 'Virtual Studio Consultation',
-      price: 197,
-      description: 'A 1-hour deep dive into your space.',
-      features: ['1-Hour Zoom Strategy Call', 'Custom Gear List & Links', 'Room Layout & Acoustic Plan', 'Session Video Recording']
-    },
-    onsite: {
-      id: 'onsite',
-      name: 'DFW On-Site Setup',
-      price: 797,
-      description: 'We come to you and wire everything.',
-      features: ['Physical Cable Routing', 'Lighting Placement & Tuning', 'Audio Treatment Installation', 'System Testing & Training']
-    }
-  };
-
-  const addonOptions = [
-    { id: 'digital_kit', name: 'At-Home Creator Kit', desc: 'PDF guides, templates, & OBS presets.', price: 47, icon: <FileVideo size={20} /> },
-    { id: 'gear_procurement', name: 'Gear Procurement', desc: 'We order and track all gear for you.', price: 150, icon: <Home size={20} /> },
-    { id: 'set_design', name: 'Custom Set Design', desc: 'Background styling and prop curation.', price: 250, icon: <Palette size={20} /> },
-  ];
-
-  const calculateTotal = () => {
-    let total = basePackages[selectedBase].price;
-    selectedAddons.forEach(id => {
-      const addon = addonOptions.find(a => a.id === id);
-      if (addon) total += addon.price;
-    });
-    if (promoMessage.includes('Success')) total = Math.floor(total * 0.9);
-    return total;
-  };
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
@@ -128,16 +75,16 @@ const LandingPage: React.FC = () => {
           </motion.h2>
 
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
-            <button onClick={scrollToPricing} className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
-              View Services
+            <button className="w-full sm:w-72 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,77,0,0.3)]">
+              Book Virtual Consultation
             </button>
-            <button onClick={() => navigate('/login')} className="w-full sm:w-64 bg-[#ff4d00]/10 hover:bg-[#ff4d00]/20 backdrop-blur-md border border-[#ff4d00]/50 text-[#ff4d00] py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
+            <button onClick={() => navigate('/login')} className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
               Sanctuary Hub
             </button>
           </motion.div>
 
           {/* BRANDS STATIC LIST */}
-          <motion.div variants={fadeUp} className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-32">
+          <motion.div variants={fadeUp} className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-24">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6 drop-shadow-md">Trusted by creators from</p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12">
               {BRANDS.map((brand, index) => (
@@ -146,33 +93,70 @@ const LandingPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* SPOTLIGHT REVIEW */}
-          <motion.div variants={fadeUp} className="w-full max-w-3xl mx-auto relative group mb-20">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d00]/20 via-transparent to-transparent rounded-[2rem] blur-2xl opacity-40" />
-            <div className="relative bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-10 rounded-[2rem] text-left shadow-2xl overflow-hidden">
-              <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#ff4d00]/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => <Star key={i} size={18} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+          {/* 3 GRID TESTIMONIALS */}
+          <motion.div variants={fadeUp} className="w-full max-w-6xl mx-auto mb-20">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              
+              {/* Testimonial 1 */}
+              <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+                </div>
+                <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
+                  "10/10 recommended! Mike transformed my spare room into a <span className="text-[#ff4d00]">high-end studio</span>. I don't have to worry about tech anymore, I just <span className="text-[#ff4d00]">show up and record</span>."
+                </h3>
+                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                    <span className="text-white/50 font-bold text-sm">C</span>
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white leading-snug md:leading-tight mb-3">
-                    "10/10 recommended! Mike transformed my spare room into a <span className="text-[#ff4d00]">high-end studio</span>. I don't have to worry about tech anymore, I just <span className="text-[#ff4d00]">show up and record</span>."
-                  </h3>
-                  <div className="flex items-center gap-3 mt-6">
-                    <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden">
-                      <span className="text-white/50 font-bold text-sm">C</span>
-                    </div>
-                    <div>
-                      <p className="text-white font-black uppercase tracking-widest text-xs">Candace J</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" className="w-3 h-3" />
-                        <p className="text-white/50 text-[10px] font-medium">Verified Client Review</p>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Candace J.</p>
+                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
                   </div>
                 </div>
               </div>
+
+              {/* Testimonial 2 */}
+              <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+                </div>
+                <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
+                  "The Virtual Consultation blew my mind. Mike gave me a custom blueprint for my exact office layout. I finally know <span className="text-[#ff4d00]">what gear to buy</span> and <span className="text-[#ff4d00]">where to put it</span>."
+                </h3>
+                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                    <span className="text-white/50 font-bold text-sm">M</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Marcus T.</p>
+                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Consultation Client</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Testimonial 3 */}
+              <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+                </div>
+                <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
+                  "The White-Glove service is a lifesaver. They came in, <span className="text-[#ff4d00]">routed all the messy cables</span>, and trained me on the system. Now my podcast looks incredibly professional."
+                </h3>
+                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                    <span className="text-white/50 font-bold text-sm">S</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Sarah L.</p>
+                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </motion.div>
         </motion.div>
@@ -217,7 +201,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* RETAINERS */}
-        <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full">
+        <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full mb-16">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">White-Glove <span className="text-[#ff4d00]">Setups</span></h2>
             <p className="text-xl text-[#F5F5F0]/80 max-w-2xl mx-auto leading-relaxed">
@@ -253,111 +237,6 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        <div className="max-w-6xl mx-auto px-6 relative z-10 w-full">
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-10"></div>
-        </div>
-
-        {/* CALCULATOR */}
-        <section id="calculator" className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-16 w-full">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">Build Your <span className="text-[#ff4d00]">Strategy</span></h2>
-            <p className="text-xl text-[#F5F5F0]/70 max-w-2xl mx-auto leading-relaxed">
-              Don't need a massive build out? Book a virtual consultation or an a la carte local setup below.
-            </p>
-          </motion.div>
-
-          <div className="flex flex-col lg:flex-row gap-12 items-start">
-            <div className="flex-1 space-y-12 w-full">
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
-                <h3 className="text-2xl font-black uppercase text-white mb-8 flex items-center gap-3">
-                  <span className="bg-white/5 w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10">1</span> 
-                  Select Base Service
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
-                  {(Object.keys(basePackages) as Array<keyof typeof basePackages>).map((key) => {
-                    const pkg = basePackages[key as keyof typeof basePackages];
-                    const isSelected = selectedBase === key;
-                    return (
-                      <div key={key} onClick={() => setSelectedBase(key as any)} className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex flex-col ${isSelected ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' : 'bg-[#131313] border-white/10 hover:border-white/30'}`}>
-                        <h4 className="text-xl font-black uppercase text-white mb-2">{pkg.name}</h4>
-                        <p className={`text-3xl font-black ${isSelected ? 'text-[#ff4d00]' : 'text-white'} mb-4`}>${pkg.price}</p>
-                        <ul className="space-y-2 text-sm text-[#F5F5F0]/70 flex-grow">
-                          {pkg.features.map((feat, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <CheckCircle2 size={16} className={`${isSelected ? 'text-[#ff4d00]' : 'text-white/60'} mt-0.5 shrink-0`} />
-                              <span>{feat}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
-                <h3 className="text-2xl font-black uppercase text-white mb-8 flex items-center gap-3">
-                  <span className="bg-white/5 w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10">2</span> 
-                  Add-Ons <span className="text-xs text-white/40 normal-case font-normal">(Optional)</span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
-                  {addonOptions.map((addon) => {
-                    const isSelected = selectedAddons.includes(addon.id);
-                    return (
-                      <div key={addon.id} onClick={() => toggleAddon(addon.id)} className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex items-start gap-4 ${isSelected ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' : 'bg-[#131313]/80 border-white/10 hover:border-white/30'}`}>
-                        <div className={`p-2.5 rounded-xl mt-1 shrink-0 ${isSelected ? 'bg-[#ff4d00] text-black' : 'bg-white/5 text-white/80'}`}>{addon.icon}</div>
-                        <div>
-                          <h4 className="font-bold text-white mb-1">{addon.name}</h4>
-                          <p className="text-xs text-white/60 mb-2">{addon.desc}</p>
-                          <p className={`text-sm font-black ${isSelected ? 'text-[#ff4d00]' : 'text-white/80'}`}>+${addon.price}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            </div>
-
-            {/* ESTIMATE CARD */}
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="lg:w-[420px] lg:sticky lg:top-32 w-full bg-[#131313]/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-9 shadow-2xl">
-              <h3 className="text-xl font-black uppercase text-white mb-7 border-b border-white/10 pb-5">Estimated Investment</h3>
-              <div className="space-y-4 mb-7 min-h-[100px]">
-                <div className="flex justify-between font-bold text-white/90">
-                  <span>{basePackages[selectedBase].name}</span>
-                  <span>${basePackages[selectedBase].price}</span>
-                </div>
-                {selectedAddons.map(id => {
-                  const addon = addonOptions.find(a => a.id === id);
-                  if (!addon) return null;
-                  return (
-                    <div key={id} className="flex justify-between text-sm text-white/70">
-                      <span>+ {addon.name}</span>
-                      <span>${addon.price}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* PROMO INPUT */}
-              <div className="border-t border-white/10 pt-5 mt-5">
-                <div className="flex items-center gap-2.5">
-                  <input type="text" placeholder="Promo Code" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} className="bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-3 text-sm w-full text-white focus:outline-none focus:border-[#ff4d00]" />
-                  <button onClick={handleApplyPromo} className="bg-white hover:bg-white/90 text-black px-6 py-3 rounded-xl text-sm font-bold">Apply</button>
-                </div>
-                {promoMessage && <p className={`text-xs mt-3.5 font-medium px-1 ${promoMessage.includes('Success') ? 'text-green-400' : 'text-[#ff4d00]'}`}>{promoMessage}</p>}
-              </div>
-
-              <div className="border-t border-white/10 pt-7 mt-5 mb-10 flex justify-between items-end">
-                <span className="text-white/60 uppercase text-xs font-bold">Estimated Total</span>
-                <span className="text-5xl font-black text-[#ff4d00]">${calculateTotal()}</span>
-              </div>
-              <button className="w-full bg-[#ff4d00] text-black px-6 py-4 rounded-2xl font-black uppercase hover:bg-orange-500 transition-all tracking-widest shadow-[0_0_20px_rgba(255,77,0,0.3)]">
-                Book Session
-              </button>
-            </motion.div>
-          </div>
-        </section>
-
         {/* FOOTER */}
         <footer className="relative z-50 w-full p-6 md:p-12 pb-8 border-t border-white/5 bg-[#0a0a0a]">
           <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
@@ -371,6 +250,12 @@ const LandingPage: React.FC = () => {
           </p>
         </footer>
       </div>
+
+      {showBackToTop && (
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="fixed bottom-6 left-6 z-50 bg-white/10 hover:bg-[#ff4d00] text-white p-3 rounded-full transition-all shadow-xl backdrop-blur-md border border-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+      )}
     </div>
   );
 };
