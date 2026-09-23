@@ -1,15 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Settings, MessageSquare, LogOut, Video, LayoutDashboard, Compass } from 'lucide-react';
-// import { supabase } from './supabaseClient'; // Uncomment when you integrate Supabase here
+import { createClient } from '@supabase/supabase-js';
+import { Home, Settings, LogOut, Video, LayoutDashboard, Compass } from 'lucide-react';
+
+// Initialize Supabase so the Hub can check sessions and log people out
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Hub() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('blueprint');
 
+  // Protect the route: Kicks unauthorized users back to login
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
+  // FULL LOGOUT FUNCTION
   const handleSignOut = async () => {
-    // await supabase.auth.signOut();
-    navigate('/login');
+    try {
+      await supabase.auth.signOut(); // Clears the session from Supabase
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      navigate('/'); // Routes back to the Landing Page
+    }
   };
 
   return (
@@ -17,12 +39,17 @@ export default function Hub() {
       
       {/* SIDEBAR */}
       <aside className="w-64 bg-[#111] border-r border-white/5 hidden md:flex flex-col">
-        <div className="p-6 border-b border-white/5">
+        
+        {/* CLICKABLE LOGO -> RETURNS TO LANDING PAGE */}
+        <div 
+          onClick={() => navigate('/')}
+          className="p-6 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
+        >
           <h2 className="text-xl font-black uppercase tracking-widest text-white">Sanctuary</h2>
           <p className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mt-1">Control Room</p>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 mt-2">
           <button 
             onClick={() => setActiveTab('blueprint')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
@@ -49,7 +76,13 @@ export default function Hub() {
           </button>
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4 border-t border-white/5 space-y-2">
+          {/* RETURN TO HOME BUTTON */}
+          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+            <Home size={18} /> Back to Main Site
+          </button>
+
+          {/* SIGN OUT BUTTON */}
           <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors">
             <LogOut size={18} /> Sign Out
           </button>
@@ -66,9 +99,8 @@ export default function Hub() {
             <p className="text-white/50 mb-8">Your personalized gear list and setup instructions based on our consultation.</p>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 rounded-2xl">
+              <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 rounded-2xl shadow-xl">
                 <h3 className="text-lg font-bold text-white mb-4">Action Items / Gear to Order</h3>
-                {/* Example checklist - later this will be driven by your database */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/5">
                     <input type="checkbox" className="w-5 h-5 accent-[#ff4d00]" />
@@ -84,7 +116,7 @@ export default function Hub() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+              <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 rounded-2xl flex flex-col justify-center items-center text-center shadow-xl">
                 <Video size={40} className="text-[#ff4d00] mb-4" />
                 <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
                 <p className="text-xs text-white/50 mb-4">Watch our 1-hour session replay where we mapped out this room.</p>
@@ -101,13 +133,13 @@ export default function Hub() {
             <h1 className="text-3xl font-black uppercase tracking-tight text-white mb-2">Director's Hotline</h1>
             <p className="text-white/50 mb-8">Stuck on a tech issue? Drop a quick video or message here, and I'll get back to you with the fix.</p>
             
-            <div className="bg-[#131313] border border-white/5 p-6 rounded-2xl min-h-[400px] flex flex-col">
+            <div className="bg-[#131313] border border-white/5 p-6 rounded-2xl min-h-[400px] flex flex-col shadow-xl">
               <div className="flex-1 flex items-center justify-center border-2 border-dashed border-white/10 rounded-xl mb-4 bg-white/5">
                 <p className="text-white/40 text-sm">No recent messages.</p>
               </div>
               <div className="flex gap-2">
-                <input type="text" placeholder="Type your issue or drop a video link..." className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00]" />
-                <button className="bg-[#ff4d00] text-black font-bold px-6 py-3 rounded-xl hover:bg-orange-500 transition-colors">
+                <input type="text" placeholder="Type your issue or drop a video link..." className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white" />
+                <button className="bg-[#ff4d00] text-black font-bold px-6 py-3 rounded-xl hover:bg-orange-500 transition-colors shadow-lg">
                   Send
                 </button>
               </div>
@@ -115,7 +147,6 @@ export default function Hub() {
           </div>
         )}
 
-        {/* Add placeholders for Community and Settings tabs */}
         {(activeTab === 'community' || activeTab === 'settings') && (
            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
              <h1 className="text-3xl font-black uppercase tracking-tight text-white mb-2 capitalize">{activeTab}</h1>
