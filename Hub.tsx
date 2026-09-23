@@ -1,125 +1,142 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, Compass, Lock, 
-  MessageSquare, Image as ImageIcon, Heart, MessageCircle, MoreHorizontal, Share2, User, Instagram, Camera, Repeat, Send
+  MessageSquare, Image as ImageIcon, Heart, MessageCircle, MoreHorizontal, 
+  Share2, User, Instagram, Camera, Repeat, Send, X, AlertCircle, Trash2, BookOpen, Pencil
 } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
-// Mock posts updated with interaction states and comments array
-const INITIAL_POSTS = [
-  {
-    id: '1',
-    author: "David R.",
-    username: "davidr",
-    avatar: "D",
-    avatar_url: null,
-    instagram: "davidr_creates",
-    time: "2 hours ago",
-    content: "Just finished mounting the Amaran 100x and the difference is night and day! Thanks @mike for the recommendation on the softbox size. No more harsh shadows on my face.",
-    image: null,
-    likes: 12,
-    isLiked: false,
-    reposts: 2,
-    isReposted: false,
-    comments: [
-      { id: 'c1', author: 'Mike Miller', username: 'mike', content: 'Looks great man! Glad it worked out.', time: '1 hr ago' }
-    ]
-  },
-  {
-    id: '2',
-    author: "Sarah L.",
-    username: "sarahl_studios",
-    avatar: "S",
-    avatar_url: null,
-    instagram: "sarahl",
-    time: "5 hours ago",
-    content: "Finally got my space treated! Here's a look at the new setup. Hit record for the first time today and the audio is completely dead—no echo at all! 🙏",
-    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=2070&auto=format&fit=crop",
-    likes: 34,
-    isLiked: true,
-    reposts: 5,
-    isReposted: false,
-    comments: []
-  }
-];
-
 export default function Hub() {
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState('community'); // Defaulting to community to test feed
+  const [searchParams, setSearchParams] = useSearchParams();
+  const targetPostId = searchParams.get('postId');
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState('community'); 
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // --- USER & BLUEPRINT STATE ---
   const [userId, setUserId] = useState<string | null>(null);
   const [blueprint, setBlueprint] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
   
-  // Profile State
   const [profile, setProfile] = useState({
+    id: '',
     display_name: 'Creator',
     username: 'creator' + Math.floor(Math.random() * 1000),
     instagram_handle: '',
     avatar_letter: 'C',
     avatar_url: '',
+    first_name: '',
+    last_name: '',
     bio: ''
   });
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  // Feed State
-  const [posts, setPosts] = useState<any[]>(INITIAL_POSTS);
+  // --- FEED STATE (Merged from CommunityChat) ---
+  const [posts, setPosts] = useState<any[]>([]);
   const [newPostText, setNewPostText] = useState('');
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
+  const [posting, setPosting] = useState(false);
+  
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  
+  const [commentText, setCommentText] = useState('');
+  const [openCommentId, setOpenCommentId] = useState<string | null>(targetPostId);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [repostTarget, setRepostTarget] = useState<any>(null);
 
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+
+  const [allMembers, setAllMembers] = useState<any[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionTarget, setMentionTarget] = useState<'post' | 'comment' | null>(null);
+
+  const [fetchingVerse, setFetchingVerse] = useState(false);
+  const verseMatch = newPostText.match(/\/verse\s+([1-3]?\s*[a-zA-Z]+\s+\d+:\d+(?:-\d+)?)/i);
+
+  // --- INITIALIZATION ---
   useEffect(() => {
     const initApp = async () => {
       try {
-        if (!supabase) {
-          setIsLoading(false);
-          return;
-        }
-
+        if (!supabase) { setIsLoading(false); return; }
         const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { navigate('/login'); return; }
         
-        if (!session) {
-          navigate('/login');
-          return;
-        }
-
         setUserId(session.user.id);
 
+        // Fetch Blueprint
         const { data: bpData } = await supabase.from('blueprints').select('*').eq('user_id', session.user.id).single(); 
         if (bpData) setBlueprint(bpData);
 
+        // Fetch Profile
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profileData) {
           setProfile(profileData);
-        } else {
-          const defaultProfile = {
-            id: session.user.id,
-            display_name: session.user.email?.split('@')[0] || 'Creator',
-            username: 'user_' + Math.floor(Math.random() * 10000),
-            avatar_letter: session.user.email ? session.user.email[0].toUpperCase() : 'C',
-          };
-          await supabase.from('profiles').insert([defaultProfile]);
-          setProfile({...profile, ...defaultProfile});
         }
+
+        // Fetch Posts and Members
+        await fetchPosts();
+        await fetchAllMembers();
+
       } catch (err) {
         console.error("Initialization error:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
     initApp();
   }, [navigate]);
 
-  // --- PROFILE ACTIONS ---
+  // Scroll to targeted post if URL has ?postId=...
+  useEffect(() => {
+    if (!isLoading && targetPostId) {
+      setTimeout(() => {
+        const element = document.getElementById(`post-${targetPostId}`);
+        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [isLoading, targetPostId]);
 
+  // --- DATA FETCHING METHODS ---
+  const fetchAllMembers = async () => {
+    if(!supabase) return;
+    const { data } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, username');
+    if (data) setAllMembers(data);
+  };
+
+  const fetchPosts = async () => {
+    if(!supabase) return;
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('posts')
+        .select(`
+          *, 
+          profiles:user_id (first_name, last_name, username, avatar_url, instagram_handle), 
+          post_likes (user_id), 
+          comments (*, profiles:user_id (first_name, last_name, username, avatar_url)),
+          original_post:original_post_id (
+            id, content, media_url, created_at,
+            profiles:user_id (first_name, last_name, username, avatar_url, instagram_handle)
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (fetchError) throw fetchError;
+      setPosts(data || []);
+    } catch (err: any) {
+      console.error('Fetch error:', err);
+    }
+  };
+
+  // --- PROFILE ACTIONS ---
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!event.target.files || event.target.files.length === 0 || !supabase || !userId) return;
@@ -128,20 +145,17 @@ export default function Hub() {
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}-${Math.random()}.${fileExt}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
       
-      // Update local state and DB
       setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
-      
+      await fetchPosts(); // Refresh feed to show new avatar
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      alert('Error uploading avatar. Did you create the "avatars" public bucket in Supabase?');
+      alert('Error uploading avatar. Did you create the "avatars" public bucket?');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -158,6 +172,7 @@ export default function Hub() {
         instagram_handle: profile.instagram_handle.replace('@', ''),
       }).eq('id', userId);
       alert("Profile saved successfully!");
+      fetchPosts();
     } catch (err) {
       console.error(err);
       alert("Failed to save profile.");
@@ -167,84 +182,209 @@ export default function Hub() {
   };
 
   // --- FEED ACTIONS ---
-
-  const handleCreatePost = async () => {
-    if (!newPostText.trim()) return;
-    
-    const newPost = {
-      id: Date.now().toString(),
-      author: profile.display_name,
-      username: profile.username,
-      avatar: profile.avatar_letter,
-      avatar_url: profile.avatar_url,
-      instagram: profile.instagram_handle,
-      time: "Just now",
-      content: newPostText,
-      image: null,
-      likes: 0,
-      isLiked: false,
-      reposts: 0,
-      isReposted: false,
-      comments: []
-    };
-
-    setPosts([newPost, ...posts]);
-    setNewPostText('');
-
-    if (supabase && userId) {
-      try {
-        await supabase.from('posts').insert([{ author_id: userId, content: newPostText }]);
-      } catch (err) {
-        console.error("Failed to save post to DB", err);
+  const handleFetchVerse = async () => {
+    if (!verseMatch) return;
+    setFetchingVerse(true);
+    try {
+      const response = await fetch(`https://bible-api.com/${encodeURIComponent(verseMatch[1])}`);
+      const data = await response.json();
+      
+      if (data.text) {
+         const cleanText = data.text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+         const replacement = `"${cleanText}" - ${data.reference}`;
+         setNewPostText(newPostText.replace(verseMatch[0], replacement));
+      } else {
+         setError("Could not find that verse. Please check the spelling!");
       }
+    } catch (e) {
+      setError("Bible API is currently unavailable.");
+    }
+    setFetchingVerse(false);
+  };
+
+  const handlePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || !userId) return;
+    if (!newPostText.trim() && !mediaFile && !repostTarget) return; 
+    
+    setPosting(true);
+    setError(null);
+    let media_url = null;
+
+    try {
+      if (mediaFile) {
+        const fileExt = mediaFile.name.split('.').pop();
+        const fileName = `${userId}/${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('setups').upload(fileName, mediaFile);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('setups').getPublicUrl(fileName);
+        media_url = publicUrl;
+      }
+
+      const { data: newPostData, error: postError } = await supabase.from('posts').insert([{ 
+        user_id: userId, 
+        content: newPostText.trim(), 
+        media_url,
+        original_post_id: repostTarget?.id || null 
+      }]).select().single();
+      
+      if (postError) throw postError;
+
+      // Notifications
+      if (repostTarget && repostTarget.user_id !== userId) {
+        await supabase.from('notifications').insert([{
+          user_id: repostTarget.user_id,
+          actor_id: userId,
+          type: 'repost',
+          post_id: newPostData.id
+        }]);
+      }
+
+      setNewPostText('');
+      setMediaFile(null);
+      setMediaPreview(null);
+      setRepostTarget(null);
+      await fetchPosts();
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setPosting(false);
+  };
+
+  const saveEdit = async (postId: string) => {
+    if (!editContent.trim() || !supabase) return;
+    try {
+      await supabase.from('posts').update({ content: editContent.trim(), is_edited: true }).eq('id', postId);
+      setEditingPostId(null);
+      fetchPosts();
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleLike = async (postId: string, currentLikes: any[] = []) => {
+    if (!userId || !supabase) return;
+    const isLiked = currentLikes.some(like => like.user_id === userId);
+    try {
+      if (isLiked) {
+        await supabase.from('post_likes').delete().match({ post_id: postId, user_id: userId });
+      } else {
+        await supabase.from('post_likes').insert([{ post_id: postId, user_id: userId }]);
+        
+        const post = posts.find(p => p.id === postId);
+        if (post && post.user_id !== userId) {
+          await supabase.from('notifications').insert([{
+            user_id: post.user_id, actor_id: userId, type: 'post_like', post_id: postId
+          }]);
+        }
+      }
+      fetchPosts();
+    } catch (e) { console.error(e); }
+  };
+
+  const submitComment = async (postId: string) => {
+    if (!commentText.trim() || !userId || !supabase) return;
+    try {
+      await supabase.from('comments').insert([{ post_id: postId, user_id: userId, content: commentText.trim() }]);
+      
+      const post = posts.find(p => p.id === postId);
+      if (post && post.user_id !== userId) {
+        await supabase.from('notifications').insert([{
+          user_id: post.user_id, actor_id: userId, type: 'new_comment', post_id: postId
+        }]);
+      }
+
+      setCommentText('');
+      fetchPosts();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleShare = async (postId: string) => {
+    const url = `${window.location.origin}/hub?tab=community&postId=${postId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(postId);
+      setTimeout(() => setCopiedId(null), 2000); 
+    } catch (err) { console.error('Failed to copy link', err); }
+  };
+
+  const initiateRepost = (post: any) => {
+    setRepostTarget(post.original_post || post);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
+
+  const deletePost = async (postId: string) => {
+    if (!supabase || !window.confirm("Are you sure you want to delete this post?")) return;
+    try {
+      await supabase.from('posts').delete().eq('id', postId);
+      fetchPosts();
+    } catch (e) { console.error(e); }
+  };
+
+  // --- MENTIONS LOGIC ---
+  const handleTextInput = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, target: 'post' | 'comment') => {
+    const val = e.target.value;
+    if (target === 'post') setNewPostText(val);
+    if (target === 'comment') setCommentText(val);
+
+    const cursorPosition = e.target.selectionStart || 0;
+    const textBeforeCursor = val.slice(0, cursorPosition);
+    const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
+
+    if (match) {
+      setMentionQuery(match[1].toLowerCase());
+      setMentionTarget(target);
+    } else {
+      setMentionQuery(null);
+      setMentionTarget(null);
     }
   };
 
-  const toggleLike = (postId: string) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return { 
-          ...post, 
-          isLiked: !post.isLiked, 
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1 
-        };
-      }
-      return post;
-    }));
+  const insertMention = (member: any) => {
+    const mentionName = `@${member.username || member.first_name || 'user'}`.replace(/\s+/g, '');
+    
+    if (mentionTarget === 'post') {
+      const newText = newPostText.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1${mentionName} `);
+      setNewPostText(newText);
+    } else if (mentionTarget === 'comment') {
+      const newText = commentText.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1${mentionName} `);
+      setCommentText(newText);
+    }
+    
+    setMentionQuery(null);
+    setMentionTarget(null);
   };
 
-  const toggleRepost = (postId: string) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return { 
-          ...post, 
-          isReposted: !post.isReposted, 
-          reposts: post.isReposted ? post.reposts - 1 : post.reposts + 1 
-        };
+  const renderContentWithMentions = (text: string) => {
+    if (!text) return null;
+    return text.split(/(@\w+)/g).map((part, index) => {
+      if (part.startsWith('@')) {
+        return <span key={index} className="text-[#ff4d00] font-medium cursor-pointer hover:underline">{part}</span>;
       }
-      return post;
-    }));
+      return part;
+    });
   };
 
-  const submitReply = (postId: string) => {
-    if (!replyText.trim()) return;
-    
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        const newComment = {
-          id: Date.now().toString(),
-          author: profile.display_name,
-          username: profile.username,
-          content: replyText,
-          time: 'Just now'
-        };
-        return { ...post, comments: [...post.comments, newComment] };
-      }
-      return post;
-    }));
-    
-    setReplyText('');
-    setReplyingTo(null);
+  const filteredMentions = mentionQuery !== null
+    ? allMembers.filter(m => {
+        const fullName = `${m.first_name || ''} ${m.last_name || ''} ${m.username || ''}`.toLowerCase();
+        return fullName.includes(mentionQuery);
+      }).slice(0, 5) 
+    : [];
+
+  const MentionDropdown = () => {
+    if (mentionQuery === null || filteredMentions.length === 0) return null;
+    return (
+      <div className="absolute bottom-[calc(100%+8px)] left-0 w-64 bg-[#131313] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="p-2 text-[10px] font-bold text-white/40 uppercase tracking-widest border-b border-white/5 bg-white/5">Mentions</div>
+        {filteredMentions.map(m => (
+          <div key={m.id} onClick={() => insertMention(m)} className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer transition-colors">
+            <div className="w-6 h-6 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+              {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : <User size={12} className="text-white/20" />}
+            </div>
+            <span className="text-sm font-medium text-white truncate">{m.first_name} @{m.username}</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const toggleGearItem = async (index: number) => {
@@ -252,7 +392,6 @@ export default function Hub() {
     const updatedGear = [...blueprint.gear_list];
     updatedGear[index].checked = !updatedGear[index].checked;
     setBlueprint({ ...blueprint, gear_list: updatedGear });
-    
     try { await supabase.from('blueprints').update({ gear_list: updatedGear }).eq('id', blueprint.id); } 
     catch (err) { console.error(err); }
   };
@@ -263,23 +402,9 @@ export default function Hub() {
     finally { navigate('/'); }
   };
 
-  const renderContentWithMentions = (text: string) => {
-    return text.split(/(@\w+)/g).map((part, index) => {
-      if (part.startsWith('@')) {
-        return <span key={index} className="text-[#ff4d00] font-medium cursor-pointer hover:underline">{part}</span>;
-      }
-      return part;
-    });
-  };
-
-  // User Avatar Component for consistency
   const UserAvatar = ({ url, letter, size = "w-10 h-10", textClass = "text-sm" }: { url?: string | null, letter: string, size?: string, textClass?: string }) => (
     <div className={`${size} rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center shrink-0 overflow-hidden relative`}>
-      {url ? (
-        <img src={url} alt="Avatar" className="w-full h-full object-cover" />
-      ) : (
-        <span className={`text-white/70 font-bold uppercase ${textClass}`}>{letter}</span>
-      )}
+      {url ? <img src={url} alt="Avatar" className="w-full h-full object-cover" /> : <span className={`text-white/70 font-bold uppercase ${textClass}`}>{letter}</span>}
     </div>
   );
 
@@ -292,9 +417,7 @@ export default function Hub() {
           <h2 className="text-lg font-black uppercase tracking-widest text-white leading-none">Sanctuary</h2>
           <p className="text-[10px] text-[#ff4d00] font-bold uppercase tracking-widest mt-1 leading-none">Control Room</p>
         </div>
-        <button onClick={handleSignOut} className="text-white/40 hover:text-red-400 p-2">
-          <LogOut size={20} />
-        </button>
+        <button onClick={handleSignOut} className="text-white/40 hover:text-red-400 p-2"><LogOut size={20} /></button>
       </div>
 
       {/* DESKTOP SIDEBAR */}
@@ -303,21 +426,17 @@ export default function Hub() {
           <h2 className="text-xl font-black uppercase tracking-widest text-white">Sanctuary</h2>
           <p className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mt-1">Control Room</p>
         </div>
-        
         <nav className="flex-1 p-4 space-y-2 mt-2">
           <button onClick={() => setActiveTab('blueprint')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <LayoutDashboard size={18} /> My Blueprint
           </button>
-          
           <button onClick={() => setActiveTab('community')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'community' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <Compass size={18} /> Kingdom Network
           </button>
-
           <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <User size={18} /> My Profile
           </button>
         </nav>
-
         <div className="p-4 border-t border-white/5 space-y-2">
           <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
             <Home size={18} /> Back to Main Site
@@ -338,9 +457,7 @@ export default function Hub() {
           </div>
         ) : (
           <>
-            {/* ========================================= */}
-            {/* BLUEPRINT TAB                             */}
-            {/* ========================================= */}
+            {/* ==================== BLUEPRINT TAB ==================== */}
             {activeTab === 'blueprint' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative max-w-6xl mx-auto md:mx-0">
                 <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
@@ -375,6 +492,19 @@ export default function Hub() {
                         )}
                       </div>
                     </div>
+                    <div className="bg-[#131313] border border-[#ff4d00]/20 p-6 md:p-8 rounded-3xl shadow-[0_0_30px_rgba(255,77,0,0.05)] flex flex-col relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+                      <div className="flex items-center gap-3 mb-2 relative z-10 flex-wrap">
+                        <MessageSquare className="text-[#ff4d00]" size={24} />
+                        <h3 className="text-xl font-black uppercase tracking-tight text-white">Director's Hotline</h3>
+                        <span className="bg-[#ff4d00]/20 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border border-[#ff4d00]/30">Premium</span>
+                      </div>
+                      <p className="text-white/50 text-sm mb-6 relative z-10 max-w-2xl">Stuck on a tech issue? Drop a quick video or message here.</p>
+                      <div className="flex flex-col sm:flex-row gap-2 relative z-10">
+                        <input type="text" placeholder="Type your issue or drop a video link..." className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#ff4d00] text-white transition-colors" />
+                        <button className="bg-[#ff4d00] text-black font-black uppercase tracking-wider px-8 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg w-full sm:w-auto">Send</button>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="relative rounded-3xl overflow-hidden border border-white/5 mt-4">
@@ -382,166 +512,271 @@ export default function Hub() {
                       <div className="h-48 bg-[#131313] rounded-3xl border border-white/10"></div>
                     </div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/70 backdrop-blur-sm p-6 text-center">
-                      <div className="bg-[#ff4d00]/10 p-4 rounded-full mb-4 border border-[#ff4d00]/30">
-                        <Lock size={32} className="text-[#ff4d00]" />
-                      </div>
+                      <Lock size={32} className="text-[#ff4d00] mb-4" />
                       <h2 className="text-xl md:text-3xl font-black uppercase text-white tracking-widest mb-3">Sanctuary Locked</h2>
-                      <p className="text-white/70 max-w-lg mb-6 text-sm leading-relaxed">You haven't booked a virtual consultation yet. Book a session to unlock your custom gear list, acoustic layout, and session replay.</p>
-                      <button onClick={() => navigate('/#pricing-section')} className="bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-4 rounded-xl font-black uppercase tracking-widest shadow-lg text-xs md:text-sm w-full md:w-auto">
-                        Book Consultation
-                      </button>
+                      <p className="text-white/70 mb-6 text-sm">Book a session to unlock your custom gear list.</p>
+                      <button onClick={() => navigate('/#pricing-section')} className="bg-[#ff4d00] text-black px-6 py-4 rounded-xl font-black uppercase tracking-widest shadow-lg text-xs md:text-sm">Book Consultation</button>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* ========================================= */}
-            {/* KINGDOM NETWORK TAB (Functional Feed)     */}
-            {/* ========================================= */}
+            {/* ==================== KINGDOM NETWORK TAB ==================== */}
             {activeTab === 'community' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
                   <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">Kingdom Network</h1>
-                  <p className="text-white/50 text-xs md:text-sm">Connect, collaborate, and share your space with other faith-driven creators.</p>
+                  <p className="text-white/50 text-xs md:text-sm">Connect, collaborate, and share your space.</p>
                 </div>
 
+                {error && (
+                  <div className="mb-4 bg-red-500/10 text-red-400 p-3 rounded-xl flex items-center gap-2 text-sm">
+                    <AlertCircle size={16} />
+                    <p>{error}</p>
+                    <button onClick={() => setError(null)} className="ml-auto"><X size={14}/></button>
+                  </div>
+                )}
+
                 {/* POST COMPOSER */}
-                <div className="bg-[#131313] p-4 md:p-5 rounded-3xl border border-white/10 mb-8 shadow-lg focus-within:border-[#ff4d00]/50 transition-colors">
-                  <div className="flex gap-3 md:gap-4">
+                <div className="bg-[#131313] p-4 md:p-5 rounded-3xl border border-white/10 mb-8 shadow-lg focus-within:border-[#ff4d00]/50 transition-colors relative">
+                  {mentionTarget === 'post' && <MentionDropdown />}
+                  <form onSubmit={handlePost} className="flex gap-3 md:gap-4">
                     <UserAvatar url={profile.avatar_url} letter={profile.avatar_letter} />
                     <div className="flex-1 pt-2">
                       <textarea 
-                        placeholder="Share your setup, ask for feedback... (Use @ to tag)"
-                        value={newPostText}
-                        onChange={(e) => setNewPostText(e.target.value)}
-                        className="w-full bg-transparent border-none text-white focus:outline-none resize-none text-sm placeholder:text-white/30"
-                        rows={3}
+                        value={newPostText} 
+                        onChange={e => handleTextInput(e, 'post')} 
+                        placeholder={repostTarget ? "Add a quote to this repost..." : "Share your setup, ask for feedback... (Use @ to tag)"} 
+                        className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-sm placeholder:text-white/30 resize-none p-0" 
+                        rows={newPostText.split('\n').length > 1 ? newPostText.split('\n').length : 2}
                       />
+                      
+                      {mediaPreview && (
+                        <div className="mt-3 relative inline-block">
+                          {mediaFile?.type.startsWith('video/') ? (
+                            <video src={mediaPreview} controls loop playsInline className="rounded-xl max-h-64 border border-white/10" />
+                          ) : (
+                            <img src={mediaPreview} className="rounded-xl max-h-64 border border-white/10" />
+                          )}
+                          <button type="button" onClick={() => {setMediaFile(null); setMediaPreview(null);}} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm p-1.5 text-white rounded-full hover:bg-black transition-colors"><X size={14}/></button>
+                        </div>
+                      )}
+
+                      {repostTarget && (
+                        <div className="mt-3 p-3 border border-white/10 rounded-xl relative bg-black/20">
+                          <button type="button" onClick={() => setRepostTarget(null)} className="absolute top-2 right-2 text-white/40 hover:text-white transition-colors"><X size={14}/></button>
+                          <div className="flex items-center gap-2 mb-1 text-white/40">
+                            <Repeat size={12} />
+                            <p className="text-[10px] font-bold uppercase tracking-wider">Quote Repost</p>
+                          </div>
+                          <p className="text-sm text-white/80 line-clamp-2">{repostTarget.content}</p>
+                        </div>
+                      )}
+
                       <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-                        <button className="text-white/40 hover:text-[#ff4d00] transition-colors p-2 rounded-full hover:bg-white/5">
-                          <ImageIcon size={18} />
-                        </button>
-                        <button 
-                          disabled={!newPostText.trim()}
-                          onClick={handleCreatePost}
-                          className="bg-[#ff4d00] disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed text-black px-6 py-2 rounded-full font-bold text-sm transition-colors shadow-lg"
-                        >
-                          Post
-                        </button>
+                         <div className="flex items-center gap-4 text-white/40">
+                           <label className="cursor-pointer hover:text-[#ff4d00] transition-colors p-2 rounded-full hover:bg-white/5">
+                             <ImageIcon size={18} />
+                             <input type="file" className="hidden" accept="image/*,video/*" onChange={e => {
+                               if (e.target.files?.[0]) { setMediaFile(e.target.files[0]); setMediaPreview(URL.createObjectURL(e.target.files[0])); }
+                             }} />
+                           </label>
+                           
+                           {verseMatch && (
+                             <button type="button" onClick={handleFetchVerse} disabled={fetchingVerse} className="flex items-center gap-1.5 text-xs text-[#ff4d00] hover:text-orange-400 transition-colors bg-[#ff4d00]/10 px-3 py-1.5 rounded-full">
+                               <BookOpen size={14} /> {fetchingVerse ? 'Fetching...' : `Fetch ${verseMatch[1]}`}
+                             </button>
+                           )}
+                         </div>
+
+                         <button type="submit" disabled={posting || (!newPostText.trim() && !mediaFile && !repostTarget)} className="bg-[#ff4d00] disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed text-black px-6 py-2 rounded-full font-bold text-sm transition-colors shadow-lg">
+                           {posting ? 'Posting...' : 'Post'}
+                         </button>
                       </div>
                     </div>
-                  </div>
+                  </form>
                 </div>
 
-                {/* FEED */}
-                <div className="space-y-6 pb-20">
-                  {posts.map((post) => (
-                    <div key={post.id} className="bg-[#131313]/50 p-4 md:p-5 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
-                      <div className="flex gap-3 md:gap-4">
-                        <div className="flex flex-col items-center">
-                          <UserAvatar url={post.avatar_url} letter={post.avatar} />
-                          {post.comments.length > 0 && <div className="w-[2px] h-full bg-white/10 mt-3 rounded-full"></div>}
-                        </div>
+                {/* FEED LIST */}
+                <div className="flex flex-col space-y-6">
+                  {posts.length === 0 && <p className="text-center text-white/40 italic">No posts yet. Be the first to share!</p>}
+                  
+                  {posts.map((post) => {
+                    const postLikes = post.post_likes || [];
+                    const postComments = post.comments || [];
+                    const isLiked = postLikes.some((l: any) => l.user_id === userId);
+                    const isTargeted = targetPostId === post.id;
+                    const isMyPost = userId === post.user_id;
+                    const isVideoMedia = post.media_url?.match(/\.(mp4|webm|ogg|mov)$/i);
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start mb-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-white text-sm hover:underline cursor-pointer truncate">{post.author}</span>
-                              <span className="text-white/30 text-xs truncate">@{post.username}</span>
-                              {post.instagram && (
-                                <a href={`https://instagram.com/${post.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-[#E1306C] transition-colors">
-                                  <Instagram size={14} />
-                                </a>
-                              )}
-                              <span className="text-white/30 text-xs shrink-0">· {post.time}</span>
-                            </div>
-                            <button className="text-white/20 hover:text-white/50 shrink-0 ml-2">
-                              <MoreHorizontal size={16} />
-                            </button>
+                    return (
+                      <div key={post.id} id={`post-${post.id}`} className={`bg-transparent group ${isTargeted ? 'bg-white/5 p-4 -mx-4 rounded-3xl' : ''}`}>
+                        
+                        {post.original_post && (
+                          <div className="flex items-center gap-2 text-white/40 text-[11px] font-bold mb-3 ml-12 md:ml-14">
+                            <Repeat size={12} /> Reposted
                           </div>
-                          
-                          <p className="text-white/80 text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">
-                            {renderContentWithMentions(post.content)}
-                          </p>
+                        )}
 
-                          {post.image && (
-                            <div className="rounded-2xl overflow-hidden mb-4 border border-white/5">
-                              <img src={post.image} alt="Setup" className="w-full h-auto object-cover" />
-                            </div>
-                          )}
-
-                          {/* ACTION BAR */}
-                          <div className="flex items-center gap-6 mt-3">
-                            <button onClick={() => toggleLike(post.id)} className={`flex items-center gap-1.5 transition-colors group/btn ${post.isLiked ? 'text-red-500' : 'text-white/40 hover:text-red-400'}`}>
-                              <div className={`p-1.5 rounded-full ${post.isLiked ? 'bg-red-500/10' : 'group-hover/btn:bg-red-400/10'}`}>
-                                <Heart size={16} className={post.isLiked ? 'fill-current' : ''} />
-                              </div>
-                              <span className="text-xs font-medium">{post.likes > 0 ? post.likes : ''}</span>
-                            </button>
-                            
-                            <button onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-blue-400 transition-colors group/btn">
-                              <div className="p-1.5 rounded-full group-hover/btn:bg-blue-400/10"><MessageCircle size={16} /></div>
-                              <span className="text-xs font-medium">{post.comments.length > 0 ? post.comments.length : ''}</span>
-                            </button>
-
-                            <button onClick={() => toggleRepost(post.id)} className={`flex items-center gap-1.5 transition-colors group/btn ${post.isReposted ? 'text-green-500' : 'text-white/40 hover:text-green-400'}`}>
-                              <div className={`p-1.5 rounded-full ${post.isReposted ? 'bg-green-500/10' : 'group-hover/btn:bg-green-400/10'}`}>
-                                <Repeat size={16} />
-                              </div>
-                              <span className="text-xs font-medium">{post.reposts > 0 ? post.reposts : ''}</span>
-                            </button>
+                        <div className="flex gap-3 md:gap-4">
+                          {/* Thread Column */}
+                          <div className="flex flex-col items-center">
+                            <UserAvatar url={post.profiles?.avatar_url} letter={post.profiles?.first_name?.charAt(0) || 'U'} />
+                            {(openCommentId === post.id || postComments.length > 0) && (
+                               <div className="w-[1.5px] h-full bg-white/5 mt-3 rounded-full group-last:hidden"></div>
+                            )}
                           </div>
-                        </div>
-                      </div>
 
-                      {/* COMMENTS SECTION */}
-                      {post.comments.length > 0 && (
-                        <div className="mt-4 pl-12 md:pl-14 space-y-4">
-                          {post.comments.map((comment: any) => (
-                            <div key={comment.id} className="flex gap-3">
-                              <UserAvatar letter={comment.author.charAt(0)} size="w-6 h-6" textClass="text-[10px]" />
-                              <div className="flex-1 bg-black/40 rounded-2xl p-3 border border-white/5">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-bold text-white text-xs">{comment.author}</span>
-                                  <span className="text-white/30 text-[10px]">@{comment.username} · {comment.time}</span>
+                          {/* Content Column */}
+                          <div className="flex-grow min-w-0 pb-2">
+                            <div className="flex justify-between items-start mb-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-white text-sm hover:underline cursor-pointer truncate">
+                                  {post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}
+                                </span>
+                                <span className="text-white/30 text-xs truncate hidden sm:inline">@{post.profiles?.username}</span>
+                                {post.profiles?.instagram_handle && (
+                                  <a href={`https://instagram.com/${post.profiles.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-[#E1306C] transition-colors">
+                                    <Instagram size={14} />
+                                  </a>
+                                )}
+                                <span className="text-white/30 text-xs shrink-0 ml-1">· {new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                {post.is_edited && <span className="text-[10px] text-white/20 italic ml-1">(edited)</span>}
+                              </div>
+                              
+                              {isMyPost && (
+                                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} className="text-white/20 hover:text-blue-400 transition-colors"><Pencil size={14} /></button>
+                                  <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                                 </div>
-                                <p className="text-white/70 text-xs">{renderContentWithMentions(comment.content)}</p>
-                              </div>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            
+                            {/* Editable Content */}
+                            {editingPostId === post.id ? (
+                              <div className="mb-3 mt-2 bg-black/40 p-3 rounded-xl border border-[#ff4d00]/30">
+                                <textarea
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-sm resize-none p-0"
+                                  rows={editContent.split('\n').length > 1 ? editContent.split('\n').length : 2}
+                                />
+                                <div className="flex justify-end gap-3 mt-2 pt-2 border-t border-white/10">
+                                  <button onClick={() => setEditingPostId(null)} className="text-xs text-white/40 hover:text-white">Cancel</button>
+                                  <button onClick={() => saveEdit(post.id)} className="bg-[#ff4d00] text-black px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">Save</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-white/80 text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">
+                                {renderContentWithMentions(post.content)}
+                              </p>
+                            )}
 
-                      {/* REPLY COMPOSER */}
-                      {replyingTo === post.id && (
-                        <div className="mt-4 pl-12 md:pl-14 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                           <UserAvatar url={profile.avatar_url} letter={profile.avatar_letter} size="w-8 h-8" textClass="text-xs" />
-                           <div className="flex-1 bg-black border border-[#ff4d00]/30 rounded-2xl flex items-center pr-2 focus-within:border-[#ff4d00] transition-colors">
-                             <input 
-                               type="text" 
-                               autoFocus
-                               value={replyText}
-                               onChange={(e) => setReplyText(e.target.value)}
-                               placeholder={`Replying to @${post.username}...`}
-                               className="flex-1 bg-transparent border-none text-white text-xs md:text-sm px-4 py-3 focus:outline-none"
-                               onKeyDown={(e) => e.key === 'Enter' && submitReply(post.id)}
-                             />
-                             <button onClick={() => submitReply(post.id)} disabled={!replyText.trim()} className="p-2 text-[#ff4d00] disabled:text-white/20 hover:bg-[#ff4d00]/10 rounded-xl transition-colors">
-                               <Send size={16} />
-                             </button>
-                           </div>
+                            {/* Media Attachment */}
+                            {post.media_url && (
+                              <div className="rounded-2xl overflow-hidden mb-4 border border-white/5 bg-black/20">
+                                {isVideoMedia ? (
+                                  <video src={post.media_url} controls playsInline className="w-full max-h-96 object-contain" />
+                                ) : (
+                                  <img src={post.media_url} className="w-full max-h-96 object-cover" />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Repost Render */}
+                            {post.original_post && (
+                              <div className="mt-2 mb-4 p-4 border border-white/10 rounded-2xl bg-[#131313]/50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <UserAvatar url={post.original_post.profiles?.avatar_url} letter={post.original_post.profiles?.first_name?.charAt(0) || 'U'} size="w-5 h-5" textClass="text-[10px]" />
+                                  <span className="font-bold text-white text-xs">{post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}</span>
+                                </div>
+                                <p className="text-white/70 text-sm line-clamp-3">{post.original_post.content}</p>
+                                {post.original_post.media_url && (
+                                  <div className="mt-2 rounded-xl overflow-hidden max-h-32 border border-white/5">
+                                    <img src={post.original_post.media_url} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* ACTION BAR */}
+                            <div className="flex items-center gap-6 mt-1">
+                              <button onClick={() => toggleLike(post.id, postLikes)} className={`flex items-center gap-1.5 transition-colors group/btn ${isLiked ? 'text-red-500' : 'text-white/40 hover:text-red-400'}`}>
+                                <div className={`p-1.5 rounded-full ${isLiked ? 'bg-red-500/10' : 'group-hover/btn:bg-red-400/10'}`}>
+                                  <Heart size={16} className={isLiked ? 'fill-current' : ''} />
+                                </div>
+                                <span className="text-xs font-medium">{postLikes.length > 0 ? postLikes.length : ''}</span>
+                              </button>
+                              
+                              <button onClick={() => setOpenCommentId(openCommentId === post.id ? null : post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-blue-400 transition-colors group/btn">
+                                <div className={`p-1.5 rounded-full ${openCommentId === post.id ? 'bg-blue-400/10 text-blue-400' : 'group-hover/btn:bg-blue-400/10'}`}>
+                                  <MessageCircle size={16} className={openCommentId === post.id ? 'fill-current' : ''} />
+                                </div>
+                                <span className="text-xs font-medium">{postComments.length > 0 ? postComments.length : ''}</span>
+                              </button>
+
+                              <button onClick={() => initiateRepost(post)} className="flex items-center gap-1.5 text-white/40 hover:text-green-400 transition-colors group/btn">
+                                <div className="p-1.5 rounded-full group-hover/btn:bg-green-400/10"><Repeat size={16} /></div>
+                              </button>
+
+                              <button onClick={() => handleShare(post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-purple-400 transition-colors group/btn">
+                                <div className="p-1.5 rounded-full group-hover/btn:bg-purple-400/10"><Share2 size={16} /></div>
+                                {copiedId === post.id && <span className="text-[10px] text-purple-400">Copied!</span>}
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* COMMENTS DROPDOWN */}
+                        {(openCommentId === post.id || postComments.length > 0) && (
+                          <div className="mt-2 pl-12 md:pl-14 space-y-4">
+                            
+                            {/* Render Comments */}
+                            {postComments.map((comment: any) => (
+                              <div key={comment.id} className="flex gap-3 relative">
+                                <UserAvatar url={comment.profiles?.avatar_url} letter={comment.profiles?.first_name?.charAt(0) || 'U'} size="w-6 h-6" textClass="text-[10px]" />
+                                <div className="flex-1 bg-black/40 rounded-2xl p-3 border border-white/5">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-bold text-white text-xs">{comment.profiles?.first_name} {comment.profiles?.last_name}</span>
+                                    <span className="text-white/30 text-[10px]">@{comment.profiles?.username} · {new Date(comment.created_at).toLocaleDateString()}</span>
+                                  </div>
+                                  <p className="text-white/70 text-xs whitespace-pre-wrap break-words">{renderContentWithMentions(comment.content)}</p>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Reply Input */}
+                            {openCommentId === post.id && (
+                              <div className="flex items-start gap-3 mt-4 animate-in fade-in slide-in-from-top-2 relative">
+                                {mentionTarget === 'comment' && <MentionDropdown />}
+                                <UserAvatar url={profile.avatar_url} letter={profile.avatar_letter} size="w-8 h-8" textClass="text-xs" />
+                                <div className="flex-1 bg-black border border-[#ff4d00]/30 rounded-2xl flex items-center pr-2 focus-within:border-[#ff4d00] transition-colors">
+                                  <input 
+                                    type="text" 
+                                    autoFocus
+                                    value={commentText}
+                                    onChange={(e) => handleTextInput(e, 'comment')}
+                                    placeholder={`Reply to @${post.profiles?.username || 'member'}...`}
+                                    className="flex-1 bg-transparent border-none text-white text-xs md:text-sm px-4 py-3 focus:outline-none"
+                                    onKeyDown={(e) => e.key === 'Enter' && submitComment(post.id)}
+                                  />
+                                  <button onClick={() => submitComment(post.id)} disabled={!commentText.trim()} className="p-2 text-[#ff4d00] disabled:text-white/20 hover:bg-[#ff4d00]/10 rounded-xl transition-colors">
+                                    <Send size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* ========================================= */}
-            {/* MY PROFILE TAB (With Picture Upload)      */}
-            {/* ========================================= */}
+            {/* ==================== MY PROFILE TAB ==================== */}
             {activeTab === 'profile' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
@@ -551,7 +786,7 @@ export default function Hub() {
 
                 <form onSubmit={handleSaveProfile} className="bg-[#131313] border border-white/10 rounded-3xl p-5 md:p-8 shadow-xl">
                   
-                  {/* AVATAR UPLOAD SECTION */}
+                  {/* AVATAR UPLOAD */}
                   <div className="flex items-center gap-4 md:gap-6 mb-8">
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                       <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-[#1a1a1a] border-2 border-white/10 flex items-center justify-center text-3xl font-black text-white/50 overflow-hidden group-hover:border-[#ff4d00] transition-colors">
@@ -566,13 +801,7 @@ export default function Hub() {
                       <div className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <Camera size={24} className="text-white" />
                       </div>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleAvatarUpload} 
-                        accept="image/*" 
-                        className="hidden" 
-                      />
+                      <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
                     </div>
                     <div>
                       <h3 className="text-base md:text-lg font-bold text-white">Profile Picture</h3>
@@ -591,7 +820,6 @@ export default function Hub() {
                         required
                       />
                     </div>
-                    
                     <div>
                       <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Username (For @Mentions)</label>
                       <div className="flex relative">
@@ -605,7 +833,6 @@ export default function Hub() {
                         />
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Instagram Handle</label>
                       <div className="flex relative">
@@ -619,13 +846,8 @@ export default function Hub() {
                         />
                       </div>
                     </div>
-
                     <div className="pt-6 border-t border-white/5 mt-6">
-                      <button 
-                        type="submit" 
-                        disabled={isSavingProfile}
-                        className="bg-[#ff4d00] text-black font-black uppercase tracking-wider px-8 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg disabled:opacity-50 w-full md:w-auto"
-                      >
+                      <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] text-black font-black uppercase tracking-wider px-8 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg disabled:opacity-50 w-full md:w-auto">
                         {isSavingProfile ? 'Saving...' : 'Save Profile'}
                       </button>
                     </div>
