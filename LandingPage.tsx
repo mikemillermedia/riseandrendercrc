@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, Video, Scissors, Share2, Palette, 
-  Calculator, ArrowRight, Image as ImageIcon, Plus, Minus, FileText, 
-  Headphones, Monitor, Radio, Camera, Crown, Wrench, FileVideo, Home
+  Star, CheckCircle2, Palette, FileVideo, Home
 } from 'lucide-react';
-// Temporarily commenting these out to isolate the crash:
-// import CustomCursor from './components/CustomCursor';
-// import FluidBackground from './components/FluidBackground';
 import BrandLogo from './components/BrandLogo';
 
 const BRANDS = [
@@ -18,6 +14,17 @@ const BRANDS = [
   "Words Taylor",
   "We Going Up"
 ];
+
+// SAFE ANIMATION VARIANTS (No blur filters)
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+};
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -36,9 +43,7 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToPricing = () => {
-    document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToPricing = () => document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
 
   const toggleAddon = (id: string) => {
     setSelectedAddons(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]);
@@ -87,62 +92,61 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
-      {/* <CustomCursor /> */}
-
-      {/* 1. CINEMATIC VIDEO BACKGROUND */}
-      <div className="fixed inset-0 z-0 bg-[#0a0a0a]">
+      
+      {/* BACKGROUND WITH FADE-IN */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.5 }} className="fixed inset-0 z-0 bg-[#0a0a0a]">
         <div className="absolute inset-0 bg-black/70 z-10" />
         <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60">
           <source src="/studio-bg.mp4" type="video/mp4" />
         </video>
-      </div>
+      </motion.div>
 
-      {/* 2. TOP NAVBAR */}
-      <nav className="fixed top-0 left-0 w-full z-50 p-6 md:p-12 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent">
+      {/* NAVBAR */}
+      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="fixed top-0 left-0 w-full z-50 p-6 md:p-12 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent">
         <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
           <BrandLogo className="h-10 md:h-16 w-auto drop-shadow-lg" />
         </div>
         <div className="flex items-center gap-4 text-sm font-medium">
           <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_20px_rgba(255,77,0,0.4)]">
-            Hub Login
+            Client Login
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* 3. HERO SECTION (Forced high z-index and removed all animations) */}
+      {/* HERO SECTION WITH STAGGERED MOTION */}
       <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-48 pb-20">
-        <div className="max-w-6xl w-full flex flex-col items-center">
+        <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-6xl w-full flex flex-col items-center">
           
-          <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black mb-4 md:mb-6 leading-[0.9] tracking-tighter uppercase text-white drop-shadow-2xl">
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black mb-4 md:mb-6 leading-[0.9] tracking-tighter uppercase text-white drop-shadow-2xl">
             Build Your Personal <br /> Content Sanctuary
-          </h1>
+          </motion.h1>
           
-          <h2 className="text-lg sm:text-xl md:text-3xl font-bold mb-12 md:mb-16 tracking-tight max-w-3xl text-white drop-shadow-lg">
+          <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-3xl font-bold mb-12 md:mb-16 tracking-tight max-w-3xl text-white drop-shadow-lg">
             We transform your room or office into a frictionless broadcast studio. <br className="hidden md:block"/>
             <span className="text-[#ff4d00] mt-2 block drop-shadow-md">Rise In Your Purpose. Render Your Calling.</span>
-          </h2>
+          </motion.h2>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
             <button onClick={scrollToPricing} className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
               View Services
             </button>
             <button onClick={() => navigate('/login')} className="w-full sm:w-64 bg-[#ff4d00]/10 hover:bg-[#ff4d00]/20 backdrop-blur-md border border-[#ff4d00]/50 text-[#ff4d00] py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
-              Creator Hub
+              Sanctuary Hub
             </button>
-          </div>
+          </motion.div>
 
           {/* BRANDS STATIC LIST */}
-          <div className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-32">
+          <motion.div variants={fadeUp} className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-32">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6 drop-shadow-md">Trusted by creators from</p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12">
               {BRANDS.map((brand, index) => (
                 <span key={index} className="text-white/60 font-black uppercase tracking-widest text-xs md:text-sm drop-shadow-sm text-center">{brand}</span>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* SPOTLIGHT REVIEW */}
-          <div className="w-full max-w-3xl mx-auto relative group mb-20">
+          <motion.div variants={fadeUp} className="w-full max-w-3xl mx-auto relative group mb-20">
             <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d00]/20 via-transparent to-transparent rounded-[2rem] blur-2xl opacity-40" />
             <div className="relative bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-10 rounded-[2rem] text-left shadow-2xl overflow-hidden">
               <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#ff4d00]/10 rounded-full blur-3xl pointer-events-none" />
@@ -169,28 +173,27 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </main>
 
+      {/* GRADIENT TRANSITION */}
       <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
 
       {/* PRICING & SYSTEM SECTION */}
       <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-10">
-        {/* <FluidBackground /> */}
-
-        {/* DONE FOR YOU RETAINERS */}
+        
+        {/* RETAINERS */}
         <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full">
-          <div className="text-center mb-16">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">White-Glove <span className="text-[#ff4d00]">Setups</span></h2>
             <p className="text-xl text-[#F5F5F0]/80 max-w-2xl mx-auto leading-relaxed">
               For creators who want us to handle everything from gear procurement to physical installation in the DFW area.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto">
-            {/* The Build Out */}
-            <div className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col shadow-xl">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col shadow-xl">
               <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">The Build-Out</h3>
               <p className="text-4xl font-black text-[#ff4d00] mb-6">$2,500+<span className="text-sm text-white/40 font-medium"> / one-time</span></p>
               <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
@@ -200,10 +203,9 @@ const LandingPage: React.FC = () => {
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 1-on-1 Operational Training</li>
               </ul>
               <button className="w-full bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10">Apply For Build-Out</button>
-            </div>
+            </motion.div>
 
-            {/* Post Production */}
-            <div className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col shadow-[0_0_40px_rgba(255,77,0,0.2)] transform lg:-translate-y-4 relative">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col shadow-[0_0_40px_rgba(255,77,0,0.2)] transform lg:-translate-y-4 relative">
               <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-xs font-black uppercase px-4 py-1.5 rounded-bl-xl">Popular Add-On</div>
               <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Post-Production Retainer</h3>
               <p className="text-4xl font-black text-[#ff4d00] mb-6">$1,500<span className="text-sm text-white/40 font-medium"> / mo</span></p>
@@ -214,7 +216,7 @@ const LandingPage: React.FC = () => {
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
               </ul>
               <button className="w-full bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors">Apply For Retainer</button>
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -224,16 +226,16 @@ const LandingPage: React.FC = () => {
 
         {/* CALCULATOR */}
         <section id="calculator" className="py-12 px-6 md:px-12 max-w-6xl mx-auto relative z-10 mb-16 w-full">
-          <div className="text-center mb-16">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">Build Your <span className="text-[#ff4d00]">Strategy</span></h2>
             <p className="text-xl text-[#F5F5F0]/70 max-w-2xl mx-auto leading-relaxed">
               Don't need a massive build out? Book a virtual consultation or an a la carte local setup below.
             </p>
-          </div>
+          </motion.div>
 
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             <div className="flex-1 space-y-12 w-full">
-              <div>
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
                 <h3 className="text-2xl font-black uppercase text-white mb-8 flex items-center gap-3">
                   <span className="bg-white/5 w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10">1</span> 
                   Select Base Service
@@ -243,7 +245,7 @@ const LandingPage: React.FC = () => {
                     const pkg = basePackages[key as keyof typeof basePackages];
                     const isSelected = selectedBase === key;
                     return (
-                      <div key={key} onClick={() => setSelectedBase(key as any)} className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex flex-col ${isSelected ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50' : 'bg-[#131313] border-white/10'}`}>
+                      <div key={key} onClick={() => setSelectedBase(key as any)} className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex flex-col ${isSelected ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' : 'bg-[#131313] border-white/10 hover:border-white/30'}`}>
                         <h4 className="text-xl font-black uppercase text-white mb-2">{pkg.name}</h4>
                         <p className={`text-3xl font-black ${isSelected ? 'text-[#ff4d00]' : 'text-white'} mb-4`}>${pkg.price}</p>
                         <ul className="space-y-2 text-sm text-[#F5F5F0]/70 flex-grow">
@@ -258,9 +260,9 @@ const LandingPage: React.FC = () => {
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
 
-              <div>
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
                 <h3 className="text-2xl font-black uppercase text-white mb-8 flex items-center gap-3">
                   <span className="bg-white/5 w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10">2</span> 
                   Add-Ons <span className="text-xs text-white/40 normal-case font-normal">(Optional)</span>
@@ -269,7 +271,7 @@ const LandingPage: React.FC = () => {
                   {addonOptions.map((addon) => {
                     const isSelected = selectedAddons.includes(addon.id);
                     return (
-                      <div key={addon.id} onClick={() => toggleAddon(addon.id)} className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex items-start gap-4 ${isSelected ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50' : 'bg-[#131313]/80 border-white/10'}`}>
+                      <div key={addon.id} onClick={() => toggleAddon(addon.id)} className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex items-start gap-4 ${isSelected ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 shadow-[0_0_20px_rgba(255,77,0,0.1)]' : 'bg-[#131313]/80 border-white/10 hover:border-white/30'}`}>
                         <div className={`p-2.5 rounded-xl mt-1 shrink-0 ${isSelected ? 'bg-[#ff4d00] text-black' : 'bg-white/5 text-white/80'}`}>{addon.icon}</div>
                         <div>
                           <h4 className="font-bold text-white mb-1">{addon.name}</h4>
@@ -280,11 +282,11 @@ const LandingPage: React.FC = () => {
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             {/* ESTIMATE CARD */}
-            <div className="lg:w-[420px] lg:sticky lg:top-32 w-full bg-[#131313]/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-9 shadow-2xl">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="lg:w-[420px] lg:sticky lg:top-32 w-full bg-[#131313]/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-9 shadow-2xl">
               <h3 className="text-xl font-black uppercase text-white mb-7 border-b border-white/10 pb-5">Estimated Investment</h3>
               <div className="space-y-4 mb-7 min-h-[100px]">
                 <div className="flex justify-between font-bold text-white/90">
@@ -316,14 +318,14 @@ const LandingPage: React.FC = () => {
                 <span className="text-white/60 uppercase text-xs font-bold">Estimated Total</span>
                 <span className="text-5xl font-black text-[#ff4d00]">${calculateTotal()}</span>
               </div>
-              <button className="w-full bg-[#ff4d00] text-black px-6 py-4 rounded-2xl font-black uppercase hover:bg-orange-500 transition-all tracking-widest shadow-lg">
+              <button className="w-full bg-[#ff4d00] text-black px-6 py-4 rounded-2xl font-black uppercase hover:bg-orange-500 transition-all tracking-widest shadow-[0_0_20px_rgba(255,77,0,0.3)]">
                 Book Session
               </button>
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* 4. FOOTER */}
+        {/* FOOTER */}
         <footer className="relative z-50 w-full p-6 md:p-12 pb-8 border-t border-white/5 bg-[#0a0a0a]">
           <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
             <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
@@ -336,12 +338,6 @@ const LandingPage: React.FC = () => {
           </p>
         </footer>
       </div>
-
-      {showBackToTop && (
-        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="fixed bottom-6 left-6 z-50 bg-white/10 hover:bg-[#ff4d00] text-white p-3 rounded-full transition-all shadow-xl backdrop-blur-md border border-white/10">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-        </button>
-      )}
     </div>
   );
 };
