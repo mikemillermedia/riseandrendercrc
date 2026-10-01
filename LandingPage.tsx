@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass 
+  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
 const BRANDS = [
-  "She Bears Fruit Podcast",
+  "She Bears Fruit Podcast", 
+  "15:5 Collective", 
   "The Breakdown With Jasmine Martines", 
   "Giving While Black Podcast",
   "Words Taylor",
@@ -28,6 +29,10 @@ const fadeUp = {
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [showBackToTop, setShowBackToTop] = useState(false);
+  
+  // PROMO CODE STATE
+  const [promoCode, setPromoCode] = useState('');
+  const [showPromo, setShowPromo] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -36,6 +41,25 @@ const LandingPage: React.FC = () => {
     document.title = "Rise & Render | Premium Content Creation Consultancy";
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // DYNAMIC JOTFORM CHECKOUT LINK
+  const handleBookConsultation = () => {
+    // Replace this with your actual Jotform link
+    let url = "https://form.jotform.com/YOUR_JOTFORM_ID_HERE";
+    
+    // If they typed a promo code, append it to the URL
+    if (promoCode.trim()) {
+       // Jotform uses URL parameters to pre-fill coupons. 
+       // You may need to change 'coupon' to match your exact Jotform field name.
+       url += `?coupon=${encodeURIComponent(promoCode.trim())}`;
+    }
+    
+    window.open(url, '_blank');
+  };
+
+  const scrollToPricing = () => {
+    document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
@@ -74,15 +98,12 @@ const LandingPage: React.FC = () => {
           </motion.h2>
 
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
-            {/* JOTFORM LINK BUTTON */}
-            <a 
-              href="https://pci.jotform.com/form/262714847150054" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <button 
+              onClick={scrollToPricing}
               className="flex items-center justify-center w-full sm:w-72 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,77,0,0.3)]"
             >
               Book Virtual Consultation
-            </a>
+            </button>
             <button onClick={() => navigate('/login')} className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
               Sanctuary Hub
             </button>
@@ -102,7 +123,6 @@ const LandingPage: React.FC = () => {
           <motion.div variants={fadeUp} className="w-full max-w-6xl mx-auto mb-20">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
               
-              {/* Testimonial 1 */}
               <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
                 <div className="flex items-center gap-1 mb-4">
@@ -122,7 +142,6 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Testimonial 2 */}
               <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
                 <div className="flex items-center gap-1 mb-4">
@@ -142,7 +161,6 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Testimonial 3 */}
               <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
                 <div className="flex items-center gap-1 mb-4">
@@ -171,7 +189,7 @@ const LandingPage: React.FC = () => {
       <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
 
       {/* PROCESS & PRICING SECTION */}
-      <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-10">
+      <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-10 scroll-m-20">
         
         {/* THE 4-STEP SANCTUARY PROCESS */}
         <section className="py-12 relative z-10 w-full">
@@ -205,43 +223,93 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* RETAINERS */}
+        {/* PRICING PACKAGES */}
         <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full mb-16">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">White-Glove <span className="text-[#ff4d00]">Setups</span></h2>
+            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">Choose Your <span className="text-[#ff4d00]">Path</span></h2>
             <p className="text-xl text-[#F5F5F0]/80 max-w-2xl mx-auto leading-relaxed">
-              For creators who want us to handle everything from gear procurement to physical installation in the DFW area.
+              From DIY consulting to fully managed, done-for-you studio build-outs.
             </p>
+          </motion.div>
+
+          {/* VIRTUAL CONSULTATION FEATURED ROW */}
+          <motion.div 
+            initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} 
+            className="bg-[#131313]/80 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-[#ff4d00]/40 flex flex-col md:flex-row items-center justify-between shadow-[0_0_40px_rgba(255,77,0,0.1)] max-w-5xl mx-auto mb-10 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+            
+            <div className="flex-1 mb-8 md:mb-0 md:pr-12 w-full text-left relative z-10">
+              <div className="inline-block bg-[#ff4d00]/10 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-[#ff4d00]/30 mb-4">Most Popular</div>
+              <h3 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-3">Virtual Studio Consultation</h3>
+              <p className="text-white/70 text-sm md:text-base mb-6 max-w-lg leading-relaxed">Stop guessing what gear to buy. We will design a frictionless, high-end broadcast studio tailored to your exact room and budget.</p>
+              
+              <ul className="space-y-3 text-sm text-[#F5F5F0]/80">
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 1-Hour Zoom Strategy Session</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom Studio Blueprint & Gear List</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Exact Room & Acoustic Layout Plan</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Lifetime Access to the Sanctuary Hub</li>
+              </ul>
+            </div>
+
+            <div className="w-full md:w-auto bg-black/50 p-6 md:p-8 rounded-2xl border border-white/5 flex flex-col items-center md:items-start min-w-[320px] relative z-10">
+              <p className="text-5xl font-black text-white mb-1">$197</p>
+              <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-6">One-Time Payment</p>
+              
+              <div className="w-full flex flex-col gap-3">
+                {showPromo ? (
+                   <div className="flex w-full items-center bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden focus-within:border-[#ff4d00]/50 transition-colors shadow-inner">
+                    <div className="pl-4 text-white/30"><Tag size={16} /></div>
+                    <input 
+                      type="text" 
+                      placeholder="ENTER PROMO CODE" 
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      className="bg-transparent border-none text-white text-xs px-3 py-4 w-full focus:outline-none uppercase font-bold tracking-widest placeholder:text-white/20"
+                    />
+                  </div>
+                ) : (
+                  <button onClick={() => setShowPromo(true)} className="text-[10px] text-white/40 uppercase font-bold tracking-widest hover:text-[#ff4d00] transition-colors text-left flex items-center gap-1.5">
+                    <Tag size={12} /> Have a promo code?
+                  </button>
+                )}
+
+                <button onClick={handleBookConsultation} className="w-full bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-4.5 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] hover:scale-105 mt-1">
+                  Book Now
+                </button>
+                
+                <div className="flex justify-center items-center mt-2 opacity-50">
+                   <span className="text-[9px] uppercase font-bold tracking-widest">Pay in 4 with Klarna at checkout</span>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto">
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col shadow-xl">
               <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">The Build-Out</h3>
-              <p className="text-4xl font-black text-[#ff4d00] mb-6">$2,500+<span className="text-sm text-white/40 font-medium"> / one-time</span></p>
+              <p className="text-4xl font-black text-white mb-6">$2,500+<span className="text-sm text-white/40 font-medium"> / one-time</span></p>
               <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Deep Space Strategy & Acoustic Plan</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Full Gear Procurement (Cameras, Mics, Lights)</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Local DFW On-Site Installation & Wire Hiding</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 1-on-1 Operational Training</li>
               </ul>
-              {/* MAILTO LINK BUTTON */}
               <a href="mailto:booking@riseandrenderdfw.com?subject=Build-Out Inquiry" className="flex items-center justify-center w-full bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10">
                 Apply For Build-Out
               </a>
             </motion.div>
 
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col shadow-[0_0_40px_rgba(255,77,0,0.2)] transform lg:-translate-y-4 relative">
-              <div className="absolute top-0 right-0 bg-[#ff4d00] text-black text-xs font-black uppercase px-4 py-1.5 rounded-bl-xl">Popular Add-On</div>
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-white/20 flex flex-col shadow-[0_0_40px_rgba(255,77,0,0.1)] relative">
               <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Post-Production Retainer</h3>
-              <p className="text-4xl font-black text-[#ff4d00] mb-6">$1,500<span className="text-sm text-white/40 font-medium"> / mo</span></p>
+              <p className="text-4xl font-black text-white mb-6">$1,500<span className="text-sm text-white/40 font-medium"> / mo</span></p>
               <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Hit record in your new space, we handle the rest.</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 4 Full-Length 4K Video Edits per month</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 12 Social Media Vertical Clips</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
               </ul>
-              {/* MAILTO LINK BUTTON */}
-              <a href="mailto:booking@riseandrenderdfw.com?subject=Retainer Inquiry" className="flex items-center justify-center w-full bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors">
+              <a href="mailto:booking@riseandrenderdfw.com?subject=Retainer Inquiry" className="flex items-center justify-center w-full bg-white text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors hover:bg-gray-200">
                 Apply For Retainer
               </a>
             </motion.div>
