@@ -45,7 +45,7 @@ const LandingPage: React.FC = () => {
   // DYNAMIC JOTFORM CHECKOUT LINK
   const handleBookConsultation = () => {
     // Replace this with your actual Jotform link
-    let url = "https://form.jotform.com/YOUR_JOTFORM_ID_HERE";
+    let url = "https://pci.jotform.com/form/262714847150054";
     
     // If they typed a promo code, append it to the URL
     if (promoCode.trim()) {
