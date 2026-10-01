@@ -44,13 +44,11 @@ const LandingPage: React.FC = () => {
 
   // DYNAMIC JOTFORM CHECKOUT LINK
   const handleBookConsultation = () => {
-    // Replace this with your actual Jotform link
+    // Your exact Jotform PCI Booking Link
     let url = "https://pci.jotform.com/form/262714847150054";
     
     // If they typed a promo code, append it to the URL
     if (promoCode.trim()) {
-       // Jotform uses URL parameters to pre-fill coupons. 
-       // You may need to change 'coupon' to match your exact Jotform field name.
        url += `?coupon=${encodeURIComponent(promoCode.trim())}`;
     }
     
