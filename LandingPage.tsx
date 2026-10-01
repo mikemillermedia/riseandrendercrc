@@ -7,8 +7,7 @@ import {
 import BrandLogo from './components/BrandLogo';
 
 const BRANDS = [
-  "She Bears Fruit Podcast", 
-  "15:5 Collective", 
+  "She Bears Fruit Podcast",
   "The Breakdown With Jasmine Martines", 
   "Giving While Black Podcast",
   "Words Taylor",
@@ -75,9 +74,15 @@ const LandingPage: React.FC = () => {
           </motion.h2>
 
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
-            <button className="w-full sm:w-72 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,77,0,0.3)]">
+            {/* JOTFORM LINK BUTTON */}
+            <a 
+              href="https://pci.jotform.com/form/262714847150054" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-full sm:w-72 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,77,0,0.3)]"
+            >
               Book Virtual Consultation
-            </button>
+            </a>
             <button onClick={() => navigate('/login')} className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
               Sanctuary Hub
             </button>
@@ -219,7 +224,10 @@ const LandingPage: React.FC = () => {
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Local DFW On-Site Installation & Wire Hiding</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 1-on-1 Operational Training</li>
               </ul>
-              <button className="w-full bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10">Apply For Build-Out</button>
+              {/* MAILTO LINK BUTTON */}
+              <a href="mailto:booking@riseandrenderdfw.com?subject=Build-Out Inquiry" className="flex items-center justify-center w-full bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10">
+                Apply For Build-Out
+              </a>
             </motion.div>
 
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-[#ff4d00]/50 flex flex-col shadow-[0_0_40px_rgba(255,77,0,0.2)] transform lg:-translate-y-4 relative">
@@ -232,7 +240,10 @@ const LandingPage: React.FC = () => {
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 12 Social Media Vertical Clips</li>
                 <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
               </ul>
-              <button className="w-full bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors">Apply For Retainer</button>
+              {/* MAILTO LINK BUTTON */}
+              <a href="mailto:booking@riseandrenderdfw.com?subject=Retainer Inquiry" className="flex items-center justify-center w-full bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors">
+                Apply For Retainer
+              </a>
             </motion.div>
           </div>
         </section>
