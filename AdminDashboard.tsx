@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import { MessageSquare, User, Send, ShieldCheck, Home, Clock, Search, LogOut, UploadCloud, Folder } from 'lucide-react';
+import { MessageSquare, User, Send, ShieldCheck, Home, Clock, Search, LogOut, Folder } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -29,15 +29,43 @@ export default function AdminDashboard() {
   const [assetLink, setAssetLink] = useState('');
   const [isUploadingAsset, setIsUploadingAsset] = useState(false);
 
+  // 1. Check Auth & Admin Status, then Fetch Clients
   useEffect(() => {
     const initAdmin = async () => {
       if (!supabase) return;
+      
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
+      if (!session) {
+        navigate('/login');
+        return;
+      }
 
-      const { data } = await supabase.from('profiles').select('*').eq('has_retainer', true).order('first_name', { ascending: true });
-      if (data) setClients(data);
+      // 🚨 SECURITY CHECK: Check if the logged-in user is actually an admin
+      const { data: adminCheck } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', session.user.id)
+        .single();
+
+      // If they are not an admin, kick them back to the Hub
+      if (!adminCheck || adminCheck.is_admin !== true) {
+        alert("Access Denied: You do not have admin privileges.");
+        navigate('/hub');
+        return;
+      }
+
+      // If they ARE an admin, fetch all users who have the retainer unlocked
+      const { data: clientsData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('has_retainer', true)
+        .order('first_name', { ascending: true });
+
+      if (!error && clientsData) {
+        setClients(clientsData);
+      }
     };
+
     initAdmin();
   }, [navigate]);
 
@@ -65,7 +93,14 @@ export default function AdminDashboard() {
     setIsSending(true);
     const messageText = newMessage.trim();
     setNewMessage('');
-    try { await supabase.from('retainer_messages').insert([{ user_id: selectedClient.id, sender_type: 'admin', message: messageText, is_read: true }]); } 
+    try { 
+      await supabase.from('retainer_messages').insert([{ 
+        user_id: selectedClient.id, 
+        sender_type: 'admin', 
+        message: messageText, 
+        is_read: true 
+      }]); 
+    } 
     finally { setIsSending(false); }
   };
 
@@ -137,6 +172,15 @@ export default function AdminDashboard() {
             </button>
           ))}
         </div>
+
+        <div className="p-4 border-t border-white/5 space-y-2 bg-[#131313]">
+          <button onClick={() => navigate('/hub')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+            <Home size={18} /> Back to Hub
+          </button>
+          <button onClick={async () => { if(supabase) await supabase.auth.signOut(); navigate('/'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+            <LogOut size={18} /> Sign Out
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 flex flex-col relative bg-[#0a0a0a]">
@@ -155,7 +199,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
               
-              {/* ADMIN TAB TOGGLES */}
               <div className="flex bg-black border border-white/10 rounded-xl p-1">
                 <button onClick={() => setAdminTab('chat')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${adminTab === 'chat' ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}>Chat</button>
                 <button onClick={() => setAdminTab('deliverables')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${adminTab === 'deliverables' ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}>Deliverables</button>
