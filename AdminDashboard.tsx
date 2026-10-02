@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import { MessageSquare, User, Send, ShieldCheck, Home, Clock, Search, LogOut, Folder } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, Send, ShieldCheck, Home, Clock, Search, LogOut, Folder, PlayCircle, Film, UploadCloud, CheckCircle2 } from 'lucide-react';
+import VideoReviewRoom from './VideoReviewRoom';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -14,10 +16,13 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Admin Tabs
-  const [adminTab, setAdminTab] = useState<'chat' | 'deliverables'>('chat');
+  const [adminTab, setAdminTab] = useState<'chat' | 'deliverables' | 'pipeline'>('chat');
 
-  // Chat State
+  // Client Data
   const [messages, setMessages] = useState<any[]>([]);
+  const [clientProjects, setClientProjects] = useState<any[]>([]);
+  
+  // Message Sending
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -29,53 +34,41 @@ export default function AdminDashboard() {
   const [assetLink, setAssetLink] = useState('');
   const [isUploadingAsset, setIsUploadingAsset] = useState(false);
 
-  // 1. Check Auth & Admin Status, then Fetch Clients
+  // Review Room State
+  const [activeReviewProject, setActiveReviewProject] = useState<any>(null);
+
   useEffect(() => {
     const initAdmin = async () => {
       if (!supabase) return;
-      
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/login');
-        return;
-      }
+      if (!session) { navigate('/login'); return; }
 
-      // 🚨 SECURITY CHECK: Check if the logged-in user is actually an admin
-      const { data: adminCheck } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single();
-
-      // If they are not an admin, kick them back to the Hub
+      const { data: adminCheck } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
       if (!adminCheck || adminCheck.is_admin !== true) {
         alert("Access Denied: You do not have admin privileges.");
         navigate('/hub');
         return;
       }
 
-      // If they ARE an admin, fetch all users who have the retainer unlocked
-      const { data: clientsData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('has_retainer', true)
-        .order('first_name', { ascending: true });
-
-      if (!error && clientsData) {
-        setClients(clientsData);
-      }
+      const { data } = await supabase.from('profiles').select('*').eq('has_retainer', true).order('first_name', { ascending: true });
+      if (data) setClients(data);
     };
-
     initAdmin();
   }, [navigate]);
 
   useEffect(() => {
     if (!supabase || !selectedClient) return;
-    const fetchMessages = async () => {
-      const { data } = await supabase.from('retainer_messages').select('*').eq('user_id', selectedClient.id).order('created_at', { ascending: true });
-      if (data) { setMessages(data); scrollToBottom(); }
+    
+    const fetchClientData = async () => {
+      const [msgRes, projRes] = await Promise.all([
+        supabase.from('retainer_messages').select('*').eq('user_id', selectedClient.id).order('created_at', { ascending: true }),
+        supabase.from('retainer_projects').select('*').eq('user_id', selectedClient.id).order('created_at', { ascending: false })
+      ]);
+      if (msgRes.data) { setMessages(msgRes.data); scrollToBottom(); }
+      if (projRes.data) { setClientProjects(projRes.data); }
     };
-    fetchMessages();
+    
+    fetchClientData();
 
     const channel = supabase.channel(`admin_chat_${selectedClient.id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retainer_messages', filter: `user_id=eq.${selectedClient.id}` }, (payload: any) => {
         setMessages((prev) => [...prev, payload.new]);
@@ -93,14 +86,7 @@ export default function AdminDashboard() {
     setIsSending(true);
     const messageText = newMessage.trim();
     setNewMessage('');
-    try { 
-      await supabase.from('retainer_messages').insert([{ 
-        user_id: selectedClient.id, 
-        sender_type: 'admin', 
-        message: messageText, 
-        is_read: true 
-      }]); 
-    } 
+    try { await supabase.from('retainer_messages').insert([{ user_id: selectedClient.id, sender_type: 'admin', message: messageText, is_read: true }]); } 
     finally { setIsSending(false); }
   };
 
@@ -108,35 +94,14 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!supabase || !selectedClient || !assetTitle || !assetLink) return;
     setIsUploadingAsset(true);
-    
     try {
-      const { error } = await supabase.from('retainer_assets').insert([{
-        user_id: selectedClient.id,
-        title: assetTitle,
-        asset_type: assetType,
-        file_size: assetSize,
-        download_url: assetLink
-      }]);
-
-      if (error) throw error;
-      
+      await supabase.from('retainer_assets').insert([{ user_id: selectedClient.id, title: assetTitle, asset_type: assetType, file_size: assetSize, download_url: assetLink }]);
       alert("Asset delivered successfully!");
       setAssetTitle(''); setAssetSize(''); setAssetLink('');
       setAdminTab('chat');
-      
-      // Auto-send a chat message letting them know
-      await supabase.from('retainer_messages').insert([{ 
-        user_id: selectedClient.id, 
-        sender_type: 'admin', 
-        message: `I just dropped a new file in your Asset Vault: ${assetTitle}. Let me know if you need any revisions!`, 
-        is_read: true 
-      }]);
-
-    } catch (err: any) {
-      alert("Error delivering asset: " + err.message);
-    } finally {
-      setIsUploadingAsset(false);
-    }
+      await supabase.from('retainer_messages').insert([{ user_id: selectedClient.id, sender_type: 'admin', message: `I just dropped a new file in your Asset Vault: ${assetTitle}. Let me know if you need any revisions!`, is_read: true }]);
+    } catch (err: any) { alert("Error delivering asset: " + err.message); } 
+    finally { setIsUploadingAsset(false); }
   };
 
   const filteredClients = clients.filter(c => `${c.first_name} ${c.last_name} ${c.username}`.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -177,9 +142,6 @@ export default function AdminDashboard() {
           <button onClick={() => navigate('/hub')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
             <Home size={18} /> Back to Hub
           </button>
-          <button onClick={async () => { if(supabase) await supabase.auth.signOut(); navigate('/'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors">
-            <LogOut size={18} /> Sign Out
-          </button>
         </div>
       </aside>
 
@@ -201,7 +163,8 @@ export default function AdminDashboard() {
               
               <div className="flex bg-black border border-white/10 rounded-xl p-1">
                 <button onClick={() => setAdminTab('chat')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${adminTab === 'chat' ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}>Chat</button>
-                <button onClick={() => setAdminTab('deliverables')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${adminTab === 'deliverables' ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}>Deliverables</button>
+                <button onClick={() => setAdminTab('pipeline')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${adminTab === 'pipeline' ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}>Pipeline</button>
+                <button onClick={() => setAdminTab('deliverables')} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${adminTab === 'deliverables' ? 'bg-[#ff4d00] text-black' : 'text-white/40 hover:text-white'}`}>Deliver</button>
               </div>
             </header>
 
@@ -237,6 +200,44 @@ export default function AdminDashboard() {
               </>
             )}
 
+            {/* PIPELINE / REVIEW TAB */}
+            {adminTab === 'pipeline' && (
+              <div className="flex-1 overflow-y-auto p-8 z-10 relative">
+                <div className="max-w-4xl mx-auto">
+                  <h2 className="text-xl font-black uppercase tracking-tight text-white mb-6">Active Pipeline</h2>
+                  {clientProjects.length === 0 ? (
+                    <p className="text-white/40 text-sm italic">No active projects for this client.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {clientProjects.map((project) => (
+                        <div key={project.id} className="bg-[#131313] border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                              {project.type === "Raw Folder" ? <UploadCloud size={20} className="text-[#ff4d00]" /> : <Film size={20} className="text-[#ff4d00]" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-white text-sm">{project.title}</h4>
+                              <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">{project.type} • {project.status}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 justify-between md:justify-end">
+                            {project.review_link && (
+                              <button 
+                                onClick={() => setActiveReviewProject(project)}
+                                className="text-xs bg-white text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-gray-200 transition-colors shrink-0"
+                              >
+                                <PlayCircle size={14} /> Open Review Room
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* DELIVERABLES TAB */}
             {adminTab === 'deliverables' && (
               <div className="flex-1 overflow-y-auto p-8 z-10 relative flex items-center justify-center">
@@ -257,11 +258,7 @@ export default function AdminDashboard() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Type</label>
-                        <select value={assetType} onChange={e => setAssetType(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#ff4d00] focus:outline-none appearance-none">
-                          <option>Video</option>
-                          <option>Social</option>
-                          <option>Image</option>
-                        </select>
+                        <select value={assetType} onChange={e => setAssetType(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#ff4d00] focus:outline-none appearance-none"><option>Video</option><option>Social</option><option>Image</option></select>
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">File Size (Optional)</label>
@@ -288,6 +285,22 @@ export default function AdminDashboard() {
           </div>
         )}
       </main>
+
+      {/* ADMIN VIDEO REVIEW ROOM */}
+      <AnimatePresence>
+        {activeReviewProject && (
+          <VideoReviewRoom 
+            projectId={activeReviewProject.id}
+            projectTitle={activeReviewProject.title}
+            videoUrl={activeReviewProject.review_link}
+            userId="admin-id-override" // Admins use a generic or real ID
+            userName="Rise & Render Team" 
+            isAdmin={true}
+            supabase={supabase}
+            onClose={() => setActiveReviewProject(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
