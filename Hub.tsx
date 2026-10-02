@@ -37,7 +37,7 @@ export default function Hub() {
     first_name: '',
     last_name: '',
     bio: '',
-    has_retainer: false // New field to track subscription
+    has_retainer: false // Tracks if they have access to the retainer dashboard
   });
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -841,7 +841,7 @@ export default function Hub() {
             {/* RETAINER DASHBOARD TAB */}
             {activeTab === 'retainer' && profile.has_retainer && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <RetainerDashboard />
+                <RetainerDashboard userId={userId} supabase={supabase} />
               </div>
             )}
           </>
