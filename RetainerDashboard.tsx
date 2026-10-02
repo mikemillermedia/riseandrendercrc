@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, PlayCircle, CheckCircle2, MessageSquare, 
@@ -6,54 +6,81 @@ import {
   ExternalLink, Send, Image as ImageIcon
 } from 'lucide-react';
 
-// Simulated Backend Data
-const INITIAL_PROJECTS = [
-  { id: 1, title: "Podcast Ep. 42: The Creator Economy", status: "Review", type: "Full Length", reviewLink: "https://frame.io" },
-  { id: 2, title: "Podcast Ep. 43: Building Systems", status: "Editing", type: "Full Length" },
-  { id: 3, title: "Batch 1: 12 Vertical Shorts", status: "Uploading", type: "Social Clips" },
-  { id: 4, title: "Podcast Ep. 41: Mindset", status: "Completed", type: "Full Length" },
-];
+// Define the props passed from Hub.tsx
+interface RetainerDashboardProps {
+  userId: string | null;
+  supabase: any;
+}
 
 const COMPLETED_ASSETS = [
   { id: 101, title: "Ep 41: Mindset (4K Master)", type: "Video", date: "Oct 24, 2026", size: "4.2 GB" },
-  { id: 102, title: "Ep 41: 3x Vertical Hooks", type: "Social", date: "Oct 24, 2026", size: "185 MB" },
-  { id: 103, title: "Ep 41: Thumbnail A/B", type: "Image", date: "Oct 23, 2026", size: "12 MB" }
+  { id: 102, title: "Ep 41: 3x Vertical Hooks", type: "Social", date: "Oct 24, 2026", size: "185 MB" }
 ];
 
-const RetainerDashboard: React.FC = () => {
+const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'asset_vault' | 'strategy'>('pipeline');
-  const [projects, setProjects] = useState(INITIAL_PROJECTS);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   
   // Link Submission State
   const [driveLink, setDriveLink] = useState('');
   const [isSubmittingLink, setIsSubmittingLink] = useState(false);
 
-  // Handlers
+  // Fetch projects from Supabase on load
+  useEffect(() => {
+    fetchProjects();
+  }, [userId, supabase]);
+
+  const fetchProjects = async () => {
+    if (!supabase || !userId) return;
+    try {
+      const { data, error } = await supabase
+        .from('retainer_projects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
+
   const handleDirectLine = () => {
     window.location.href = "mailto:support@riseandrenderdfw.com?subject=Retainer Support Request";
   };
 
-  const handleLinkSubmit = (e: React.FormEvent) => {
+  const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!driveLink.trim()) return;
+    if (!driveLink.trim() || !supabase || !userId) return;
     
     setIsSubmittingLink(true);
     
-    // Simulate sending the link to your database
-    setTimeout(() => {
-      setProjects([
-        { 
-          id: Date.now(), 
-          title: "New Raw Footage Linked", 
-          status: "Review", 
-          type: "Raw Folder",
-          reviewLink: driveLink 
-        }, 
-        ...projects
-      ]);
+    try {
+      // Save the submitted link directly to Supabase
+      const { error } = await supabase.from('retainer_projects').insert([{
+        user_id: userId,
+        title: "Raw Footage Processing",
+        status: "Review", // You can update this status later in your database to "Editing" or "Completed"
+        type: "Raw Folder",
+        review_link: driveLink
+      }]);
+
+      if (error) throw error;
+
+      // Clear form and refresh the UI so the client sees it instantly
       setDriveLink('');
+      await fetchProjects();
+
+    } catch (error) {
+      console.error("Error submitting link:", error);
+      alert("There was an error saving your link. Please try again.");
+    } finally {
       setIsSubmittingLink(false);
-    }, 800);
+    }
   };
 
   return (
@@ -160,37 +187,43 @@ const RetainerDashboard: React.FC = () => {
             {activeTab === 'pipeline' && (
               <motion.div key="pipeline" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
                 <h2 className="font-black uppercase tracking-widest text-white mb-6 text-xl">Active Production</h2>
-                <div className="space-y-4">
-                  {projects.map((project) => (
-                    <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/10 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
-                          {project.type.includes("Social") ? <Smartphone size={20} className="text-white/50" /> : <Film size={20} className="text-white/50" />}
+                
+                {isLoadingProjects ? (
+                  <p className="text-white/40 text-sm animate-pulse">Loading pipeline...</p>
+                ) : projects.length === 0 ? (
+                  <p className="text-white/40 text-sm italic">No active projects. Link your raw footage to get started!</p>
+                ) : (
+                  <div className="space-y-4">
+                    {projects.map((project) => (
+                      <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-white/10 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                            {project.type === "Raw Folder" ? <UploadCloud size={20} className="text-white/50" /> : <Film size={20} className="text-white/50" />}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white text-sm">{project.title}</h4>
+                            <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">{project.type}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-bold text-white text-sm">{project.title}</h4>
-                          <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">{project.type}</p>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-4 md:gap-6 justify-between md:justify-end">
-                        <div className="flex items-center gap-2">
-                          {project.status === "Completed" && <CheckCircle2 size={16} className="text-green-500" />}
-                          {project.status === "Review" && <PlayCircle size={16} className="text-[#ff4d00]" />}
-                          {project.status === "Editing" && <Clock size={16} className="text-blue-400" />}
-                          {project.status === "Uploading" && <UploadCloud size={16} className="text-white/40 animate-pulse" />}
-                          <span className="text-xs font-bold uppercase tracking-widest text-white/70">{project.status}</span>
+                        <div className="flex items-center gap-4 md:gap-6 justify-between md:justify-end">
+                          <div className="flex items-center gap-2">
+                            {project.status === "Completed" && <CheckCircle2 size={16} className="text-green-500" />}
+                            {project.status === "Review" && <PlayCircle size={16} className="text-[#ff4d00]" />}
+                            {project.status === "Editing" && <Clock size={16} className="text-blue-400" />}
+                            <span className="text-xs font-bold uppercase tracking-widest text-white/70">{project.status}</span>
+                          </div>
+                          
+                          {project.review_link && (
+                            <a href={project.review_link} target="_blank" rel="noopener noreferrer" className="text-xs bg-white text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-gray-200 transition-colors shrink-0">
+                              <LinkIcon size={14} /> View Link
+                            </a>
+                          )}
                         </div>
-                        
-                        {project.status === "Review" && project.reviewLink && (
-                          <a href={project.reviewLink} target="_blank" rel="noopener noreferrer" className="text-xs bg-white text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-gray-200 transition-colors shrink-0">
-                            <LinkIcon size={14} /> Review Link
-                          </a>
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -199,11 +232,7 @@ const RetainerDashboard: React.FC = () => {
               <motion.div key="asset_vault" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="font-black uppercase tracking-widest text-white text-xl">Asset Vault</h2>
-                  <button className="text-xs text-[#ff4d00] hover:text-orange-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                    <ExternalLink size={14} /> Open Main Drive
-                  </button>
                 </div>
-                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {COMPLETED_ASSETS.map(asset => (
                     <div key={asset.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 hover:border-[#ff4d00]/30 transition-colors group">
@@ -211,7 +240,7 @@ const RetainerDashboard: React.FC = () => {
                         <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-white/50 group-hover:text-[#ff4d00] transition-colors">
                           {asset.type === 'Video' ? <Film size={18} /> : asset.type === 'Social' ? <Smartphone size={18} /> : <ImageIcon size={18} />}
                         </div>
-                        <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors" title="Download Asset">
+                        <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors">
                           <Download size={16} />
                         </button>
                       </div>
@@ -231,24 +260,18 @@ const RetainerDashboard: React.FC = () => {
               <motion.div key="strategy" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
                 <h2 className="font-black uppercase tracking-widest text-white mb-2 text-xl">Monthly Strategy</h2>
                 <p className="text-white/50 text-sm mb-8">Drop your ideas, call-to-actions, or vibe checks for this month's edits.</p>
-                
-                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Strategy notes sent to the editing bay!"); }}>
+                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Strategy notes sent!"); }}>
                   <div>
                     <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Campaign Goal</label>
                     <select className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white appearance-none">
                       <option>General Audience Growth</option>
-                      <option>Lead Generation (Pushing a Link)</option>
-                      <option>Product Launch / Promo</option>
-                      <option>Brand Authority / Storytelling</option>
+                      <option>Lead Generation</option>
+                      <option>Product Launch</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Call to Action (CTA)</label>
-                    <input type="text" placeholder="e.g. 'Click the link in my bio to join the newsletter'" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Editor Notes / Vibe Checks</label>
-                    <textarea rows={4} placeholder="Keep the pacing fast on the intro, use dark/moody color grading..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white resize-none"></textarea>
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Editor Notes</label>
+                    <textarea rows={4} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white resize-none"></textarea>
                   </div>
                   <button type="submit" className="flex items-center justify-center gap-2 w-full bg-white text-black font-black uppercase tracking-widest py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
                     <Send size={16} /> Submit Brief
@@ -256,7 +279,6 @@ const RetainerDashboard: React.FC = () => {
                 </form>
               </motion.div>
             )}
-
           </AnimatePresence>
         </div>
       </div>
