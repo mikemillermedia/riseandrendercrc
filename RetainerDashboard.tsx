@@ -6,15 +6,23 @@ import {
   ExternalLink, Send, Image as ImageIcon
 } from 'lucide-react';
 
-// Define the props passed from Hub.tsx
 interface RetainerDashboardProps {
   userId: string | null;
   supabase: any;
 }
 
+// Demo data so the dashboard always looks fully populated
+const DEMO_PROJECTS = [
+  { id: 'demo-1', title: "Podcast Ep. 42: The Creator Economy", status: "Review", type: "Full Length", review_link: "https://frame.io" },
+  { id: 'demo-2', title: "Podcast Ep. 43: Building Systems", status: "Editing", type: "Full Length" },
+  { id: 'demo-3', title: "Batch 1: 12 Vertical Shorts", status: "Uploading", type: "Social Clips" },
+  { id: 'demo-4', title: "Podcast Ep. 41: Mindset", status: "Completed", type: "Full Length" },
+];
+
 const COMPLETED_ASSETS = [
   { id: 101, title: "Ep 41: Mindset (4K Master)", type: "Video", date: "Oct 24, 2026", size: "4.2 GB" },
-  { id: 102, title: "Ep 41: 3x Vertical Hooks", type: "Social", date: "Oct 24, 2026", size: "185 MB" }
+  { id: 102, title: "Ep 41: 3x Vertical Hooks", type: "Social", date: "Oct 24, 2026", size: "185 MB" },
+  { id: 103, title: "Ep 41: Thumbnail A/B", type: "Image", date: "Oct 23, 2026", size: "12 MB" }
 ];
 
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
@@ -26,13 +34,17 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const [driveLink, setDriveLink] = useState('');
   const [isSubmittingLink, setIsSubmittingLink] = useState(false);
 
-  // Fetch projects from Supabase on load
   useEffect(() => {
     fetchProjects();
   }, [userId, supabase]);
 
   const fetchProjects = async () => {
-    if (!supabase || !userId) return;
+    if (!supabase || !userId) {
+      setProjects(DEMO_PROJECTS);
+      setIsLoadingProjects(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('retainer_projects')
@@ -41,9 +53,14 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      setProjects(data || []);
+      
+      // Merge real database submissions with the demo projects so it never looks empty
+      const realProjects = data || [];
+      setProjects([...realProjects, ...DEMO_PROJECTS]);
+
     } catch (err) {
       console.error("Error fetching projects:", err);
+      setProjects(DEMO_PROJECTS); // Fallback to demo data on error
     } finally {
       setIsLoadingProjects(false);
     }
@@ -64,16 +81,15 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
       const { error } = await supabase.from('retainer_projects').insert([{
         user_id: userId,
         title: "Raw Footage Processing",
-        status: "Review", // You can update this status later in your database to "Editing" or "Completed"
+        status: "Review",
         type: "Raw Folder",
         review_link: driveLink
       }]);
 
       if (error) throw error;
 
-      // Clear form and refresh the UI so the client sees it instantly
       setDriveLink('');
-      await fetchProjects();
+      await fetchProjects(); // Refresh UI to show the new link at the top
 
     } catch (error) {
       console.error("Error submitting link:", error);
@@ -190,8 +206,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                 
                 {isLoadingProjects ? (
                   <p className="text-white/40 text-sm animate-pulse">Loading pipeline...</p>
-                ) : projects.length === 0 ? (
-                  <p className="text-white/40 text-sm italic">No active projects. Link your raw footage to get started!</p>
                 ) : (
                   <div className="space-y-4">
                     {projects.map((project) => (
