@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import Login from './Login';
 import Hub from './Hub';
-import RetainerDashboard from './RetainerDashboard'; // <-- 1. Import the new component
-// import CookieConsent from './CookieConsent';
-// import { loadAnalytics } from './analytics';
+import AdminDashboard from './AdminDashboard'; // <-- Import the new Admin Dashboard
 
 export default function App() {
   return (
@@ -15,8 +13,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/hub" element={<Hub />} />
         
-        {/* 2. Add the preview route here */}
-        <Route path="/hub/retainer" element={<RetainerDashboard />} />
+        {/* Hidden Admin Route */}
+        <Route path="/admin" element={<AdminDashboard />} /> 
       </Routes>
     </BrowserRouter>
   );
