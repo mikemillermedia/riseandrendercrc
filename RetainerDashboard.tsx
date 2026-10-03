@@ -17,7 +17,7 @@ const DEMO_PROJECTS = [
     title: "EP 30 - Collecting Data Reel Review", 
     status: "Review", 
     type: "Full Length", 
-    review_link: "https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Collecting%20Evidence%20-%20EP%2030.mp4" 
+    review_link: "YOUR_CLOUDFLARE_MP4_LINK_HERE" 
   }
 ];
 
@@ -111,38 +111,40 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   };
 
   return (
-    <div className="text-[#F5F5F0] font-sans relative">
-      <div className="max-w-6xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+    <div className="text-[#F5F5F0] font-sans relative pb-28 md:pb-12 px-4 md:px-0">
+      <div className="max-w-6xl mx-auto mb-8 pt-4 md:pt-0 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-2 flex items-center gap-3">
             The Content <span className="text-[#ff4d00]">Engine</span>
           </h1>
-          <p className="text-white/50 text-sm tracking-widest uppercase font-bold">Post-Production Retainer • Active</p>
+          <p className="text-white/50 text-xs md:text-sm tracking-widest uppercase font-bold">Post-Production Retainer • Active</p>
         </div>
-        <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(255,77,0,0.2)]">
+        <button onClick={() => setIsChatOpen(true)} className="w-full md:w-auto flex items-center justify-center gap-2 bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(255,77,0,0.2)]">
           <MessageSquare size={18} /> Direct Line
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto flex gap-8 mb-8 border-b border-white/10 pb-4">
+      <div className="max-w-6xl mx-auto flex gap-6 md:gap-8 mb-8 border-b border-white/10 pb-4 overflow-x-auto">
         {[ { id: 'pipeline', label: 'Pipeline' }, { id: 'asset_vault', label: 'Asset Vault' }, { id: 'strategy', label: 'Strategy' } ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === tab.id ? 'text-[#ff4d00]' : 'text-white/40 hover:text-white'}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`text-xs md:text-sm font-bold uppercase tracking-widest transition-colors shrink-0 ${activeTab === tab.id ? 'text-[#ff4d00]' : 'text-white/40 hover:text-white'}`}>
             {tab.label}
           </button>
         ))}
       </div>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-1 space-y-6 sticky top-6">
+        {/* SIDEBAR: STACKED NORMALLY ON MOBILE, STICKY ONLY ON DESKTOP */}
+        <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 w-full">
           <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50">
-            <div className="w-16 h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={32} className="text-[#ff4d00]" /></div>
-            <h3 className="font-black uppercase tracking-widest text-white mb-2">Link Raw Footage</h3>
+            <div className="w-14 h-14 md:w-16 md:h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={28} className="text-[#ff4d00]" /></div>
+            <h3 className="font-black uppercase tracking-widest text-white mb-2 text-sm md:text-base">Link Raw Footage</h3>
             <p className="text-xs text-white/50 mb-6">Paste your Google Drive or Dropbox folder link below to sync.</p>
             <form onSubmit={handleLinkSubmit} className="w-full flex flex-col gap-3">
               <input type="url" required value={driveLink} onChange={(e) => setDriveLink(e.target.value)} placeholder="https://drive.google.com/..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#ff4d00] text-white placeholder:text-white/30" />
               <button type="submit" disabled={isSubmittingLink || !driveLink.trim()} className="w-full bg-white text-black font-black uppercase tracking-widest py-3 rounded-xl disabled:opacity-50 text-xs">{isSubmittingLink ? 'Syncing...' : 'Submit Link'}</button>
             </form>
           </div>
+
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
             <h3 className="font-black uppercase tracking-widest text-white mb-6 text-sm flex items-center gap-2"><Clock size={16} className="text-[#ff4d00]" /> Monthly Quota</h3>
             <div className="space-y-6">
@@ -158,27 +160,28 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        {/* MAIN CONTENT AREA */}
+        <div className="lg:col-span-2 w-full">
           <AnimatePresence mode="wait">
             {/* PIPELINE TAB */}
             {activeTab === 'pipeline' && (
-              <motion.div key="pipeline" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
-                <h2 className="font-black uppercase tracking-widest text-white mb-6 text-xl">Active Production</h2>
+              <motion.div key="pipeline" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
+                <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl">Active Production</h2>
                 {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading...</p> : (
                   <div className="space-y-4">
                     {projects.map((project) => (
-                      <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+                      <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
-                            {project.type === "Raw Folder" ? <UploadCloud size={20} className="text-white/50" /> : <Film size={20} className="text-white/50" />}
+                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                            {project.type === "Raw Folder" ? <UploadCloud size={18} className="text-white/50" /> : <Film size={18} className="text-white/50" />}
                           </div>
                           <div>
-                            <h4 className="font-bold text-white text-sm">{project.title}</h4>
+                            <h4 className="font-bold text-white text-xs md:text-sm">{project.title}</h4>
                             <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">{project.type}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto">
+                        <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-none">
                           <div className="flex items-center gap-2">
                             {project.status === "Completed" && <CheckCircle2 size={16} className="text-green-500" />}
                             {project.status === "Review" && <span className="w-2 h-2 rounded-full bg-[#ff4d00] animate-pulse"></span>}
@@ -209,9 +212,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
 
             {/* ASSET VAULT TAB */}
             {activeTab === 'asset_vault' && (
-              <motion.div key="asset_vault" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
+              <motion.div key="asset_vault" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-black uppercase tracking-widest text-white text-xl">Asset Vault</h2>
+                  <h2 className="font-black uppercase tracking-widest text-white text-lg md:text-xl">Asset Vault</h2>
                 </div>
                 {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading vault...</p> : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -239,9 +242,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
 
             {/* STRATEGY TAB */}
             {activeTab === 'strategy' && (
-              <motion.div key="strategy" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
-                <h2 className="font-black uppercase tracking-widest text-white mb-2 text-xl">Monthly Strategy</h2>
-                <p className="text-white/50 text-sm mb-8">Drop your ideas, call-to-actions, or vibe checks for this month's edits.</p>
+              <motion.div key="strategy" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
+                <h2 className="font-black uppercase tracking-widest text-white mb-2 text-lg md:text-xl">Monthly Strategy</h2>
+                <p className="text-white/50 text-xs md:text-sm mb-8">Drop your ideas, call-to-actions, or vibe checks for this month's edits.</p>
                 <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Strategy notes sent!"); }}>
                   <div>
                     <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Campaign Goal</label>
