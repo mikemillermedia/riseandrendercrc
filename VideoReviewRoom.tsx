@@ -21,7 +21,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
 
-  // Fetch existing comments & subscribe to real-time new ones
   useEffect(() => {
     fetchComments();
 
@@ -38,7 +37,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   }, [projectId]);
 
   const fetchComments = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('video_comments')
       .select('*')
       .eq('project_id', projectId)
@@ -47,19 +46,16 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     if (data) setComments(data);
   };
 
-  // Keep track of the video time
   const handleTimeUpdate = () => {
     if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
   };
 
-  // Format seconds to MM:SS
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Jump video to a specific comment's timestamp
   const jumpToTime = (time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
@@ -67,14 +63,11 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     }
   };
 
-  // Submit a new time-coded comment
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !videoRef.current) return;
     
-    // Auto-pause video when they leave a comment
     videoRef.current.pause();
-    
     setIsSending(true);
     const timeToSave = videoRef.current.currentTime;
 
@@ -89,7 +82,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       }]);
       setNewComment('');
     } catch (err) {
-      console.error(err);
+      console.error('Error submitting comment:', err);
     } finally {
       setIsSending(false);
     }
@@ -97,8 +90,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col md:flex-row overflow-hidden font-sans text-white">
-      
-      {/* LEFT: VIDEO PLAYER AREA */}
+      {/* LEFT: VIDEO PLAYER */}
       <div className="flex-1 flex flex-col relative">
         <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
           <div>
@@ -110,7 +102,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </button>
         </div>
 
-        {/* Video Player */}
         <div className="flex-1 bg-[#0a0a0a] flex items-center justify-center p-4 md:p-12">
           <video 
             ref={videoRef}
@@ -122,7 +113,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         </div>
       </div>
 
-      {/* RIGHT: TIME-CODED COMMENTS PANEL */}
+      {/* RIGHT: COMMENTS PANEL */}
       <div className="w-full md:w-96 bg-[#111] border-l border-white/10 flex flex-col shrink-0 h-[50vh] md:h-full">
         <div className="p-5 border-b border-white/10 bg-[#131313]">
           <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-2">
@@ -130,7 +121,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </h3>
         </div>
 
-        {/* Comments Feed */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {comments.length === 0 ? (
             <p className="text-white/30 text-xs italic text-center mt-10">No notes yet. Play the video and drop a comment to mark a timestamp!</p>
@@ -155,7 +145,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           )}
         </div>
 
-        {/* Input Area */}
         <div className="p-4 bg-[#131313] border-t border-white/10">
           <div className="flex items-center justify-between mb-2 px-1">
             <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Mark Time:</span>
@@ -179,7 +168,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </form>
         </div>
       </div>
-      
     </div>
   );
 };
