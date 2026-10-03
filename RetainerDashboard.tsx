@@ -12,7 +12,7 @@ interface RetainerDashboardProps {
 }
 
 const DEMO_PROJECTS = [
-  { id: 'demo-1', title: "Podcast Ep. 42: The Creator Economy", status: "Review", type: "Full Length", review_link: "" }
+  { id: 'demo-1', title: "EP 30 Collecting Data Reel", status: "Review", type: "Full Length", review_link: "https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Collecting%20Evidence%20-%20EP%2030.mp4" }
 ];
 
 const DEMO_ASSETS = [
