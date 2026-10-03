@@ -12,11 +12,17 @@ interface RetainerDashboardProps {
 }
 
 const DEMO_PROJECTS = [
-  { id: 'demo-1', title: "EP 30 Collecting Data Reel", status: "Review", type: "Full Length", review_link: "https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Collecting%20Evidence%20-%20EP%2030.mp4" }
+  { 
+    id: '82d05483-0a15-4439-a028-fb8d3b7a3ef6', 
+    title: "EP 30 - Collecting Data Reel Review", 
+    status: "Review", 
+    type: "Full Length", 
+    review_link: "YOUR_CLOUDFLARE_MP4_LINK_HERE" 
+  }
 ];
 
 const DEMO_ASSETS = [
-  { id: 'demo-101', title: "Ep 41: Mindset (4K Master)", asset_type: "Video", created_at: new Date().toISOString(), file_size: "4.2 GB", download_url: "#" }
+  { id: 'demo-101', title: "Ep 29: Mindset (4K Master)", asset_type: "Video", created_at: new Date().toISOString(), file_size: "4.2 GB", download_url: "#" }
 ];
 
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
