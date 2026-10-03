@@ -17,7 +17,7 @@ const DEMO_PROJECTS = [
     title: "EP 30 - Collecting Data Reel Review", 
     status: "Review", 
     type: "Full Length", 
-    review_link: "YOUR_CLOUDFLARE_MP4_LINK_HERE" 
+    review_link: "https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Collecting%20Evidence%20-%20EP%2030.mp4" 
   }
 ];
 
