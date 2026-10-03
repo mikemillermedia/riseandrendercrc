@@ -1,11 +1,10 @@
-import VideoReviewRoom from './VideoReviewRoom';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, PlayCircle, CheckCircle2, MessageSquare, 
-  Film, Smartphone, Clock, Link as LinkIcon, Download,
-  ExternalLink, Send, Image as ImageIcon, X, User, ShieldCheck
+  Film, Smartphone, Clock, Link as LinkIcon, Download, Send, Image as ImageIcon, X, ShieldCheck
 } from 'lucide-react';
+import VideoReviewRoom from './VideoReviewRoom';
 
 interface RetainerDashboardProps {
   userId: string | null;
@@ -13,13 +12,11 @@ interface RetainerDashboardProps {
 }
 
 const DEMO_PROJECTS = [
-  { id: 'demo-1', title: "Podcast Ep. 42: The Creator Economy", status: "Review", type: "Full Length", review_link: "https://frame.io" }
+  { id: 'demo-1', title: "Podcast Ep. 42: The Creator Economy", status: "Review", type: "Full Length", review_link: "" }
 ];
 
 const DEMO_ASSETS = [
-  { id: 'demo-101', title: "Ep 41: Mindset (4K Master)", asset_type: "Video", created_at: new Date().toISOString(), file_size: "4.2 GB", download_url: "#" },
-  { id: 'demo-102', title: "Ep 41: 3x Vertical Hooks", asset_type: "Social", created_at: new Date().toISOString(), file_size: "185 MB", download_url: "#" },
-  { id: 'demo-103', title: "Ep 41: Thumbnail A/B", asset_type: "Image", created_at: new Date().toISOString(), file_size: "12 MB", download_url: "#" }
+  { id: 'demo-101', title: "Ep 41: Mindset (4K Master)", asset_type: "Video", created_at: new Date().toISOString(), file_size: "4.2 GB", download_url: "#" }
 ];
 
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
@@ -37,6 +34,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const [newMessage, setNewMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Review Room State
+  const [activeReviewProject, setActiveReviewProject] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -67,7 +67,8 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         supabase.from('retainer_assets').select('*').eq('user_id', userId).order('created_at', { ascending: false })
       ]);
       
-      setProjects([...(projRes.data || []), ...DEMO_PROJECTS]);
+      const realProjects = projRes.data || [];
+      setProjects(realProjects.length > 0 ? realProjects : DEMO_PROJECTS);
       setAssets(assetRes.data && assetRes.data.length > 0 ? assetRes.data : DEMO_ASSETS);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -153,13 +154,14 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
 
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
+            {/* PIPELINE TAB */}
             {activeTab === 'pipeline' && (
               <motion.div key="pipeline" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
                 <h2 className="font-black uppercase tracking-widest text-white mb-6 text-xl">Active Production</h2>
                 {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading...</p> : (
                   <div className="space-y-4">
                     {projects.map((project) => (
-                      <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4">
+                      <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
                             {project.type === "Raw Folder" ? <UploadCloud size={20} className="text-white/50" /> : <Film size={20} className="text-white/50" />}
@@ -169,16 +171,27 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                             <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">{project.type}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 justify-between md:justify-end">
+
+                        <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto">
                           <div className="flex items-center gap-2">
                             {project.status === "Completed" && <CheckCircle2 size={16} className="text-green-500" />}
-                            {project.status === "Review" && <PlayCircle size={16} className="text-[#ff4d00]" />}
-                            <span className="text-xs font-bold uppercase tracking-widest text-white/70">{project.status}</span>
+                            {project.status === "Review" && <span className="w-2 h-2 rounded-full bg-[#ff4d00] animate-pulse"></span>}
+                            <span className="text-xs font-bold uppercase tracking-widest text-white/50">{project.status}</span>
                           </div>
-                          {project.review_link && (
-                            <a href={project.review_link} target="_blank" rel="noopener noreferrer" className="text-xs bg-white text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-gray-200">
-                              <LinkIcon size={14} /> View
-                            </a>
+                          
+                          {project.status === "Review" && (
+                            <button 
+                              onClick={() => {
+                                if (!project.review_link) {
+                                  alert("No video URL linked to this project! Paste your Cloudflare .mp4 link in Supabase under review_link.");
+                                  return;
+                                }
+                                setActiveReviewProject(project);
+                              }}
+                              className="text-xs bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-500 transition-all shrink-0 cursor-pointer shadow-lg shadow-[#ff4d00]/20"
+                            >
+                              <PlayCircle size={14} /> Open Review Room
+                            </button>
                           )}
                         </div>
                       </div>
@@ -188,13 +201,12 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
               </motion.div>
             )}
 
-            {/* --- ASSET VAULT TAB --- */}
+            {/* ASSET VAULT TAB */}
             {activeTab === 'asset_vault' && (
               <motion.div key="asset_vault" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="font-black uppercase tracking-widest text-white text-xl">Asset Vault</h2>
                 </div>
-                
                 {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading vault...</p> : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {assets.map(asset => (
@@ -203,11 +215,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                           <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-white/50 group-hover:text-[#ff4d00] transition-colors">
                             {asset.asset_type === 'Video' ? <Film size={18} /> : asset.asset_type === 'Social' ? <Smartphone size={18} /> : <ImageIcon size={18} />}
                           </div>
-                          
-                          {/* DYNAMIC DOWNLOAD LINK */}
-                          <a href={asset.download_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors border border-white/5" title="Download Asset">
-                            <Download size={16} />
-                          </a>
+                          <a href={asset.download_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors border border-white/5" title="Download Asset"><Download size={16} /></a>
                         </div>
                         <div>
                           <h4 className="font-bold text-white text-sm mb-2 line-clamp-1">{asset.title}</h4>
@@ -223,7 +231,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
               </motion.div>
             )}
 
-            {/* --- STRATEGY TAB --- */}
+            {/* STRATEGY TAB */}
             {activeTab === 'strategy' && (
               <motion.div key="strategy" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
                 <h2 className="font-black uppercase tracking-widest text-white mb-2 text-xl">Monthly Strategy</h2>
@@ -231,19 +239,13 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                 <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Strategy notes sent!"); }}>
                   <div>
                     <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Campaign Goal</label>
-                    <select className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white appearance-none">
-                      <option>General Audience Growth</option>
-                      <option>Lead Generation</option>
-                      <option>Product Launch</option>
-                    </select>
+                    <select className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white appearance-none"><option>General Audience Growth</option><option>Lead Generation</option><option>Product Launch</option></select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Editor Notes</label>
                     <textarea rows={4} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white resize-none"></textarea>
                   </div>
-                  <button type="submit" className="flex items-center justify-center gap-2 w-full bg-white text-black font-black uppercase tracking-widest py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
-                    <Send size={16} /> Submit Brief
-                  </button>
+                  <button type="submit" className="flex items-center justify-center gap-2 w-full bg-white text-black font-black uppercase tracking-widest py-3.5 rounded-xl hover:bg-gray-200 transition-colors"><Send size={16} /> Submit Brief</button>
                 </form>
               </motion.div>
             )}
@@ -251,7 +253,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         </div>
       </div>
 
-      {/* CHAT DRAWER */}
+      {/* DIRECT LINE CHAT DRAWER */}
       <AnimatePresence>
         {isChatOpen && (
           <>
@@ -290,6 +292,22 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
               </form>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* VIDEO REVIEW ROOM OVERLAY */}
+      <AnimatePresence>
+        {activeReviewProject && (
+          <VideoReviewRoom 
+            projectId={activeReviewProject.id}
+            projectTitle={activeReviewProject.title}
+            videoUrl={activeReviewProject.review_link}
+            userId={userId || 'client-id'}
+            userName="Client" 
+            isAdmin={false}
+            supabase={supabase}
+            onClose={() => setActiveReviewProject(null)}
+          />
         )}
       </AnimatePresence>
     </div>
