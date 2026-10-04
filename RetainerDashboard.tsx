@@ -22,7 +22,7 @@ const DEMO_PROJECTS = [
 ];
 
 const DEMO_ASSETS = [
-  { id: 'demo-101', title: "Ep 29: Mindset (4K Master)", asset_type: "Horizontal Podcast", created_at: new Date().toISOString(), file_size: "4.2 GB", download_url: "#" }
+  { id: 'demo-101', title: "Ep 29: Mindset (4K Master)", asset_type: "Horizontal Podcast", created_at: new Date().toISOString(), file_size: "Link", download_url: "#" }
 ];
 
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
@@ -101,7 +101,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     if (!driveLink.trim() || !supabase || !userId) return;
     setIsSubmittingLink(true);
     try {
-      // Saves the folder link to the database as a "Raw Folder" project so it shows up in the feed immediately
       await supabase.from('retainer_projects').insert([{ 
         user_id: userId, 
         title: "Raw Footage Processing", 
@@ -110,21 +109,13 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         review_link: driveLink 
       }]);
       setDriveLink('');
-      await fetchData(); // Refresh the feed to show the new folder
+      await fetchData(); 
     } finally { setIsSubmittingLink(false); }
   };
 
-  const longFormProjects = projects.filter(p => ['Full Length', 'Horizontal Podcast', 'Long Form', 'Video'].includes(p.type)).length;
-  const longFormAssets = assets.filter(a => ['Video', 'Horizontal Podcast', 'Long Form', 'Full Length'].includes(a.asset_type)).length;
-  const totalLongForm = longFormProjects + longFormAssets;
-  const longFormTarget = 4;
-  const longFormProgress = Math.min(100, Math.round((totalLongForm / longFormTarget) * 100));
-
-  const verticalProjects = projects.filter(p => ['Vertical Clip', 'Reel', 'Short', 'Social', 'Vertical Reel'].includes(p.type)).length;
-  const verticalAssets = assets.filter(a => ['Social', 'Vertical Reel', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
-  const totalVertical = verticalProjects + verticalAssets;
-  const verticalTarget = 12;
-  const verticalProgress = Math.min(100, Math.round((totalVertical / verticalTarget) * 100));
+  // Tracking Logic for Delivered Assets
+  const horizontalDelivered = assets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
+  const verticalDelivered = assets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
 
   return (
     <div className="text-[#F5F5F0] font-sans relative pb-28 md:pb-12 px-4 md:px-0">
@@ -146,6 +137,8 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         
         {/* LEFT SIDEBAR (STICKY ON DESKTOP) */}
         <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 w-full">
+          
+          {/* CLIENT SUBMIT FORM */}
           <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50">
             <div className="w-14 h-14 md:w-16 md:h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={28} className="text-[#ff4d00]" /></div>
             <h3 className="font-black uppercase tracking-widest text-white mb-2 text-sm md:text-base">Link Raw Footage</h3>
@@ -156,28 +149,19 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             </form>
           </div>
 
+          {/* DELIVERED ASSETS TRACKER */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
             <h3 className="font-black uppercase tracking-widest text-white mb-6 text-sm flex items-center gap-2">
-              <Clock size={16} className="text-[#ff4d00]" /> Monthly Quota
+              <CheckCircle2 size={16} className="text-green-500" /> Delivered Assets
             </h3>
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between text-xs text-white/60 mb-2 font-bold uppercase tracking-wider">
-                  <span>Horizontal Podcasts</span>
-                  <span className="text-white">{totalLongForm} / {longFormTarget}</span>
-                </div>
-                <div className="w-full bg-black rounded-full h-2 overflow-hidden border border-white/5">
-                  <div className="bg-[#ff4d00] h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,77,0,0.5)]" style={{ width: `${longFormProgress}%` }} />
-                </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center bg-black/50 p-4 rounded-xl border border-white/5">
+                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Horizontal Podcasts</span>
+                <span className="text-lg font-black text-green-500">{horizontalDelivered}</span>
               </div>
-              <div>
-                <div className="flex justify-between text-xs text-white/60 mb-2 font-bold uppercase tracking-wider">
-                  <span>Vertical Reels / Shorts</span>
-                  <span className="text-white">{totalVertical} / {verticalTarget}</span>
-                </div>
-                <div className="w-full bg-black rounded-full h-2 overflow-hidden border border-white/5">
-                  <div className="bg-[#ff4d00] h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,77,0,0.5)]" style={{ width: `${verticalProgress}%` }} />
-                </div>
+              <div className="flex justify-between items-center bg-black/50 p-4 rounded-xl border border-white/5">
+                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Vertical Reels / Shorts</span>
+                <span className="text-lg font-black text-green-500">{verticalDelivered}</span>
               </div>
             </div>
           </div>
@@ -186,7 +170,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         {/* RIGHT MAIN CONTENT (SINGLE SCROLL FEED) */}
         <div className="lg:col-span-2 w-full space-y-8">
           
-          {/* SECTION 1: ACTIVE PRODUCTION / PIPELINE */}
+          {/* ACTIVE PRODUCTION */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
             <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl">Active Production & Review</h2>
             {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading...</p> : projects.length === 0 ? (
@@ -219,7 +203,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                         <span className="text-xs font-bold uppercase tracking-widest text-white/50">{project.status}</span>
                       </div>
                       
-                      {/* DYNAMIC ACTION BUTTON */}
                       {project.type === "Raw Folder" ? (
                         <a 
                           href={project.review_link}
@@ -233,7 +216,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                         <button 
                           onClick={() => {
                             if (!project.review_link) {
-                              alert("No video URL linked to this project! Paste your Cloudflare .mp4 link in Supabase under review_link.");
+                              alert("No video URL linked to this project!");
                               return;
                             }
                             setActiveReviewProject(project);
@@ -250,7 +233,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             )}
           </div>
 
-          {/* SECTION 2: ASSET VAULT */}
+          {/* ASSET VAULT */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
             <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl">Asset Vault</h2>
             {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading vault...</p> : assets.length === 0 ? (
@@ -258,9 +241,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {assets.map(asset => (
-                  <div key={asset.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 hover:border-[#ff4d00]/30 transition-colors group flex flex-col justify-between">
+                  <div key={asset.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 hover:border-green-500/30 transition-colors group flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-6">
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-white/50 group-hover:text-[#ff4d00] transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-white/50 group-hover:text-green-500 transition-colors">
                         {['Vertical Reel', 'Social', 'Reel', 'Short'].includes(asset.asset_type) ? <Smartphone size={18} /> : <Film size={18} />}
                       </div>
                       <a href={asset.download_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors border border-white/5" title="Download Asset"><Download size={16} /></a>
@@ -268,8 +251,8 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                     <div>
                       <h4 className="font-bold text-white text-sm mb-2 line-clamp-1">{asset.title}</h4>
                       <div className="flex justify-between items-center text-[10px] text-white/40 uppercase tracking-widest font-bold">
-                        <span>{new Date(asset.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                        <span>{asset.file_size}</span>
+                        <span className="flex items-center gap-1 text-green-500"><CheckCircle2 size={12} /> Delivered</span>
+                        <span>{asset.asset_type}</span>
                       </div>
                     </div>
                   </div>
@@ -278,7 +261,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             )}
           </div>
 
-          {/* SECTION 3: STRATEGY */}
+          {/* STRATEGY */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
             <h2 className="font-black uppercase tracking-widest text-white mb-2 text-lg md:text-xl">Monthly Strategy</h2>
             <p className="text-white/50 text-xs md:text-sm mb-8">Drop your ideas, call-to-actions, or vibe checks for this month's edits.</p>
@@ -298,7 +281,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         </div>
       </div>
 
-      {/* DIRECT LINE CHAT DRAWER */}
       <AnimatePresence>
         {isChatOpen && (
           <>
@@ -340,7 +322,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         )}
       </AnimatePresence>
 
-      {/* VIDEO REVIEW ROOM OVERLAY */}
       <AnimatePresence>
         {activeReviewProject && (
           <VideoReviewRoom 
