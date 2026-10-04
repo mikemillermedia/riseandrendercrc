@@ -78,7 +78,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
       setAssets(assetRes.data && assetRes.data.length > 0 ? assetRes.data : DEMO_ASSETS);
     } catch (err) {
       console.error("Error fetching data:", err);
-    } fontally {
+    } finally {
       setIsLoading(false);
     }
   };
