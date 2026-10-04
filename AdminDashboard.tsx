@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, FolderOpen, Send, CheckCircle2 } from 'lucide-react';
+import { Users, FolderOpen, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface AdminDashboardProps {
   supabase: any;
@@ -9,6 +9,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   // Delivery Form State
   const [deliverLink, setDeliverLink] = useState('');
@@ -22,18 +23,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
 
   const fetchClients = async () => {
     try {
+      setDbError(null);
+      // We removed the .order() clause to prevent silent column-mismatch crashes
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
       
       if (error) throw error;
       if (data) {
         setClients(data);
         if (data.length > 0) setSelectedClient(data[0]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching clients:", error);
+      setDbError(error.message || JSON.stringify(error));
     } finally {
       setIsLoading(false);
     }
@@ -55,13 +58,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
       
       if (error) throw error;
 
-      // Clear form on success
       setDeliverTitle('');
       setDeliverLink('');
       alert("Asset Delivered Successfully to Client Vault!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error delivering asset:", error);
-      alert("Failed to deliver asset. Check console.");
+      alert(`Delivery Failed: ${error.message}`);
     } finally {
       setIsDelivering(false);
     }
@@ -83,6 +85,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
         
         {/* LEFT SIDEBAR: CLIENT LIST */}
         <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 w-full">
+          
+          {/* NEW ERROR CATCHER BOX */}
+          {dbError && (
+            <div className="bg-red-500/10 border border-red-500/50 p-5 rounded-3xl shadow-xl">
+              <h4 className="text-red-500 font-black text-sm uppercase tracking-widest flex items-center gap-2 mb-2">
+                <AlertTriangle size={16} /> Database Error
+              </h4>
+              <p className="text-red-400 text-xs leading-relaxed">{dbError}</p>
+            </div>
+          )}
+
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
             <h3 className="font-black uppercase tracking-widest text-white mb-4 flex items-center gap-2">
               <Users size={18} className="text-green-500" /> Active Clients
@@ -103,7 +116,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
                         : 'bg-black border-white/5 text-white hover:border-white/20'
                     }`}
                   >
-                    <span className="font-bold text-sm truncate">{client.first_name} {client.last_name || client.username}</span>
+                    <span className="font-bold text-sm truncate">{client.first_name || "Unknown"} {client.last_name || client.username || ""}</span>
                   </button>
                 ))}
               </div>
@@ -122,7 +135,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
                 </h2>
                 
                 <p className="text-white/50 text-xs mb-6">
-                  Uploading an asset here instantly pushes it to <span className="text-white font-bold">{selectedClient.first_name}'s</span> Asset Vault and updates their Delivered Tracker.
+                  Uploading an asset here instantly pushes it to <span className="text-white font-bold">{selectedClient.first_name || 'the client'}'s</span> Asset Vault and updates their Delivered Tracker.
                 </p>
 
                 <form onSubmit={handleDeliverAsset} className="space-y-5">
