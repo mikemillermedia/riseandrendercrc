@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
-  User, Film, Sparkles, BookOpen
+  User, Film, Sparkles, BookOpen, Camera, Save
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -35,6 +35,10 @@ export default function Hub() {
     has_retainer: false
   });
 
+  // PROFILE SAVING STATE
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
   // INITIALIZATION
   useEffect(() => {
     const initApp = async () => {
@@ -49,7 +53,17 @@ export default function Hub() {
         if (bpData) setBlueprint(bpData);
 
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        if (profileData) setProfile(profileData);
+        if (profileData) {
+          setProfile({
+            ...profileData,
+            first_name: profileData.first_name || '',
+            last_name: profileData.last_name || '',
+            username: profileData.username || '',
+            instagram_handle: profileData.instagram_handle || '',
+            bio: profileData.bio || '',
+            avatar_url: profileData.avatar_url || ''
+          });
+        }
 
       } catch (err) {
         console.error("Initialization error:", err);
@@ -73,6 +87,63 @@ export default function Hub() {
     try { if (supabase) await supabase.auth.signOut(); } 
     catch (error) { console.error(error); } 
     finally { navigate('/'); }
+  };
+
+  // AVATAR UPLOAD HANDLER
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setIsUploadingAvatar(true);
+      if (!event.target.files || event.target.files.length === 0 || !supabase || !userId) return;
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}-${Math.random()}.${fileExt}`;
+
+      // Upload to Supabase Storage Bucket named "avatars"
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      
+      // Update local state
+      setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
+      
+      // Save directly to database
+      await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
+
+    } catch (error: any) {
+      alert(`Error uploading image: ${error.message}`);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // PROFILE SAVE HANDLER
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || !userId) return;
+    
+    setIsSavingProfile(true);
+    try {
+      const displayName = `${profile.first_name} ${profile.last_name}`.trim() || profile.username || 'Creator';
+      
+      const { error } = await supabase.from('profiles').update({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        display_name: displayName,
+        username: profile.username,
+        instagram_handle: profile.instagram_handle,
+        bio: profile.bio
+      }).eq('id', userId);
+
+      if (error) throw error;
+      alert("Profile updated successfully!");
+    } catch (error: any) {
+      alert(`Error saving profile: ${error.message}`);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   return (
@@ -229,7 +300,7 @@ export default function Hub() {
                             style={{ transform: 'translateZ(12px)' }}
                           >
                             <img 
-                              src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg" // <-- Replace with your Cloudflare / hosted cover image URL
+                              src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg"
                               alt="The Content Creator Studio Kit Cover" 
                               className="w-full h-full object-cover"
                             />
@@ -281,7 +352,7 @@ export default function Hub() {
 
                       <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                         <a 
-                          href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" // <-- Replace with your actual guide URL
+                          href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf"
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,77,0,0.35)] transition-all"
@@ -296,18 +367,112 @@ export default function Hub() {
               </div>
             )}
 
-            {/* PROFILE TAB */}
+            {/* FULLY FUNCTIONAL PROFILE TAB */}
             {activeTab === 'profile' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
                   <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Profile</h1>
-                  <p className="text-white/50 text-xs md:text-sm">Manage your Sanctuary account details.</p>
+                  <p className="text-white/50 text-xs md:text-sm">Manage your Sanctuary account details and identity.</p>
                 </div>
-                <div className="bg-[#131313] border border-white/10 rounded-3xl p-5 md:p-8 shadow-xl space-y-4">
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Display Name</label>
-                    <input type="text" readOnly value={profile.display_name} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white/70" />
-                  </div>
+                
+                <div className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
+                  
+                  <form onSubmit={handleSaveProfile} className="space-y-8 relative z-10">
+                    
+                    {/* AVATAR UPLOAD SECTION */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-8 border-b border-white/5">
+                      <div className="relative group shrink-0">
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white/10 group-hover:border-[#ff4d00]/50 transition-colors" />
+                        ) : (
+                          <div className="w-24 h-24 rounded-full bg-black border-2 border-white/10 flex items-center justify-center text-3xl font-black text-white/30 group-hover:border-[#ff4d00]/50 transition-colors uppercase">
+                            {profile.first_name ? profile.first_name[0] : 'C'}
+                          </div>
+                        )}
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity backdrop-blur-sm">
+                          <Camera size={24} className="text-white" />
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleAvatarUpload} 
+                            className="hidden" 
+                            disabled={isUploadingAvatar} 
+                          />
+                        </label>
+                      </div>
+                      <div className="text-center sm:text-left pt-2">
+                        <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1">Profile Photo</h3>
+                        <p className="text-white/40 text-xs mb-3">Upload a square image. JPG, GIF, or PNG.</p>
+                        {isUploadingAvatar && <span className="text-[#ff4d00] text-[10px] font-bold uppercase tracking-widest animate-pulse bg-[#ff4d00]/10 px-2.5 py-1 rounded">Uploading...</span>}
+                      </div>
+                    </div>
+
+                    {/* TEXT FIELDS SECTION */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">First Name</label>
+                        <input 
+                          type="text" 
+                          value={profile.first_name} 
+                          onChange={(e) => setProfile({...profile, first_name: e.target.value})}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
+                          placeholder="Your first name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Last Name</label>
+                        <input 
+                          type="text" 
+                          value={profile.last_name} 
+                          onChange={(e) => setProfile({...profile, last_name: e.target.value})}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
+                          placeholder="Your last name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Username</label>
+                        <input 
+                          type="text" 
+                          value={profile.username} 
+                          onChange={(e) => setProfile({...profile, username: e.target.value})}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
+                          placeholder="@creator"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Instagram Handle</label>
+                        <input 
+                          type="text" 
+                          value={profile.instagram_handle} 
+                          onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
+                          placeholder="e.g. riseandrender"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Short Bio</label>
+                        <textarea 
+                          rows={3}
+                          value={profile.bio} 
+                          onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors resize-none" 
+                          placeholder="Tell us about your brand or podcast..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex justify-end">
+                      <button 
+                        type="submit" 
+                        disabled={isSavingProfile}
+                        className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,77,0,0.2)] transition-all disabled:opacity-50 w-full sm:w-auto"
+                      >
+                        <Save size={16} /> {isSavingProfile ? 'Saving...' : 'Save Profile'}
+                      </button>
+                    </div>
+
+                  </form>
                 </div>
               </div>
             )}
