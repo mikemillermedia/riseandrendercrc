@@ -16,7 +16,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const [assets, setAssets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Link Submission State
   const [driveLink, setDriveLink] = useState('');
+  const [driveTitle, setDriveTitle] = useState('');
   const [isSubmittingLink, setIsSubmittingLink] = useState(false);
 
   // Client Direct Line State
@@ -85,16 +87,25 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     if (!driveLink.trim() || !supabase || !userId) return;
     setIsSubmittingLink(true);
     try {
-      await supabase.from('retainer_projects').insert([{ 
+      const { error } = await supabase.from('retainer_projects').insert([{ 
         user_id: userId, 
-        title: "Raw Footage Processing", 
+        title: driveTitle.trim() || "Raw Footage Folder", 
         status: "Processing", 
         type: "Raw Folder", 
         review_link: driveLink 
       }]);
+      
+      if (error) throw error;
+      
       setDriveLink('');
+      setDriveTitle('');
       await fetchData(); 
-    } finally { setIsSubmittingLink(false); }
+    } catch (error: any) {
+      console.error("Failed to submit raw footage link:", error);
+      alert(`Upload Failed: ${error.message}`);
+    } finally { 
+      setIsSubmittingLink(false); 
+    }
   };
 
   // Pipeline Filtering Logic
@@ -126,13 +137,29 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         {/* LEFT SIDEBAR (STICKY ON DESKTOP) */}
         <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 w-full">
           
-          <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50">
+          <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50 transition-colors">
             <div className="w-14 h-14 md:w-16 md:h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={28} className="text-[#ff4d00]" /></div>
             <h3 className="font-black uppercase tracking-widest text-white mb-2 text-sm md:text-base">Link Raw Footage</h3>
             <p className="text-xs text-white/50 mb-6">Paste your Google Drive or Dropbox folder link below to sync.</p>
             <form onSubmit={handleLinkSubmit} className="w-full flex flex-col gap-3">
-              <input type="url" required value={driveLink} onChange={(e) => setDriveLink(e.target.value)} placeholder="https://drive.google.com/..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#ff4d00] text-white placeholder:text-white/30" />
-              <button type="submit" disabled={isSubmittingLink || !driveLink.trim()} className="w-full bg-white text-black font-black uppercase tracking-widest py-3 rounded-xl disabled:opacity-50 text-xs">{isSubmittingLink ? 'Syncing...' : 'Submit Link'}</button>
+              <input 
+                type="text" 
+                value={driveTitle} 
+                onChange={(e) => setDriveTitle(e.target.value)} 
+                placeholder="Folder Title (e.g. EP 30 Raw)" 
+                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#ff4d00] text-white placeholder:text-white/30" 
+              />
+              <input 
+                type="url" 
+                required 
+                value={driveLink} 
+                onChange={(e) => setDriveLink(e.target.value)} 
+                placeholder="https://drive.google.com/..." 
+                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#ff4d00] text-white placeholder:text-white/30" 
+              />
+              <button type="submit" disabled={isSubmittingLink || !driveLink.trim()} className="w-full bg-white text-black font-black uppercase tracking-widest py-3 rounded-xl disabled:opacity-50 text-xs mt-1">
+                {isSubmittingLink ? 'Syncing...' : 'Submit Link'}
+              </button>
             </form>
           </div>
 
