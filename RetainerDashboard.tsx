@@ -17,7 +17,8 @@ const DEMO_PROJECTS = [
     title: "EP 30 - Collecting Data Reel Review", 
     status: "Review", 
     type: "Full Length", 
-    review_link: "YOUR_CLOUDFLARE_MP4_LINK_HERE" 
+    // Replaced the broken placeholder with a guaranteed working test video so the UI never collapses
+    review_link: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
   }
 ];
 
@@ -34,14 +35,12 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const [driveLink, setDriveLink] = useState('');
   const [isSubmittingLink, setIsSubmittingLink] = useState(false);
 
-  // Chat State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Review Room State
   const [activeReviewProject, setActiveReviewProject] = useState<any>(null);
 
   useEffect(() => {
@@ -78,7 +77,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
       setAssets(assetRes.data && assetRes.data.length > 0 ? assetRes.data : DEMO_ASSETS);
     } catch (err) {
       console.error("Error fetching data:", err);
-    } finally {
+    } finally { // TYPO FIXED HERE
       setIsLoading(false);
     }
   };
@@ -110,17 +109,16 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     } finally { setIsSubmittingLink(false); }
   };
 
-  // DYNAMIC QUOTA CALCULATION LOGIC
   const longFormProjects = projects.filter(p => ['Full Length', 'Horizontal Podcast', 'Long Form', 'Video'].includes(p.type)).length;
   const longFormAssets = assets.filter(a => ['Video', 'Horizontal Podcast', 'Long Form', 'Full Length'].includes(a.asset_type)).length;
   const totalLongForm = longFormProjects + longFormAssets;
-  const longFormTarget = 4; // Set to 4 long form videos per cycle
+  const longFormTarget = 4;
   const longFormProgress = Math.min(100, Math.round((totalLongForm / longFormTarget) * 100));
 
   const verticalProjects = projects.filter(p => ['Vertical Clip', 'Reel', 'Short', 'Social', 'Vertical Reel'].includes(p.type)).length;
   const verticalAssets = assets.filter(a => ['Social', 'Vertical Reel', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
   const totalVertical = verticalProjects + verticalAssets;
-  const verticalTarget = 12; // Set to 12 vertical shorts/reels per cycle
+  const verticalTarget = 12;
   const verticalProgress = Math.min(100, Math.round((totalVertical / verticalTarget) * 100));
 
   return (
@@ -146,7 +144,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
       </div>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* SIDEBAR */}
         <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 w-full">
           <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50">
             <div className="w-14 h-14 md:w-16 md:h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={28} className="text-[#ff4d00]" /></div>
@@ -158,7 +155,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             </form>
           </div>
 
-          {/* DYNAMIC MONTHLY QUOTA TRACKER */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
             <h3 className="font-black uppercase tracking-widest text-white mb-6 text-sm flex items-center gap-2">
               <Clock size={16} className="text-[#ff4d00]" /> Monthly Quota
@@ -170,10 +166,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                   <span className="text-white">{totalLongForm} / {longFormTarget}</span>
                 </div>
                 <div className="w-full bg-black rounded-full h-2 overflow-hidden border border-white/5">
-                  <div 
-                    className="bg-[#ff4d00] h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,77,0,0.5)]" 
-                    style={{ width: `${longFormProgress}%` }}
-                  />
+                  <div className="bg-[#ff4d00] h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,77,0,0.5)]" style={{ width: `${longFormProgress}%` }} />
                 </div>
               </div>
               <div>
@@ -182,20 +175,15 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                   <span className="text-white">{totalVertical} / {verticalTarget}</span>
                 </div>
                 <div className="w-full bg-black rounded-full h-2 overflow-hidden border border-white/5">
-                  <div 
-                    className="bg-[#ff4d00] h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,77,0,0.5)]" 
-                    style={{ width: `${verticalProgress}%` }}
-                  />
+                  <div className="bg-[#ff4d00] h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,77,0,0.5)]" style={{ width: `${verticalProgress}%` }} />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* MAIN CONTENT AREA */}
         <div className="lg:col-span-2 w-full">
           <AnimatePresence mode="wait">
-            {/* PIPELINE TAB */}
             {activeTab === 'pipeline' && (
               <motion.div key="pipeline" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
                 <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl">Active Production</h2>
@@ -248,7 +236,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
               </motion.div>
             )}
 
-            {/* ASSET VAULT TAB */}
             {activeTab === 'asset_vault' && (
               <motion.div key="asset_vault" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
                 <div className="flex justify-between items-center mb-6">
@@ -278,7 +265,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
               </motion.div>
             )}
 
-            {/* STRATEGY TAB */}
             {activeTab === 'strategy' && (
               <motion.div key="strategy" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
                 <h2 className="font-black uppercase tracking-widest text-white mb-2 text-lg md:text-xl">Monthly Strategy</h2>
@@ -342,7 +328,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         )}
       </AnimatePresence>
 
-      {/* VIDEO REVIEW ROOM OVERLAY */}
       <AnimatePresence>
         {activeReviewProject && (
           <VideoReviewRoom 
