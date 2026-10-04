@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, FolderOpen, Send, CheckCircle2, AlertTriangle, 
-  Film, Smartphone, Link as LinkIcon, Download, PlayCircle 
+  Film, Smartphone, Link as LinkIcon, Download, PlayCircle, MessageSquare, X, ShieldCheck 
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 
 // Initializes Supabase
@@ -33,6 +34,13 @@ const AdminDashboard: React.FC = () => {
   const [clientAssets, setClientAssets] = useState<any[]>([]);
   const [isLoadingClientData, setIsLoadingClientData] = useState(false);
 
+  // Admin Direct Line State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (supabase) {
       fetchClients();
@@ -45,8 +53,31 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (selectedClient && supabase) {
       fetchClientData(selectedClient.id);
+      setIsChatOpen(false); // Close chat when switching clients
     }
   }, [selectedClient]);
+
+  // Chat Subscriptions
+  useEffect(() => {
+    if (!isChatOpen || !selectedClient || !supabase) return;
+    
+    const fetchMessages = async () => {
+      const { data } = await supabase.from('retainer_messages').select('*').eq('user_id', selectedClient.id).order('created_at', { ascending: true });
+      if (data) { setMessages(data); scrollToBottom(); }
+    };
+    
+    fetchMessages();
+
+    const channel = supabase.channel(`admin_chat_${selectedClient.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retainer_messages', filter: `user_id=eq.${selectedClient.id}` }, (payload: any) => {
+        setMessages((prev) => [...prev, payload.new]);
+        scrollToBottom();
+      }).subscribe();
+      
+    return () => { supabase.removeChannel(channel); };
+  }, [isChatOpen, selectedClient]);
+
+  const scrollToBottom = () => setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
   const fetchClients = async () => {
     try {
@@ -85,6 +116,20 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // ACTION: Send Chat Message (Admin Side)
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !supabase || !selectedClient) return;
+    setIsSendingMessage(true);
+    const messageText = newMessage.trim();
+    setNewMessage('');
+    try { 
+      await supabase.from('retainer_messages').insert([{ user_id: selectedClient.id, sender_type: 'admin', message: messageText }]); 
+    } finally { 
+      setIsSendingMessage(false); 
+    }
+  };
+
   // ACTION: Send to "In Production" (Review Room)
   const handleSendForReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,19 +144,14 @@ const AdminDashboard: React.FC = () => {
         review_link: reviewLink,
         status: "Review"
       }]);
-      
       if (error) throw error;
-
       setReviewTitle('');
       setReviewLink('');
       fetchClientData(selectedClient.id);
       alert("Sent to In Production for Client Review!");
     } catch (error: any) {
-      console.error("Error sending review:", error);
       alert(`Failed to send for review: ${error.message}`);
-    } finally {
-      setIsSendingReview(false);
-    }
+    } finally { setIsSendingReview(false); }
   };
 
   // ACTION: Send to "Final Videos" (Delivered)
@@ -128,24 +168,18 @@ const AdminDashboard: React.FC = () => {
         download_url: deliverLink,
         file_size: "Link"
       }]);
-      
       if (error) throw error;
-
       setDeliverTitle('');
       setDeliverLink('');
       fetchClientData(selectedClient.id);
       alert("Asset Delivered Successfully to Final Videos!");
     } catch (error: any) {
-      console.error("Error delivering asset:", error);
       alert(`Delivery Failed: ${error.message}`);
-    } finally {
-      setIsDelivering(false);
-    }
+    } finally { setIsDelivering(false); }
   };
 
   const deliveryProjects = clientProjects.filter(p => p.type === 'Raw Folder');
   const productionProjects = clientProjects.filter(p => p.type !== 'Raw Folder');
-
   const horizontalDelivered = clientAssets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
   const verticalDelivered = clientAssets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
 
@@ -217,7 +251,7 @@ const AdminDashboard: React.FC = () => {
                         <PlayCircle size={18} className="text-[#ff4d00]" /> Send for Review
                       </h2>
                       <p className="text-white/50 text-[10px] mb-6 leading-relaxed">
-                        Push a Cloudflare .mp4 link to the client's <strong className="text-white">In Production</strong> stage so they can review it.
+                        Push a Cloudflare .mp4 link to the client's <strong className="text-white">In Production</strong> stage.
                       </p>
 
                       <form onSubmit={handleSendForReview} className="space-y-4">
@@ -260,7 +294,7 @@ const AdminDashboard: React.FC = () => {
                         <CheckCircle2 size={18} className="text-green-500" /> Deliver Final Asset
                       </h2>
                       <p className="text-white/50 text-[10px] mb-6 leading-relaxed">
-                        Push a final link to the client's <strong className="text-white">Final Videos</strong> section. This instantly updates their Monthly Quota.
+                        Push a final link to the client's <strong className="text-white">Final Videos</strong> section to update quotas.
                       </p>
 
                       <form onSubmit={handleDeliverAsset} className="space-y-4">
@@ -297,13 +331,20 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* LIVE CLIENT DASHBOARD PREVIEW */}
+                {/* LIVE CLIENT DASHBOARD PREVIEW & DIRECT LINE */}
                 <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden mt-8">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
                   
-                  <h2 className="text-white text-lg font-black uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
-                    Client View: <span className="text-[#ff4d00]">{selectedClient.first_name}</span>
-                  </h2>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-white/10 pb-4 gap-4">
+                    <h2 className="text-white text-lg font-black uppercase tracking-widest">
+                      Client View: <span className="text-[#ff4d00]">{selectedClient.first_name}</span>
+                    </h2>
+                    
+                    {/* ADMIN CHAT BUTTON */}
+                    <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors shadow-lg">
+                      <MessageSquare size={16} className="text-[#ff4d00]" /> Open Direct Line
+                    </button>
+                  </div>
 
                   {isLoadingClientData ? (
                     <p className="text-white/40 text-sm animate-pulse">Syncing client feed...</p>
@@ -323,13 +364,10 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        
                         {/* Stage 1 Snippet */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 1: Delivery</h3>
-                          {deliveryProjects.length === 0 ? (
-                            <p className="text-white/30 text-xs italic">No raw folders.</p>
-                          ) : (
+                          {deliveryProjects.length === 0 ? <p className="text-white/30 text-xs italic">No raw folders.</p> : (
                             <div className="space-y-2">
                               {deliveryProjects.map(project => (
                                 <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
@@ -347,9 +385,7 @@ const AdminDashboard: React.FC = () => {
                         {/* Stage 2 Snippet */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 2: In Prod</h3>
-                          {productionProjects.length === 0 ? (
-                            <p className="text-white/30 text-xs italic">No videos in review.</p>
-                          ) : (
+                          {productionProjects.length === 0 ? <p className="text-white/30 text-xs italic">No videos in review.</p> : (
                             <div className="space-y-2">
                               {productionProjects.map(project => (
                                 <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
@@ -367,9 +403,7 @@ const AdminDashboard: React.FC = () => {
                         {/* Stage 3 Snippet */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 3: Final</h3>
-                          {clientAssets.length === 0 ? (
-                            <p className="text-white/30 text-xs italic">No delivered assets.</p>
-                          ) : (
+                          {clientAssets.length === 0 ? <p className="text-white/30 text-xs italic">No delivered assets.</p> : (
                             <div className="space-y-2">
                               {clientAssets.map(asset => (
                                 <div key={asset.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
@@ -383,7 +417,6 @@ const AdminDashboard: React.FC = () => {
                             </div>
                           )}
                         </div>
-
                       </div>
                     </div>
                   )}
@@ -399,6 +432,53 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ADMIN DIRECT LINE CHAT DRAWER */}
+      <AnimatePresence>
+        {isChatOpen && selectedClient && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsChatOpen(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-[#0d0d0d] border-l border-white/10 z-50 flex flex-col shadow-2xl">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#131313]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/30 flex items-center justify-center text-[#ff4d00]"><ShieldCheck size={20} /></div>
+                  <div>
+                    <h3 className="font-black text-white uppercase tracking-wider text-sm">Direct Line</h3>
+                    <p className="text-[10px] text-[#ff4d00] font-bold uppercase tracking-widest">Chatting with {selectedClient.first_name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="p-2 text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/5"><X size={20} /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                    <MessageSquare size={36} className="text-white/20 mb-3" />
+                    <p className="text-white/60 text-sm font-bold mb-1">Direct Line Active</p>
+                    <p className="text-white/40 text-xs">Send a message to {selectedClient.first_name}.</p>
+                  </div>
+                ) : (
+                  messages.map((msg) => (
+                    // Admin messages go to the right, Client messages to the left
+                    <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'admin' ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-[#ff4d00] text-black font-medium rounded-tr-none' : 'bg-white/10 text-white rounded-tl-none border border-white/10'}`}>
+                        {msg.message}
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10 bg-[#131313] flex gap-2">
+                <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#ff4d00] text-white" />
+                <button type="submit" disabled={!newMessage.trim() || isSendingMessage} className="bg-[#ff4d00] text-black p-3 rounded-xl disabled:opacity-50 font-bold"><Send size={16} /></button>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
