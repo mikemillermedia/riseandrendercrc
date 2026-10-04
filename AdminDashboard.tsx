@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, FolderOpen, Send, CheckCircle2, AlertTriangle, 
-  Film, Smartphone, Link as LinkIcon, Download, PlayCircle, MessageSquare, X, ShieldCheck 
+  Film, Smartphone, PlayCircle, MessageSquare, X, ShieldCheck, Trash2, Pencil 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
@@ -33,6 +33,16 @@ const AdminDashboard: React.FC = () => {
   const [clientProjects, setClientProjects] = useState<any[]>([]);
   const [clientAssets, setClientAssets] = useState<any[]>([]);
   const [isLoadingClientData, setIsLoadingClientData] = useState(false);
+
+  // Edit Modal State
+  const [editModal, setEditModal] = useState<{
+    id: string;
+    type: 'project' | 'asset';
+    title: string;
+    formatType: string;
+    link: string;
+    status?: string;
+  } | null>(null);
 
   // Admin Direct Line State
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -148,7 +158,6 @@ const AdminDashboard: React.FC = () => {
       setReviewTitle('');
       setReviewLink('');
       fetchClientData(selectedClient.id);
-      alert("Sent to In Production for Client Review!");
     } catch (error: any) {
       alert(`Failed to send for review: ${error.message}`);
     } finally { setIsSendingReview(false); }
@@ -172,10 +181,65 @@ const AdminDashboard: React.FC = () => {
       setDeliverTitle('');
       setDeliverLink('');
       fetchClientData(selectedClient.id);
-      alert("Asset Delivered Successfully to Final Videos!");
     } catch (error: any) {
       alert(`Delivery Failed: ${error.message}`);
     } finally { setIsDelivering(false); }
+  };
+
+  // EDIT & DELETE ACTIONS
+  const handleDeleteItem = async (id: string, type: 'project' | 'asset') => {
+    if (!confirm(`Are you sure you want to delete this ${type}? This will remove it from the client's feed.`)) return;
+    if (!supabase || !selectedClient) return;
+
+    try {
+      if (type === 'project') {
+        await supabase.from('retainer_projects').delete().eq('id', id);
+      } else {
+        await supabase.from('retainer_assets').delete().eq('id', id);
+      }
+      fetchClientData(selectedClient.id);
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete item.");
+    }
+  };
+
+  const openEditModal = (item: any, type: 'project' | 'asset') => {
+    setEditModal({
+      id: item.id,
+      type,
+      title: item.title,
+      formatType: type === 'project' ? item.type : item.asset_type,
+      link: type === 'project' ? item.review_link : item.download_url,
+      status: type === 'project' ? item.status : undefined
+    });
+  };
+
+  const handleUpdateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModal || !supabase || !selectedClient) return;
+
+    try {
+      if (editModal.type === 'project') {
+        await supabase.from('retainer_projects').update({
+          title: editModal.title,
+          type: editModal.formatType,
+          review_link: editModal.link,
+          status: editModal.status
+        }).eq('id', editModal.id);
+      } else {
+        await supabase.from('retainer_assets').update({
+          title: editModal.title,
+          asset_type: editModal.formatType,
+          download_url: editModal.link
+        }).eq('id', editModal.id);
+      }
+      setEditModal(null);
+      fetchClientData(selectedClient.id);
+    } catch (error) {
+      console.error("Update error:", error);
+      alert("Failed to update item.");
+    }
   };
 
   const deliveryProjects = clientProjects.filter(p => p.type === 'Raw Folder');
@@ -370,10 +434,16 @@ const AdminDashboard: React.FC = () => {
                           {deliveryProjects.length === 0 ? <p className="text-white/30 text-xs italic">No raw folders.</p> : (
                             <div className="space-y-2">
                               {deliveryProjects.map(project => (
-                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <FolderOpen size={12} className="text-white/40" />
-                                    <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3 relative group overflow-hidden">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                                      <FolderOpen size={12} className="text-white/40 shrink-0" />
+                                      <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
+                                      <button onClick={() => openEditModal(project, 'project')} className="text-white/40 hover:text-white"><Pencil size={12} /></button>
+                                      <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500"><Trash2 size={12} /></button>
+                                    </div>
                                   </div>
                                   <span className="text-[8px] font-bold uppercase tracking-widest text-white/50 bg-white/5 px-2 py-1 rounded inline-block">{project.status}</span>
                                 </div>
@@ -388,10 +458,16 @@ const AdminDashboard: React.FC = () => {
                           {productionProjects.length === 0 ? <p className="text-white/30 text-xs italic">No videos in review.</p> : (
                             <div className="space-y-2">
                               {productionProjects.map(project => (
-                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <PlayCircle size={12} className="text-[#ff4d00]" />
-                                    <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3 relative group overflow-hidden">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                                      <PlayCircle size={12} className="text-[#ff4d00] shrink-0" />
+                                      <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
+                                      <button onClick={() => openEditModal(project, 'project')} className="text-[#ff4d00]/70 hover:text-[#ff4d00]"><Pencil size={12} /></button>
+                                      <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500"><Trash2 size={12} /></button>
+                                    </div>
                                   </div>
                                   <span className="text-[8px] font-bold uppercase tracking-widest text-[#ff4d00] bg-[#ff4d00]/10 border border-[#ff4d00]/20 px-2 py-1 rounded inline-block">{project.status}</span>
                                 </div>
@@ -406,10 +482,16 @@ const AdminDashboard: React.FC = () => {
                           {clientAssets.length === 0 ? <p className="text-white/30 text-xs italic">No delivered assets.</p> : (
                             <div className="space-y-2">
                               {clientAssets.map(asset => (
-                                <div key={asset.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <CheckCircle2 size={12} className="text-green-500" />
-                                    <p className="text-[10px] font-bold text-white truncate">{asset.title}</p>
+                                <div key={asset.id} className="bg-black/50 border border-white/5 rounded-xl p-3 relative group overflow-hidden">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                                      <CheckCircle2 size={12} className="text-green-500 shrink-0" />
+                                      <p className="text-[10px] font-bold text-white truncate">{asset.title}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
+                                      <button onClick={() => openEditModal(asset, 'asset')} className="text-green-500/70 hover:text-green-500"><Pencil size={12} /></button>
+                                      <button onClick={() => handleDeleteItem(asset.id, 'asset')} className="text-white/40 hover:text-red-500"><Trash2 size={12} /></button>
+                                    </div>
                                   </div>
                                   <span className="text-[8px] font-bold uppercase tracking-widest text-white/50">{asset.asset_type}</span>
                                 </div>
@@ -432,6 +514,86 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* EDIT MODAL OVERLAY */}
+      <AnimatePresence>
+        {editModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-[50px] pointer-events-none" />
+              
+              <div className="flex justify-between items-center mb-6 relative z-10">
+                <h2 className="text-white font-black uppercase tracking-widest text-lg">Edit {editModal.type === 'project' ? 'Project' : 'Asset'}</h2>
+                <button onClick={() => setEditModal(null)} className="text-white/40 hover:text-white transition-colors bg-white/5 p-2 rounded-full"><X size={16} /></button>
+              </div>
+              
+              <form onSubmit={handleUpdateItem} className="space-y-4 relative z-10">
+                <div>
+                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Title</label>
+                  <input 
+                    type="text" value={editModal.title} onChange={(e) => setEditModal({...editModal, title: e.target.value})}
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" required 
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Type</label>
+                  <select 
+                    value={editModal.formatType} onChange={(e) => setEditModal({...editModal, formatType: e.target.value})}
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none focus:outline-none focus:border-[#ff4d00] transition-colors"
+                  >
+                    {editModal.type === 'project' ? (
+                      <>
+                        <option value="Raw Folder">Raw Folder</option>
+                        <option value="Horizontal Podcast">Horizontal Podcast</option>
+                        <option value="Vertical Reel">Vertical Reel / Short</option>
+                        <option value="Other">Other Media</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Horizontal Podcast">Horizontal Podcast</option>
+                        <option value="Vertical Reel">Vertical Reel / Short</option>
+                        <option value="Other">Other Media</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Link / URL</label>
+                  <input 
+                    type="url" value={editModal.link} onChange={(e) => setEditModal({...editModal, link: e.target.value})}
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" required 
+                  />
+                </div>
+
+                {editModal.type === 'project' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Status</label>
+                    <select 
+                      value={editModal.status || ''} onChange={(e) => setEditModal({...editModal, status: e.target.value})}
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white appearance-none focus:outline-none focus:border-[#ff4d00] transition-colors"
+                    >
+                      <option value="Processing">Processing (Stage 1)</option>
+                      <option value="Review">Review (Stage 2)</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+                )}
+                
+                <div className="pt-4">
+                  <button type="submit" className="w-full bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-3.5 rounded-xl hover:bg-orange-500 transition-all text-xs shadow-lg shadow-[#ff4d00]/20">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ADMIN DIRECT LINE CHAT DRAWER */}
       <AnimatePresence>
@@ -459,7 +621,6 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ) : (
                   messages.map((msg) => (
-                    // Admin messages go to the right, Client messages to the left
                     <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'admin' ? 'items-end' : 'items-start'}`}>
                       <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-[#ff4d00] text-black font-medium rounded-tr-none' : 'bg-white/10 text-white rounded-tl-none border border-white/10'}`}>
                         {msg.message}
