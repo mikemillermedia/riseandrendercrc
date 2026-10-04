@@ -1,51 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Clock, AlertCircle, CheckCircle, CheckCircle2, MessageSquareReply } from 'lucide-react';
+import { X, CheckCircle2, Clock, Send, MessageSquare, PlayCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface VideoReviewRoomProps {
   projectId: string;
   projectTitle: string;
   videoUrl: string;
-  userId: string;
+  userId: string; 
   userName: string;
   isAdmin: boolean;
   supabase: any;
   onClose: () => void;
 }
 
-const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({ 
-  projectId, projectTitle, videoUrl, userId, userName, isAdmin, supabase, onClose 
+const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
+  projectId, projectTitle, videoUrl, isAdmin, supabase, onClose
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isSending, setIsSending] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Stores the current logged-in user's avatar & name
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
 
-  const isDemo = projectId.includes('demo');
-
+  // Fetch the logged-in user's profile & the video comments
   useEffect(() => {
-    if (isDemo) return;
+    const fetchSessionAndComments = async () => {
+      // 1. Get current logged-in user profile for their avatar
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        if (profile) setCurrentUserProfile(profile);
+      }
+      
+      // 2. Fetch comments for this video
+      fetchComments();
+    };
 
-    fetchComments();
+    fetchSessionAndComments();
 
-    const channel = supabase
-      .channel(`video_review_${projectId}`)
-      .on('postgres_changes', { 
-        event: '*', schema: 'public', table: 'video_comments', filter: `project_id=eq.${projectId}` 
-      }, (payload: any) => {
-        if (payload.eventType === 'INSERT') {
-          setComments(prev => [...prev, payload.new].sort((a, b) => a.timestamp - b.timestamp));
-        } else if (payload.eventType === 'UPDATE') {
-          setComments(prev => prev.map(c => c.id === payload.new.id ? payload.new : c));
-        } else if (payload.eventType === 'DELETE') {
-          setComments(prev => prev.filter(c => c.id !== payload.old.id));
-        }
-      })
-      .subscribe();
+    // Subscribe to new comments in real-time
+    const channel = supabase.channel(`review_${projectId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments', filter: `project_id=eq.${projectId}` }, () => {
+        fetchComments();
+      }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [projectId]);
+  }, [projectId, supabase]);
 
   const fetchComments = async () => {
     const { data } = await supabase
@@ -53,244 +57,198 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       .select('*')
       .eq('project_id', projectId)
       .order('timestamp', { ascending: true });
-    if (data) setComments(data);
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+    
+    if (data) {
+      setComments(data);
+      setTimeout(() => {
+        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
   };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const jumpToTime = (time: number) => {
+  const handleSeek = (time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
       videoRef.current.play();
-    }
-  };
-
-  const handleReplyClick = (time: number, authorName: string) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      videoRef.current.pause();
-    }
-    setNewComment(`@${authorName.replace(/\s+/g, '')} `);
-    // Focus logic can be added here if needed
-  };
-
-  const toggleResolve = async (commentId: string, currentStatus: boolean) => {
-    if (!isAdmin || !supabase) return;
-    try {
-      await supabase.from('video_comments').update({ is_resolved: !currentStatus }).eq('id', commentId);
-    } catch (err) {
-      console.error('Failed to resolve comment', err);
     }
   };
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !videoRef.current) return;
+    if (!newComment.trim() || !supabase) return;
 
-    if (isDemo) {
-      setErrorMsg("Cannot save comments to a demo project.");
-      setTimeout(() => setErrorMsg(''), 4000);
-      return;
-    }
+    setIsSubmitting(true);
+    const time = videoRef.current ? videoRef.current.currentTime : 0;
     
-    videoRef.current.pause();
-    setIsSending(true);
-    const timeToSave = videoRef.current.currentTime;
+    // Determine the name and avatar to use
+    let finalName = isAdmin ? 'Rise & Render Team' : 'Client';
+    let finalAvatar = '';
+
+    if (currentUserProfile) {
+      finalName = currentUserProfile.display_name || currentUserProfile.first_name || finalName;
+      finalAvatar = currentUserProfile.avatar_url || '';
+    }
 
     try {
-      // Adding is_resolved explicitly false for new comments
-      const { error } = await supabase.from('video_comments').insert([{
+      await supabase.from('video_comments').insert([{
         project_id: projectId,
-        user_id: userId,
-        user_name: userName,
-        is_admin: isAdmin,
-        timestamp: timeToSave,
         text: newComment.trim(),
+        timestamp: time,
+        author: finalName,
+        author_avatar: finalAvatar,
+        is_admin: isAdmin,
         is_resolved: false
       }]);
       
-      if (error) throw error;
       setNewComment('');
-    } catch (err: any) {
-      console.error('Error submitting comment:', err);
-      // Suppress silent database errors if column 'is_resolved' isn't fully migrated yet 
-      // but try a fallback without it just in case
-      try {
-         await supabase.from('video_comments').insert([{
-          project_id: projectId, user_id: userId, user_name: userName,
-          is_admin: isAdmin, timestamp: timeToSave, text: newComment.trim()
-        }]);
-        setNewComment('');
-      } catch (fallbackErr) {
-        setErrorMsg("Failed to save comment.");
-        setTimeout(() => setErrorMsg(''), 4000);
-      }
+    } catch (error) {
+      console.error("Failed to add comment:", error);
     } finally {
-      setIsSending(false);
+      setIsSubmitting(false);
     }
   };
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      videoRef.current.play();
-    } else {
-      videoRef.current.pause();
-    }
+  const toggleResolve = async (commentId: string, currentStatus: boolean) => {
+    if (!isAdmin) return; // Only admin can check off tasks
+    await supabase.from('video_comments').update({ is_resolved: !currentStatus }).eq('id', commentId);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans text-white">
+    <div className="fixed inset-0 z-[100] flex bg-black/95 backdrop-blur-sm font-sans">
       
-      {/* VIDEO PLAYER AREA */}
-      <div className="w-full md:flex-1 h-[55vh] md:h-full flex flex-col relative bg-black/50 shrink-0">
-        <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
-          <div className="pointer-events-auto">
-            <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded mb-2 inline-block shadow-lg ${isAdmin ? 'bg-green-500 text-black' : 'bg-[#ff4d00] text-black shadow-[0_0_15px_rgba(255,77,0,0.4)]'}`}>
-              {isAdmin ? 'Admin Review Room' : 'Review Room'}
-            </span>
-            <h2 className="text-xl md:text-2xl font-black tracking-tight drop-shadow-md line-clamp-1">{projectTitle}</h2>
+      {/* LEFT SIDE: VIDEO PLAYER */}
+      <div className="flex-1 flex flex-col relative h-full">
+        {/* Header Bar */}
+        <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
+          <div className="flex items-center gap-4">
+            <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded shadow-lg">Review Room</span>
+            <h2 className="text-white font-black text-lg md:text-xl tracking-wide">{projectTitle}</h2>
           </div>
-          <button onClick={onClose} className="pointer-events-auto p-2 md:p-2.5 bg-white/10 hover:bg-[#ff4d00] hover:text-black rounded-full transition-all backdrop-blur-md shrink-0">
+          {/* Close Button Mobile (Hidden on Desktop) */}
+          <button onClick={onClose} className="md:hidden bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-4 md:p-8 md:pt-24 md:pb-12 w-full h-full relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-[#ff4d00]/10 blur-[100px] pointer-events-none" />
-          
-          <div 
-            onClick={togglePlay}
-            className="relative w-full max-w-4xl h-full flex items-center justify-center rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0a0a0a] cursor-pointer min-h-[250px]"
-          >
-            <video 
-              ref={videoRef}
-              src={videoUrl} 
-              controls
-              playsInline
-              preload="metadata"
-              onTimeUpdate={handleTimeUpdate}
-              className="w-auto h-auto max-w-full max-h-full object-contain"
-            />
-          </div>
+        {/* Video Container */}
+        <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-10 bg-[#050505]">
+          <video 
+            ref={videoRef}
+            src={videoUrl}
+            controls
+            className="max-h-full max-w-full rounded-2xl shadow-2xl border border-white/5"
+            controlsList="nodownload"
+          />
         </div>
       </div>
 
-      {/* COMMENTS PANEL */}
-      <div className="w-full md:w-[400px] bg-[#0d0d0d] border-t md:border-t-0 md:border-l border-white/5 flex flex-col shrink-0 h-[45vh] md:h-full z-20 shadow-2xl">
-        <div className="p-4 md:p-6 border-b border-white/5 bg-[#111]">
-          <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-2">
+      {/* RIGHT SIDE: REVISION NOTES SIDEBAR */}
+      <motion.div 
+        initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="w-full md:w-[400px] h-full bg-[#0a0a0a] border-l border-white/10 flex flex-col shrink-0 shadow-2xl z-20 absolute md:relative right-0"
+      >
+        {/* Sidebar Header */}
+        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#111]">
+          <h3 className="font-black text-white uppercase tracking-widest text-sm flex items-center gap-2">
             <Clock size={16} className="text-[#ff4d00]" /> Revision Notes
           </h3>
+          <button onClick={onClose} className="hidden md:flex bg-white/5 hover:bg-white/10 text-white/50 hover:text-white p-2 rounded-full transition-colors">
+            <X size={18} />
+          </button>
         </div>
 
-        {errorMsg && (
-          <div className="mx-4 mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3 text-red-500 text-xs">
-            <AlertCircle size={14} className="shrink-0 mt-0.5" />
-            <p>{errorMsg}</p>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-          {isDemo ? (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
-              <AlertCircle size={24} className="text-[#ff4d00] mx-auto mb-2" />
-              <p className="text-white/70 text-xs font-medium">You are viewing a Demo Project.</p>
-              <p className="text-white/40 text-[10px] mt-2">Comments cannot be saved. To test commenting, link a real project.</p>
-            </div>
-          ) : comments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center opacity-30 mt-6 md:mt-10">
-              <Clock size={32} className="mb-3" />
-              <p className="text-sm font-bold uppercase tracking-widest">No notes yet</p>
-              <p className="text-[10px] mt-2 max-w-[200px]">Play the video and drop a comment to mark a timestamp.</p>
+        {/* Comments Feed */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0d0d0d]">
+          {comments.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+              <MessageSquare size={32} className="mb-3" />
+              <p className="text-sm font-bold uppercase tracking-widest">No Notes Yet</p>
+              <p className="text-xs mt-1">Play the video and drop a comment to leave a timestamped note.</p>
             </div>
           ) : (
             comments.map(comment => (
               <div 
                 key={comment.id} 
-                className={`bg-black border p-4 rounded-xl transition-all group relative overflow-hidden flex flex-col ${
-                  comment.is_resolved 
-                    ? 'border-green-500/30 opacity-70 hover:opacity-100 bg-green-500/5' 
-                    : 'border-white/5 hover:border-[#ff4d00]/40 hover:shadow-[0_0_15px_rgba(255,77,0,0.1)]'
-                }`}
+                className={`p-4 rounded-xl border transition-all ${comment.is_resolved ? 'opacity-50 grayscale border-white/5 bg-black/50' : comment.is_admin ? 'border-[#ff4d00]/20 bg-[#ff4d00]/5' : 'border-green-500/20 bg-green-500/5'}`}
               >
-                {!comment.is_resolved && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#ff4d00] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />}
-                
-                <div className="flex justify-between items-start mb-2 pl-2">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-white flex items-center gap-2">
-                      {comment.is_admin ? <span className="text-[#ff4d00]">Rise & Render Team</span> : comment.user_name}
-                      {comment.is_resolved && <CheckCircle2 size={12} className="text-green-500" title="Addressed" />}
+                <div className="flex justify-between items-start mb-2">
+                  {/* Avatar & Name */}
+                  <div className="flex items-center gap-2.5">
+                    {comment.author_avatar ? (
+                      <img src={comment.author_avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover border border-white/10" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                        {comment.author.charAt(0)}
+                      </div>
+                    )}
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${comment.is_admin ? 'text-[#ff4d00]' : 'text-green-500'}`}>
+                      {comment.author}
                     </span>
                   </div>
-                  
-                  <div className="flex items-center gap-2">
+
+                  {/* Badges & Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button 
-                      onClick={() => jumpToTime(comment.timestamp)}
-                      className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${comment.is_resolved ? 'bg-green-500/20 text-green-500' : 'bg-white/5 text-white/50 group-hover:bg-[#ff4d00] group-hover:text-black'}`}
+                      onClick={() => handleSeek(comment.timestamp)} 
+                      className={`px-2 py-1 rounded text-[10px] font-black shadow transition-opacity hover:opacity-80 flex items-center gap-1 ${comment.is_admin ? 'bg-[#ff4d00]/20 text-[#ff4d00]' : 'bg-green-500/20 text-green-500'}`}
                     >
-                      {formatTime(comment.timestamp)}
+                      <PlayCircle size={10} /> {formatTime(comment.timestamp)}
                     </button>
                     
-                    {/* ADMIN CONTROLS */}
+                    <button className="p-1 rounded bg-white/5 text-white/40 hover:text-white transition-colors" title="Reply">
+                      <MessageSquare size={12} />
+                    </button>
+
                     {isAdmin && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleReplyClick(comment.timestamp, comment.user_name)}
-                          className="p-1 rounded bg-white/5 hover:bg-blue-500 text-white/50 hover:text-white" title="Reply to comment"
-                        >
-                          <MessageSquareReply size={12} />
-                        </button>
-                        <button 
-                          onClick={() => toggleResolve(comment.id, comment.is_resolved)}
-                          className={`p-1 rounded text-white/50 hover:text-white ${comment.is_resolved ? 'bg-white/5 hover:bg-red-500' : 'bg-white/5 hover:bg-green-500'}`} 
-                          title={comment.is_resolved ? "Mark Unresolved" : "Mark as Addressed"}
-                        >
-                          {comment.is_resolved ? <X size={12} /> : <CheckCircle size={12} />}
-                        </button>
-                      </div>
+                      <button 
+                        onClick={() => toggleResolve(comment.id, comment.is_resolved)} 
+                        className={`p-1 rounded transition-colors ${comment.is_resolved ? 'bg-white/10 text-white/50 hover:bg-white/20' : 'bg-green-500 text-black hover:bg-green-400'}`}
+                        title="Mark Resolved"
+                      >
+                        <CheckCircle2 size={12} />
+                      </button>
                     )}
                   </div>
                 </div>
-                <p className={`text-sm pl-2 leading-relaxed ${comment.is_resolved ? 'text-white/40 line-through' : 'text-white/70'}`}>
+                
+                <p className={`text-xs pl-8 leading-relaxed ${comment.is_resolved ? 'line-through text-white/30' : 'text-white/80'}`}>
                   {comment.text}
                 </p>
               </div>
             ))
           )}
+          <div ref={commentsEndRef} />
         </div>
 
-        <div className="p-4 md:p-5 bg-[#111] border-t border-white/5 shrink-0">
-          <div className="flex items-center justify-between mb-2 md:mb-3 px-1">
-            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Marking Time:</span>
-            <span className="text-xs font-black text-[#ff4d00] bg-[#ff4d00]/10 px-2 py-0.5 rounded border border-[#ff4d00]/20">{formatTime(currentTime)}</span>
-          </div>
-          <form onSubmit={handleAddComment} className="flex gap-2">
+        {/* Comment Input Form */}
+        <form onSubmit={handleAddComment} className="p-4 border-t border-white/10 bg-[#111]">
+          <div className="relative flex items-center">
             <input 
               type="text" 
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Leave a note at this frame..."
-              className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 md:py-3.5 text-xs focus:outline-none focus:border-[#ff4d00] text-white transition-colors placeholder:text-white/20"
+              value={newComment} 
+              onChange={(e) => setNewComment(e.target.value)} 
+              placeholder="Drop a note here..." 
+              className="w-full bg-black border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-xs text-white focus:outline-none focus:border-[#ff4d00] transition-colors shadow-inner" 
             />
             <button 
               type="submit" 
-              disabled={!newComment.trim() || isSending}
-              className="bg-[#ff4d00] disabled:bg-white/5 disabled:text-white/20 text-black px-4 md:px-5 rounded-xl font-bold flex items-center justify-center transition-all hover:bg-orange-500 shadow-lg shadow-[#ff4d00]/20 disabled:shadow-none"
+              disabled={isSubmitting || !newComment.trim()} 
+              className="absolute right-2 p-2 bg-[#ff4d00] text-black rounded-lg disabled:opacity-50 hover:bg-orange-500 transition-colors"
             >
-              <Send size={16} />
+              <Send size={14} />
             </button>
-          </form>
-        </div>
-      </div>
+          </div>
+          <p className="text-[9px] text-white/30 uppercase tracking-widest text-center mt-3 font-bold">
+            Note will automatically timestamp to {formatTime(videoRef.current?.currentTime || 0)}
+          </p>
+        </form>
+      </motion.div>
     </div>
   );
 };
