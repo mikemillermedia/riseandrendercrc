@@ -19,6 +19,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const [driveLink, setDriveLink] = useState('');
   const [isSubmittingLink, setIsSubmittingLink] = useState(false);
 
+  // Client Direct Line State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -31,6 +32,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     fetchData();
   }, [userId, supabase]);
 
+  // Chat Subscriptions
   useEffect(() => {
     if (!isChatOpen || !supabase || !userId) return;
     fetchMessages();
@@ -66,6 +68,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     if (data) { setMessages(data); scrollToBottom(); }
   };
 
+  // ACTION: Send Chat Message (Client Side)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !supabase || !userId) return;
@@ -76,6 +79,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     finally { setIsSendingMessage(false); }
   };
 
+  // ACTION: Submit Raw Link
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!driveLink.trim() || !supabase || !userId) return;
@@ -292,6 +296,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         </div>
       </div>
 
+      {/* CLIENT DIRECT LINE CHAT DRAWER */}
       <AnimatePresence>
         {isChatOpen && (
           <>
@@ -315,6 +320,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                   </div>
                 ) : (
                   messages.map((msg) => (
+                    // Client messages go to the right, Admin messages to the left
                     <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'admin' ? 'items-start' : 'items-end'}`}>
                       <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-white/10 text-white rounded-tl-none border border-white/10' : 'bg-[#ff4d00] text-black font-medium rounded-tr-none'}`}>
                         {msg.message}
