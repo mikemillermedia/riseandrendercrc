@@ -109,42 +109,46 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans text-white">
       
       {/* LEFT: VIDEO PLAYER AREA */}
-      <div className="flex-1 flex flex-col relative bg-black/50">
+      {/* On mobile: strictly 55vh. On desktop: flex-1 to fill the remaining width */}
+      <div className="w-full md:flex-1 h-[55vh] md:h-full flex flex-col relative bg-black/50 shrink-0">
         
         {/* Top Header */}
-        <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
+        <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
           <div className="pointer-events-auto">
             <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded mb-2 inline-block shadow-[0_0_15px_rgba(255,77,0,0.4)]">
               Review Room
             </span>
-            <h2 className="text-2xl font-black tracking-tight drop-shadow-md">{projectTitle}</h2>
+            <h2 className="text-xl md:text-2xl font-black tracking-tight drop-shadow-md line-clamp-1">{projectTitle}</h2>
           </div>
-          <button onClick={onClose} className="pointer-events-auto p-2.5 bg-white/10 hover:bg-[#ff4d00] hover:text-black rounded-full transition-all backdrop-blur-md">
+          <button onClick={onClose} className="pointer-events-auto p-2 md:p-2.5 bg-white/10 hover:bg-[#ff4d00] hover:text-black rounded-full transition-all backdrop-blur-md shrink-0">
             <X size={20} />
           </button>
         </div>
 
-        {/* Video Container (Centered and bounded) */}
-        <div className="flex-1 flex items-center justify-center p-8 pt-24 pb-12 w-full h-full relative">
+        {/* Video Container */}
+        {/* Reduced padding on mobile so the video fits better */}
+        <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-4 md:p-8 md:pt-24 md:pb-12 w-full h-full relative">
           
           {/* Ambient background glow for the video */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-[#ff4d00]/10 blur-[100px] pointer-events-none" />
           
-          <div className="relative w-full max-w-4xl max-h-full flex items-center justify-center rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0a0a0a]">
+          <div className="relative w-full max-w-4xl h-full flex items-center justify-center rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0a0a0a]">
             <video 
               ref={videoRef}
               src={videoUrl} 
-              controls 
+              controls
+              playsInline 
               onTimeUpdate={handleTimeUpdate}
-              className="w-auto h-auto max-w-full max-h-[75vh] object-contain"
+              className="w-auto h-auto max-w-full max-h-full object-contain"
             />
           </div>
         </div>
       </div>
 
       {/* RIGHT: COMMENTS PANEL */}
-      <div className="w-full md:w-[400px] bg-[#0d0d0d] border-l border-white/5 flex flex-col shrink-0 h-[50vh] md:h-full z-20 shadow-2xl">
-        <div className="p-6 border-b border-white/5 bg-[#111]">
+      {/* On mobile: strictly 45vh. On desktop: full height and fixed width */}
+      <div className="w-full md:w-[400px] bg-[#0d0d0d] border-t md:border-t-0 md:border-l border-white/5 flex flex-col shrink-0 h-[45vh] md:h-full z-20 shadow-2xl">
+        <div className="p-4 md:p-6 border-b border-white/5 bg-[#111]">
           <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-2">
             <Clock size={16} className="text-[#ff4d00]" /> Revision Notes
           </h3>
@@ -159,7 +163,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         )}
 
         {/* Comments Feed */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {isDemo ? (
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <AlertCircle size={24} className="text-[#ff4d00] mx-auto mb-2" />
@@ -167,7 +171,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
               <p className="text-white/40 text-[10px] mt-2">Comments cannot be saved. To test commenting, link a real project from your database.</p>
             </div>
           ) : comments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center opacity-30 mt-10">
+            <div className="flex flex-col items-center justify-center h-full text-center opacity-30 mt-6 md:mt-10">
               <Clock size={32} className="mb-3" />
               <p className="text-sm font-bold uppercase tracking-widest">No notes yet</p>
               <p className="text-[10px] mt-2 max-w-[200px]">Play the video and drop a comment to mark a timestamp.</p>
@@ -197,8 +201,8 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         </div>
 
         {/* Input Area */}
-        <div className="p-5 bg-[#111] border-t border-white/5">
-          <div className="flex items-center justify-between mb-3 px-1">
+        <div className="p-4 md:p-5 bg-[#111] border-t border-white/5 shrink-0">
+          <div className="flex items-center justify-between mb-2 md:mb-3 px-1">
             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Marking Time:</span>
             <span className="text-xs font-black text-[#ff4d00] bg-[#ff4d00]/10 px-2 py-0.5 rounded border border-[#ff4d00]/20">{formatTime(currentTime)}</span>
           </div>
@@ -208,12 +212,12 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Leave a note at this frame..."
-              className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3.5 text-xs focus:outline-none focus:border-[#ff4d00] text-white transition-colors placeholder:text-white/20"
+              className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 md:py-3.5 text-xs focus:outline-none focus:border-[#ff4d00] text-white transition-colors placeholder:text-white/20"
             />
             <button 
               type="submit" 
               disabled={!newComment.trim() || isSending}
-              className="bg-[#ff4d00] disabled:bg-white/5 disabled:text-white/20 text-black px-5 rounded-xl font-bold flex items-center justify-center transition-all hover:bg-orange-500 shadow-lg shadow-[#ff4d00]/20 disabled:shadow-none"
+              className="bg-[#ff4d00] disabled:bg-white/5 disabled:text-white/20 text-black px-4 md:px-5 rounded-xl font-bold flex items-center justify-center transition-all hover:bg-orange-500 shadow-lg shadow-[#ff4d00]/20 disabled:shadow-none"
             >
               <Send size={16} />
             </button>
