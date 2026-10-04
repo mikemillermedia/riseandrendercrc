@@ -17,8 +17,7 @@ const DEMO_PROJECTS = [
     title: "EP 30 - Collecting Data Reel Review", 
     status: "Review", 
     type: "Full Length", 
-    // Replaced the broken placeholder with a guaranteed working test video so the UI never collapses
-    review_link: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
+    review_link: "https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Collecting%20Evidence%20-%20EP%2030.mp4" 
   }
 ];
 
@@ -77,7 +76,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
       setAssets(assetRes.data && assetRes.data.length > 0 ? assetRes.data : DEMO_ASSETS);
     } catch (err) {
       console.error("Error fetching data:", err);
-    } finally { // TYPO FIXED HERE
+    } finally {
       setIsLoading(false);
     }
   };
@@ -286,7 +285,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         </div>
       </div>
 
-      {/* DIRECT LINE CHAT DRAWER */}
       <AnimatePresence>
         {isChatOpen && (
           <>
