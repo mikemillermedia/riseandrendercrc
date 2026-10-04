@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, PlayCircle, CheckCircle2, MessageSquare, 
-  Film, Smartphone, Link as LinkIcon, Download, Send, X, ShieldCheck, FolderOpen
+  Film, Smartphone, Link as LinkIcon, Download, Send, X, ShieldCheck, FolderOpen, User
 } from 'lucide-react';
 import VideoReviewRoom from './VideoReviewRoom';
 
@@ -14,7 +14,8 @@ interface RetainerDashboardProps {
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
-  const [projectComments, setProjectComments] = useState<any[]>([]); // NEW: Comment Tracker
+  const [projectComments, setProjectComments] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Link Submission State
@@ -39,10 +40,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   useEffect(() => {
     if (!supabase || !userId) return;
 
-    // Subscribe to video comments to instantly update the red bubbles
     const commentChannel = supabase.channel(`client_comments_${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments' }, () => {
-        fetchData(); // Silently refresh data to update the counts
+        fetchData();
       }).subscribe();
 
     if (isChatOpen) {
@@ -66,16 +66,17 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const fetchData = async () => {
     if (!supabase || !userId) return;
     try {
-      const [projRes, assetRes] = await Promise.all([
+      const [projRes, assetRes, profileRes] = await Promise.all([
         supabase.from('retainer_projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('retainer_assets').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+        supabase.from('retainer_assets').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*').eq('id', userId).single()
       ]);
       
       const projects = projRes.data || [];
       setProjects(projects);
       setAssets(assetRes.data || []);
+      if (profileRes.data) setUserProfile(profileRes.data);
 
-      // Fetch Comment Counts for Bubbles
       if (projects.length > 0) {
         const projectIds = projects.map((p: any) => p.id);
         const { data: comments } = await supabase.from('video_comments').select('id, project_id, is_resolved').in('project_id', projectIds);
@@ -96,7 +97,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     if (data) { setMessages(data); scrollToBottom(); }
   };
 
-  // ACTION: Send Chat Message (Client Side)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !supabase || !userId) return;
@@ -107,7 +107,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     finally { setIsSendingMessage(false); }
   };
 
-  // ACTION: Submit Raw Link
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!driveLink.trim() || !supabase || !userId) return;
@@ -134,11 +133,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     }
   };
 
-  // Pipeline Filtering Logic
   const deliveryProjects = projects.filter(p => p.type === 'Raw Folder');
   const productionProjects = projects.filter(p => p.type !== 'Raw Folder');
 
-  // Tracking Logic for Delivered Assets
   const horizontalDelivered = assets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
   const verticalDelivered = assets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
 
@@ -160,9 +157,8 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {/* LEFT SIDEBAR (STICKY ON DESKTOP) */}
+        {/* LEFT SIDEBAR */}
         <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 w-full">
-          
           <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50 transition-colors">
             <div className="w-14 h-14 md:w-16 md:h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={28} className="text-[#ff4d00]" /></div>
             <h3 className="font-black uppercase tracking-widest text-white mb-2 text-sm md:text-base">Link Raw Footage</h3>
@@ -206,7 +202,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
           </div>
         </div>
 
-        {/* RIGHT MAIN CONTENT (SINGLE SCROLL FEED) */}
+        {/* RIGHT MAIN CONTENT */}
         <div className="lg:col-span-2 w-full space-y-8">
           
           {/* STAGE 1: DELIVERY */}
@@ -249,7 +245,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             )}
           </div>
 
-          {/* STAGE 2: IN PRODUCTION (REVIEW ROOM) */}
+          {/* STAGE 2: IN PRODUCTION */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl relative overflow-hidden">
              <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
             <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl flex items-center gap-2 relative z-10">
@@ -270,7 +266,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                           ) : (
                             <Film size={18} className="text-[#ff4d00]" />
                           )}
-                          {/* UNRESOLVED COMMENT BUBBLE */}
                           {unresolvedCount > 0 && (
                             <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-lg ring-2 ring-[#131313]">
                               {unresolvedCount}
@@ -349,7 +344,9 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-[#0d0d0d] border-l border-white/10 z-50 flex flex-col shadow-2xl">
               <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#131313]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/30 flex items-center justify-center text-[#ff4d00]"><ShieldCheck size={20} /></div>
+                  <div className="w-10 h-10 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/30 flex items-center justify-center text-[#ff4d00] shrink-0">
+                    <ShieldCheck size={20} />
+                  </div>
                   <div>
                     <h3 className="font-black text-white uppercase tracking-wider text-sm">Direct Line Support</h3>
                     <p className="text-[10px] text-[#ff4d00] font-bold uppercase tracking-widest">Rise & Render Bay</p>
@@ -357,6 +354,7 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                 </div>
                 <button onClick={() => setIsChatOpen(false)} className="p-2 text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/5"><X size={20} /></button>
               </div>
+
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6">
@@ -365,16 +363,35 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                   </div>
                 ) : (
                   messages.map((msg) => (
-                    // Client messages go to the right, Admin messages to the left
-                    <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'admin' ? 'items-start' : 'items-end'}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-white/10 text-white rounded-tl-none border border-white/10' : 'bg-[#ff4d00] text-black font-medium rounded-tr-none'}`}>
+                    <div key={msg.id} className={`flex items-end gap-2.5 ${msg.sender_type === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                      {/* ADMIN AVATAR */}
+                      {msg.sender_type === 'admin' && (
+                        <div className="w-7 h-7 rounded-full bg-[#ff4d00]/20 border border-[#ff4d00]/50 flex items-center justify-center text-[#ff4d00] shrink-0 text-[10px] font-black uppercase">
+                          R
+                        </div>
+                      )}
+
+                      {/* MESSAGE BUBBLE */}
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-white/10 text-white rounded-bl-none border border-white/10' : 'bg-[#ff4d00] text-black font-medium rounded-br-none'}`}>
                         {msg.message}
                       </div>
+
+                      {/* CLIENT AVATAR FROM PROFILE */}
+                      {msg.sender_type !== 'admin' && (
+                        userProfile?.avatar_url ? (
+                          <img src={userProfile.avatar_url} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 text-[10px] font-bold uppercase">
+                            {userProfile?.first_name ? userProfile.first_name[0] : <User size={12} />}
+                          </div>
+                        )
+                      )}
                     </div>
                   ))
                 )}
                 <div ref={chatEndRef} />
               </div>
+
               <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10 bg-[#131313] flex gap-2">
                 <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#ff4d00] text-white" />
                 <button type="submit" disabled={!newMessage.trim() || isSendingMessage} className="bg-[#ff4d00] text-black p-3 rounded-xl disabled:opacity-50 font-bold"><Send size={16} /></button>
