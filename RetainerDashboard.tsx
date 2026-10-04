@@ -303,23 +303,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             )}
           </div>
 
-          {/* STRATEGY */}
-          <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
-            <h2 className="font-black uppercase tracking-widest text-white mb-2 text-lg md:text-xl">Monthly Strategy</h2>
-            <p className="text-white/50 text-xs md:text-sm mb-8">Drop your ideas, call-to-actions, or vibe checks for this month's edits.</p>
-            <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Strategy notes sent!"); }}>
-              <div>
-                <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Campaign Goal</label>
-                <select className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white appearance-none"><option>General Audience Growth</option><option>Lead Generation</option><option>Product Launch</option></select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Editor Notes</label>
-                <textarea rows={4} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white resize-none"></textarea>
-              </div>
-              <button type="submit" className="flex items-center justify-center gap-2 w-full bg-white text-black font-black uppercase tracking-widest py-3.5 rounded-xl hover:bg-gray-200 transition-colors"><Send size={16} /> Submit Brief</button>
-            </form>
-          </div>
-
         </div>
       </div>
 
