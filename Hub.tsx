@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
-  User, Film, Sparkles, BookOpen, Camera, Save
+  User, Film, Sparkles, BookOpen, Camera, Save, Wrench, Calendar, ArrowUpRight
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -208,23 +208,25 @@ export default function Hub() {
           </div>
         ) : (
           <>
-            {/* ASSET VAULT TAB (ALWAYS ACCESSIBLE) */}
+            {/* ASSET VAULT & SERVICES TAB */}
             {activeTab === 'vault' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
-                <div className="text-center mb-8 md:mb-12">
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto space-y-12">
+                
+                {/* PAGE HEADER */}
+                <div className="text-center">
                   <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-3 inline-block">
-                    Digital Resources
+                    Digital Resources & Services
                   </span>
                   <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-2">
                     Asset <span className="text-[#ff4d00]">Vault</span>
                   </h1>
                   <p className="text-white/50 text-xs md:text-sm max-w-lg mx-auto">
-                    Exclusive guides, templates, and creator tools engineered for high-end content production.
+                    Exclusive guides, 1-on-1 consultations, post-production retainers, and full studio buildouts engineered by Rise & Render.
                   </p>
                 </div>
 
-                {/* FEATURED: CREATOR KIT GUIDE WITH CLEAN 3D BOX MOCKUP */}
-                <div className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-6 md:p-10 mb-10 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]">
+                {/* 1. FEATURED DIGITAL RESOURCE: CREATOR STUDIO KIT */}
+                <div className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-6 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[110px] pointer-events-none" />
                   
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
@@ -232,11 +234,8 @@ export default function Hub() {
                     {/* 3D SOFTWARE BOX MOCKUP */}
                     <div className="md:col-span-5 flex justify-center items-center py-4">
                       <div className="relative group cursor-pointer" style={{ perspective: '1200px' }}>
-                        
-                        {/* Ambient Back Glow */}
                         <div className="absolute -inset-2 bg-gradient-to-r from-[#ff4d00] to-orange-600 rounded-xl blur-2xl opacity-30 group-hover:opacity-60 transition-opacity duration-500" />
 
-                        {/* 3D Box Wrapper */}
                         <div 
                           className="relative w-48 sm:w-56 h-72 sm:h-80 transition-transform duration-500 ease-out"
                           style={{ 
@@ -244,8 +243,6 @@ export default function Hub() {
                             transform: 'rotateY(-20deg) rotateX(10deg)' 
                           }}
                         >
-                          
-                          {/* Box Front Face */}
                           <div 
                             className="absolute inset-0 bg-[#111] rounded-r-md overflow-hidden border border-white/20 shadow-2xl z-10"
                             style={{ transform: 'translateZ(12px)' }}
@@ -258,7 +255,6 @@ export default function Hub() {
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-40 group-hover:opacity-70 transition-opacity pointer-events-none" />
                           </div>
 
-                          {/* Box Spine (Side Edge) */}
                           <div 
                             className="absolute top-0 left-0 w-6 h-full bg-[#0a0a0a] border-l border-y border-white/20 flex flex-col justify-between py-6 px-1 text-center shadow-inner z-0"
                             style={{ 
@@ -271,7 +267,6 @@ export default function Hub() {
                             <div className="w-2 h-2 rounded-full bg-[#ff4d00] mx-auto" />
                           </div>
 
-                          {/* Box Top Edge */}
                           <div 
                             className="absolute top-0 left-0 w-full h-6 bg-[#222] border-t border-x border-white/20 z-0"
                             style={{ 
@@ -280,7 +275,6 @@ export default function Hub() {
                             }}
                           />
 
-                          {/* Drop Shadow */}
                           <div 
                             className="absolute -bottom-6 left-2 right-2 h-6 bg-black/80 blur-md rounded-full transition-all" 
                             style={{ transform: 'rotateX(60deg) scale(0.95)' }}
@@ -315,6 +309,157 @@ export default function Hub() {
 
                   </div>
                 </div>
+
+                {/* 2. SERVICES & UPGRADES SHOWCASE GRID */}
+                <div className="space-y-6">
+                  <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+                      <Sparkles className="text-[#ff4d00]" size={22} /> Studio Services & Upgrades
+                    </h2>
+                    <p className="text-white/40 text-xs uppercase tracking-widest font-bold">White-Glove Production Services</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* SERVICE CARD 1: VIRTUAL STUDIO CONSULTATION */}
+                    <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
+                      <div>
+                        {/* Image Banner Container */}
+                        <div className="h-48 overflow-hidden relative bg-black">
+                          <img 
+                            src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/studio-consultation.jpg" // <-- Replace with your image link
+                            alt="Virtual Studio Consultation"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                            onError={(e: any) => {
+                              // Fallback if image link is not uploaded yet
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
+                          <div className="absolute top-4 left-4">
+                            <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
+                              1-on-1 Strategy
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="p-6 space-y-3">
+                          <h3 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
+                            <Video size={18} className="text-[#ff4d00]" /> Virtual Studio Consultation
+                          </h3>
+                          <p className="text-white/60 text-xs leading-relaxed">
+                            Complete remote audit of your room layout, acoustic treatment, lighting setup, audio chain, and camera settings to build a broadcast-ready studio environment.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Action */}
+                      <div className="p-6 pt-0">
+                        <a 
+                          href="https://your-booking-link.com" // <-- Replace with your booking link
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
+                        >
+                          <Calendar size={14} /> Book Session <ArrowUpRight size={14} />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* SERVICE CARD 2: POST PRODUCTION RETAINER */}
+                    <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
+                      <div>
+                        {/* Image Banner Container */}
+                        <div className="h-48 overflow-hidden relative bg-black">
+                          <img 
+                            src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/post-production-retainer.jpg" // <-- Replace with your image link
+                            alt="Post Production Retainer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
+                          <div className="absolute top-4 left-4">
+                            <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
+                              Turnkey Editing
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="p-6 space-y-3">
+                          <h3 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
+                            <Film size={18} className="text-[#ff4d00]" /> Post Production Retainer
+                          </h3>
+                          <p className="text-white/60 text-xs leading-relaxed">
+                            Monthly editing subscription for podcasts and vertical content. Includes full interactive Review Room feedback, timestamped revision notes, and direct team chat.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Action */}
+                      <div className="p-6 pt-0">
+                        <a 
+                          href="https://your-retainer-link.com" // <-- Replace with your retainer link
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
+                        >
+                          <Film size={14} /> Apply for Retainer <ArrowUpRight size={14} />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* SERVICE CARD 3: THE BUILD OUT */}
+                    <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
+                      <div>
+                        {/* Image Banner Container */}
+                        <div className="h-48 overflow-hidden relative bg-black">
+                          <img 
+                            src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/studio-buildout.jpg" // <-- Replace with your image link
+                            alt="The Build Out"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
+                          <div className="absolute top-4 left-4">
+                            <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
+                              Full-Service On-Site
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="p-6 space-y-3">
+                          <h3 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
+                            <Wrench size={18} className="text-[#ff4d00]" /> The Build Out
+                          </h3>
+                          <p className="text-white/60 text-xs leading-relaxed">
+                            White-glove, in-person studio design and installation. From physical acoustic treatment and custom wiring to camera rigging, lighting grid installation, and staff training.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Action */}
+                      <div className="p-6 pt-0">
+                        <a 
+                          href="https://your-buildout-link.com" // <-- Replace with your discovery call link
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
+                        >
+                          <Wrench size={14} /> Schedule Discovery Call <ArrowUpRight size={14} />
+                        </a>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
               </div>
             )}
 
