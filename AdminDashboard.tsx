@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, FolderOpen, Send, CheckCircle2, AlertTriangle, 
-  Film, Smartphone, Link as LinkIcon, Download 
+  Film, Smartphone, Link as LinkIcon, Download, PlayCircle 
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
@@ -16,7 +16,13 @@ const AdminDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
 
-  // Delivery Form State
+  // Form State: Review / In Production
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewType, setReviewType] = useState('Horizontal Podcast');
+  const [reviewLink, setReviewLink] = useState('');
+  const [isSendingReview, setIsSendingReview] = useState(false);
+
+  // Form State: Final Delivery
   const [deliverLink, setDeliverLink] = useState('');
   const [deliverTitle, setDeliverTitle] = useState('');
   const [deliverType, setDeliverType] = useState('Horizontal Podcast');
@@ -36,7 +42,6 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  // Fetch client snippet data whenever a new client is selected
   useEffect(() => {
     if (selectedClient && supabase) {
       fetchClientData(selectedClient.id);
@@ -80,6 +85,36 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // ACTION: Send to "In Production" (Review Room)
+  const handleSendForReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClient || !reviewLink.trim() || !reviewTitle.trim() || !supabase) return;
+    
+    setIsSendingReview(true);
+    try {
+      const { error } = await supabase.from('retainer_projects').insert([{
+        user_id: selectedClient.id,
+        title: reviewTitle,
+        type: reviewType,
+        review_link: reviewLink,
+        status: "Review"
+      }]);
+      
+      if (error) throw error;
+
+      setReviewTitle('');
+      setReviewLink('');
+      fetchClientData(selectedClient.id);
+      alert("Sent to In Production for Client Review!");
+    } catch (error: any) {
+      console.error("Error sending review:", error);
+      alert(`Failed to send for review: ${error.message}`);
+    } finally {
+      setIsSendingReview(false);
+    }
+  };
+
+  // ACTION: Send to "Final Videos" (Delivered)
   const handleDeliverAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !deliverLink.trim() || !deliverTitle.trim() || !supabase) return;
@@ -98,10 +133,8 @@ const AdminDashboard: React.FC = () => {
 
       setDeliverTitle('');
       setDeliverLink('');
-      
-      // Refresh the client preview automatically
       fetchClientData(selectedClient.id);
-      alert("Asset Delivered Successfully to Client Vault!");
+      alert("Asset Delivered Successfully to Final Videos!");
     } catch (error: any) {
       console.error("Error delivering asset:", error);
       alert(`Delivery Failed: ${error.message}`);
@@ -110,7 +143,9 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Client Snippet Trackers
+  const deliveryProjects = clientProjects.filter(p => p.type === 'Raw Folder');
+  const productionProjects = clientProjects.filter(p => p.type !== 'Raw Folder');
+
   const horizontalDelivered = clientAssets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
   const verticalDelivered = clientAssets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
 
@@ -174,65 +209,96 @@ const AdminDashboard: React.FC = () => {
           <div className="lg:col-span-2 w-full space-y-8">
             {selectedClient ? (
               <>
-                {/* DELIVER ASSET FORM */}
-                <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 md:p-8 shadow-xl">
-                  <h2 className="text-white text-lg font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <CheckCircle2 size={20} className="text-[#ff4d00]" /> Deliver Final Asset
-                  </h2>
-                  <p className="text-white/50 text-xs mb-8">
-                    Uploading an asset here instantly pushes it to <span className="text-white font-bold">{selectedClient.first_name || 'the client'}'s</span> Asset Vault.
-                  </p>
-
-                  <form onSubmit={handleDeliverAsset} className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Asset Title</label>
-                        <input 
-                          type="text" 
-                          value={deliverTitle} 
-                          onChange={(e) => setDeliverTitle(e.target.value)} 
-                          placeholder="e.g. EP 30 Final Version" 
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                          required 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Asset Type</label>
-                        <select 
-                          value={deliverType} 
-                          onChange={(e) => setDeliverType(e.target.value)} 
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white appearance-none focus:outline-none focus:border-[#ff4d00] transition-colors"
-                        >
-                          <option value="Horizontal Podcast">Horizontal Podcast</option>
-                          <option value="Vertical Reel">Vertical Reel / Short</option>
-                          <option value="Other">Other Media</option>
-                        </select>
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* FORM 1: SEND TO "IN PRODUCTION" (REVIEW ROOM) */}
+                  <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col justify-between focus-within:border-[#ff4d00]/50 transition-colors">
                     <div>
-                      <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Cloudflare / Drive Download Link</label>
-                      <input 
-                        type="url" 
-                        value={deliverLink} 
-                        onChange={(e) => setDeliverLink(e.target.value)} 
-                        placeholder="https://..." 
-                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                        required 
-                      />
+                      <h2 className="text-white text-sm font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <PlayCircle size={18} className="text-[#ff4d00]" /> Send for Review
+                      </h2>
+                      <p className="text-white/50 text-[10px] mb-6 leading-relaxed">
+                        Push a Cloudflare .mp4 link to the client's <strong className="text-white">In Production</strong> stage so they can review it.
+                      </p>
+
+                      <form onSubmit={handleSendForReview} className="space-y-4">
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Video Title</label>
+                          <input 
+                            type="text" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} 
+                            placeholder="e.g. EP 30 V1" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#ff4d00]" required 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Format Type</label>
+                          <select 
+                            value={reviewType} onChange={(e) => setReviewType(e.target.value)} 
+                            className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white appearance-none focus:outline-none focus:border-[#ff4d00]"
+                          >
+                            <option value="Horizontal Podcast">Horizontal Podcast</option>
+                            <option value="Vertical Reel">Vertical Reel / Short</option>
+                            <option value="Other">Other Media</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Cloudflare MP4 Link</label>
+                          <input 
+                            type="url" value={reviewLink} onChange={(e) => setReviewLink(e.target.value)} 
+                            placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#ff4d00]" required 
+                          />
+                        </div>
+                        <button type="submit" disabled={isSendingReview} className="w-full bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-3.5 rounded-xl hover:bg-orange-500 transition-all text-[10px] flex items-center justify-center gap-2 mt-2">
+                          <PlayCircle size={14} /> {isSendingReview ? 'Sending...' : 'Push to Review Room'}
+                        </button>
+                      </form>
                     </div>
-                    <button 
-                      type="submit" 
-                      disabled={isDelivering} 
-                      className="bg-[#ff4d00] text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl hover:bg-orange-500 transition-all text-sm w-full md:w-auto flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,77,0,0.3)]"
-                    >
-                      <Send size={16} />
-                      {isDelivering ? 'Pushing to Client Vault...' : 'Deliver to Asset Vault'}
-                    </button>
-                  </form>
+                  </div>
+
+                  {/* FORM 2: DELIVER FINAL ASSET */}
+                  <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col justify-between focus-within:border-green-500/50 transition-colors">
+                    <div>
+                      <h2 className="text-white text-sm font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <CheckCircle2 size={18} className="text-green-500" /> Deliver Final Asset
+                      </h2>
+                      <p className="text-white/50 text-[10px] mb-6 leading-relaxed">
+                        Push a final link to the client's <strong className="text-white">Final Videos</strong> section. This instantly updates their Monthly Quota.
+                      </p>
+
+                      <form onSubmit={handleDeliverAsset} className="space-y-4">
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Asset Title</label>
+                          <input 
+                            type="text" value={deliverTitle} onChange={(e) => setDeliverTitle(e.target.value)} 
+                            placeholder="e.g. EP 30 Final" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-green-500" required 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Format Type</label>
+                          <select 
+                            value={deliverType} onChange={(e) => setDeliverType(e.target.value)} 
+                            className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white appearance-none focus:outline-none focus:border-green-500"
+                          >
+                            <option value="Horizontal Podcast">Horizontal Podcast</option>
+                            <option value="Vertical Reel">Vertical Reel / Short</option>
+                            <option value="Other">Other Media</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Folder / Download Link</label>
+                          <input 
+                            type="url" value={deliverLink} onChange={(e) => setDeliverLink(e.target.value)} 
+                            placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-green-500" required 
+                          />
+                        </div>
+                        <button type="submit" disabled={isDelivering} className="w-full bg-green-500 text-black font-black uppercase tracking-widest px-4 py-3.5 rounded-xl hover:bg-green-400 transition-all text-[10px] flex items-center justify-center gap-2 mt-2">
+                          <Send size={14} /> {isDelivering ? 'Delivering...' : 'Push to Final Videos'}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
                 </div>
 
                 {/* LIVE CLIENT DASHBOARD PREVIEW */}
-                <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden mt-8">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
                   
                   <h2 className="text-white text-lg font-black uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
@@ -256,51 +322,69 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Pipeline Snippet */}
-                      <div>
-                        <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Active Production</h3>
-                        {clientProjects.length === 0 ? (
-                          <p className="text-white/30 text-xs italic">No active projects.</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {clientProjects.map(project => (
-                              <div key={project.id} className="bg-[#131313] border border-white/5 rounded-xl p-3 flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                  {project.type === 'Raw Folder' ? <FolderOpen size={14} className="text-white/40" /> : <Film size={14} className="text-[#ff4d00]" />}
-                                  <div>
-                                    <p className="text-xs font-bold text-white truncate max-w-[200px] sm:max-w-[300px]">{project.title}</p>
-                                    <p className="text-[9px] text-white/40 uppercase tracking-widest">{project.type}</p>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        {/* Stage 1 Snippet */}
+                        <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
+                          <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 1: Delivery</h3>
+                          {deliveryProjects.length === 0 ? (
+                            <p className="text-white/30 text-xs italic">No raw folders.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {deliveryProjects.map(project => (
+                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <FolderOpen size={12} className="text-white/40" />
+                                    <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
                                   </div>
+                                  <span className="text-[8px] font-bold uppercase tracking-widest text-white/50 bg-white/5 px-2 py-1 rounded inline-block">{project.status}</span>
                                 </div>
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-white/50 bg-white/5 px-2 py-1 rounded">{project.status}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Vault Snippet */}
-                      <div>
-                        <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Asset Vault</h3>
-                        {clientAssets.length === 0 ? (
-                          <p className="text-white/30 text-xs italic">No delivered assets.</p>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {clientAssets.map(asset => (
-                              <div key={asset.id} className="bg-[#131313] border border-white/5 rounded-xl p-3 flex justify-between items-start">
-                                <div>
-                                  <p className="text-xs font-bold text-white truncate max-w-[150px]">{asset.title}</p>
-                                  <p className="text-[9px] text-white/40 uppercase tracking-widest mt-1">{asset.asset_type}</p>
+                        {/* Stage 2 Snippet */}
+                        <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
+                          <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 2: In Prod</h3>
+                          {productionProjects.length === 0 ? (
+                            <p className="text-white/30 text-xs italic">No videos in review.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {productionProjects.map(project => (
+                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <PlayCircle size={12} className="text-[#ff4d00]" />
+                                    <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                                  </div>
+                                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#ff4d00] bg-[#ff4d00]/10 border border-[#ff4d00]/20 px-2 py-1 rounded inline-block">{project.status}</span>
                                 </div>
-                                <a href={asset.download_url} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-[#ff4d00] hover:text-black rounded text-white/50 transition-colors">
-                                  <Download size={12} />
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
+                        {/* Stage 3 Snippet */}
+                        <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
+                          <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 3: Final</h3>
+                          {clientAssets.length === 0 ? (
+                            <p className="text-white/30 text-xs italic">No delivered assets.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {clientAssets.map(asset => (
+                                <div key={asset.id} className="bg-black/50 border border-white/5 rounded-xl p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <CheckCircle2 size={12} className="text-green-500" />
+                                    <p className="text-[10px] font-bold text-white truncate">{asset.title}</p>
+                                  </div>
+                                  <span className="text-[8px] font-bold uppercase tracking-widest text-white/50">{asset.asset_type}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
                     </div>
                   )}
                 </div>
