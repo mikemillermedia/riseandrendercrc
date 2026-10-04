@@ -229,7 +229,7 @@ export default function Hub() {
                             style={{ transform: 'translateZ(12px)' }}
                           >
                             <img 
-                              src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit.pdf" // <-- Replace with your Cloudflare / hosted cover image URL
+                              src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg" // <-- Replace with your Cloudflare / hosted cover image URL
                               alt="The Content Creator Studio Kit Cover" 
                               className="w-full h-full object-cover"
                             />
