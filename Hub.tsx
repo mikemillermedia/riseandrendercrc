@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
-  User, Film, Download, FileText, Sparkles, BookOpen, ExternalLink, AlertCircle, X
+  User, Film, Sparkles, BookOpen
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -14,11 +14,9 @@ const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, su
 
 export default function Hub() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   
   const [activeTab, setActiveTab] = useState('vault'); 
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // USER & BLUEPRINT STATE
   const [userId, setUserId] = useState<string | null>(null);
@@ -37,9 +35,6 @@ export default function Hub() {
     has_retainer: false
   });
 
-  // DIGITAL PRODUCTS / ASSETS STATE
-  const [vaultAssets, setVaultAssets] = useState<any[]>([]);
-
   // INITIALIZATION
   useEffect(() => {
     const initApp = async () => {
@@ -56,8 +51,6 @@ export default function Hub() {
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profileData) setProfile(profileData);
 
-        await fetchVaultAssets();
-
       } catch (err) {
         console.error("Initialization error:", err);
       } finally {
@@ -66,21 +59,6 @@ export default function Hub() {
     };
     initApp();
   }, [navigate]);
-
-  const fetchVaultAssets = async () => {
-    if (!supabase) return;
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('digital_assets')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (fetchError) throw fetchError;
-      setVaultAssets(data || []);
-    } catch (err: any) {
-      console.error('Fetch vault assets error:', err);
-    }
-  };
 
   const toggleGearItem = async (index: number) => {
     if (!blueprint || !supabase) return;
@@ -208,7 +186,7 @@ export default function Hub() {
               </div>
             )}
 
-            {/* ASSET VAULT TAB (NEW DIGITAL PRODUCTS & CREATOR KIT) */}
+            {/* ASSET VAULT TAB */}
             {activeTab === 'vault' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
                 <div className="text-center mb-8 md:mb-12">
@@ -241,7 +219,7 @@ export default function Hub() {
                     </div>
                     <div className="flex justify-start md:justify-end">
                       <a 
-                        href="https://drive.google.com" // Swap with your actual guide PDF / Notion link
+                        href="file:///C:/Users/immed/Downloads/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" // <-- REPLACE WITH YOUR URL LINK
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(255,77,0,0.3)] transition-all w-full md:w-auto justify-center"
@@ -251,46 +229,6 @@ export default function Hub() {
                     </div>
                   </div>
                 </div>
-
-                {/* DYNAMIC DIGITAL ASSETS GRID */}
-                <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4 flex items-center gap-2">
-                  <FolderDown size={16} className="text-[#ff4d00]" /> Digital Products
-                </h3>
-
-                {vaultAssets.length === 0 ? (
-                  <div className="bg-[#131313] border border-white/5 rounded-3xl p-8 text-center">
-                    <FileText size={32} className="text-white/20 mx-auto mb-3" />
-                    <p className="text-white/50 text-sm font-bold uppercase tracking-widest">More Tools Coming Soon</p>
-                    <p className="text-white/30 text-xs mt-1">New LUTs, overlays, and templates are added regularly.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {vaultAssets.map(asset => (
-                      <div key={asset.id} className="bg-[#131313] border border-white/5 hover:border-white/10 rounded-2xl p-5 transition-all flex flex-col justify-between group">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/50 group-hover:text-[#ff4d00] transition-colors">
-                            <FileText size={18} />
-                          </div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 bg-white/5 px-2.5 py-1 rounded-md">
-                            {asset.category || 'Digital Download'}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-white text-sm mb-1">{asset.title}</h4>
-                          <p className="text-white/50 text-xs line-clamp-2 mb-4">{asset.description}</p>
-                          <a 
-                            href={asset.download_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-bold uppercase tracking-widest text-[10px] py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors w-full"
-                          >
-                            <Download size={14} /> Download File
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
