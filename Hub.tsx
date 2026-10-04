@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
-  Home, LogOut, Video, LayoutDashboard, Compass, Lock, 
-  MessageSquare, Image as ImageIcon, Heart, MessageCircle, MoreHorizontal, 
-  Share2, User, Instagram, Camera, Repeat, Send, X, AlertCircle, Trash2, BookOpen, Pencil, Film
+  Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
+  User, Film, Download, FileText, Sparkles, BookOpen, ExternalLink, AlertCircle, X
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -15,15 +14,13 @@ const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, su
 
 export default function Hub() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const targetPostId = searchParams.get('postId');
+  const [searchParams] = useSearchParams();
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState('community'); 
+  const [activeTab, setActiveTab] = useState('vault'); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- USER & BLUEPRINT STATE ---
+  // USER & BLUEPRINT STATE
   const [userId, setUserId] = useState<string | null>(null);
   const [blueprint, setBlueprint] = useState<any>(null);
   
@@ -37,35 +34,13 @@ export default function Hub() {
     first_name: '',
     last_name: '',
     bio: '',
-    has_retainer: false // Tracks if they have access to the retainer dashboard
+    has_retainer: false
   });
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  // --- FEED STATE ---
-  const [posts, setPosts] = useState<any[]>([]);
-  const [newPostText, setNewPostText] = useState('');
-  const [posting, setPosting] = useState(false);
-  
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  
-  const [commentText, setCommentText] = useState('');
-  const [openCommentId, setOpenCommentId] = useState<string | null>(targetPostId);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [repostTarget, setRepostTarget] = useState<any>(null);
+  // DIGITAL PRODUCTS / ASSETS STATE
+  const [vaultAssets, setVaultAssets] = useState<any[]>([]);
 
-  const [editingPostId, setEditingPostId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-
-  const [allMembers, setAllMembers] = useState<any[]>([]);
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionTarget, setMentionTarget] = useState<'post' | 'comment' | null>(null);
-
-  const [fetchingVerse, setFetchingVerse] = useState(false);
-  const verseMatch = newPostText.match(/\/verse\s+([1-3]?\s*[a-zA-Z]+\s+\d+:\d+(?:-\d+)?)/i);
-
-  // --- INITIALIZATION ---
+  // INITIALIZATION
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -81,8 +56,7 @@ export default function Hub() {
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profileData) setProfile(profileData);
 
-        await fetchPosts();
-        await fetchAllMembers();
+        await fetchVaultAssets();
 
       } catch (err) {
         console.error("Initialization error:", err);
@@ -93,284 +67,19 @@ export default function Hub() {
     initApp();
   }, [navigate]);
 
-  useEffect(() => {
-    if (!isLoading && targetPostId) {
-      setTimeout(() => {
-        const element = document.getElementById(`post-${targetPostId}`);
-        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    }
-  }, [isLoading, targetPostId]);
-
-  // --- DATA FETCHING METHODS ---
-  const fetchAllMembers = async () => {
-    if(!supabase) return;
-    const { data } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, username');
-    if (data) setAllMembers(data);
-  };
-
-  const fetchPosts = async () => {
-    if(!supabase) return;
+  const fetchVaultAssets = async () => {
+    if (!supabase) return;
     try {
       const { data, error: fetchError } = await supabase
-        .from('posts')
-        .select(`
-          *, 
-          profiles:user_id (first_name, last_name, username, avatar_url, instagram_handle), 
-          post_likes (user_id), 
-          comments (*, profiles:user_id (first_name, last_name, username, avatar_url)),
-          original_post:original_post_id (
-            id, content, media_url, created_at,
-            profiles:user_id (first_name, last_name, username, avatar_url, instagram_handle)
-          )
-        `)
+        .from('digital_assets')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (fetchError) throw fetchError;
-      setPosts(data || []);
+      setVaultAssets(data || []);
     } catch (err: any) {
-      console.error('Fetch error:', err);
+      console.error('Fetch vault assets error:', err);
     }
-  };
-
-  // --- PROFILE ACTIONS ---
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!event.target.files || event.target.files.length === 0 || !supabase || !userId) return;
-      setIsUploadingAvatar(true);
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${userId}-${Math.random()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      
-      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
-      await fetchPosts();
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      alert('Error uploading avatar. Did you create the "avatars" public bucket?');
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!supabase || !userId) return;
-    setIsSavingProfile(true);
-    try {
-      await supabase.from('profiles').update({
-        display_name: profile.display_name,
-        username: profile.username.replace('@', ''),
-        instagram_handle: profile.instagram_handle.replace('@', ''),
-      }).eq('id', userId);
-      alert("Profile saved successfully!");
-      fetchPosts();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save profile.");
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  // --- FEED ACTIONS ---
-  const handleFetchVerse = async () => {
-    if (!verseMatch) return;
-    setFetchingVerse(true);
-    try {
-      const response = await fetch(`https://bible-api.com/${encodeURIComponent(verseMatch[1])}`);
-      const data = await response.json();
-      
-      if (data.text) {
-         const cleanText = data.text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-         const replacement = `"${cleanText}" - ${data.reference}`;
-         setNewPostText(newPostText.replace(verseMatch[0], replacement));
-      } else {
-         setError("Could not find that verse. Please check the spelling!");
-      }
-    } catch (e) {
-      setError("Bible API is currently unavailable.");
-    }
-    setFetchingVerse(false);
-  };
-
-  const handlePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!supabase || !userId) return;
-    if (!newPostText.trim() && !mediaFile && !repostTarget) return; 
-    
-    setPosting(true);
-    setError(null);
-    let media_url = null;
-
-    try {
-      if (mediaFile) {
-        const fileExt = mediaFile.name.split('.').pop();
-        const fileName = `${userId}/${Math.random()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('setups').upload(fileName, mediaFile);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('setups').getPublicUrl(fileName);
-        media_url = publicUrl;
-      }
-
-      const { data: newPostData, error: postError } = await supabase.from('posts').insert([{ 
-        user_id: userId, 
-        content: newPostText.trim(), 
-        media_url,
-        original_post_id: repostTarget?.id || null 
-      }]).select().single();
-      
-      if (postError) throw postError;
-
-      if (repostTarget && repostTarget.user_id !== userId) {
-        await supabase.from('notifications').insert([{
-          user_id: repostTarget.user_id,
-          actor_id: userId,
-          type: 'repost',
-          post_id: newPostData.id
-        }]);
-      }
-
-      setNewPostText('');
-      setMediaFile(null);
-      setMediaPreview(null);
-      setRepostTarget(null);
-      await fetchPosts();
-    } catch (err: any) {
-      setError(err.message);
-    }
-    setPosting(false);
-  };
-
-  const saveEdit = async (postId: string) => {
-    if (!editContent.trim() || !supabase) return;
-    try {
-      await supabase.from('posts').update({ content: editContent.trim(), is_edited: true }).eq('id', postId);
-      setEditingPostId(null);
-      fetchPosts();
-    } catch (e) { console.error(e); }
-  };
-
-  const toggleLike = async (postId: string, currentLikes: any[] = []) => {
-    if (!userId || !supabase) return;
-    const isLiked = currentLikes.some(like => like.user_id === userId);
-    try {
-      if (isLiked) {
-        await supabase.from('post_likes').delete().match({ post_id: postId, user_id: userId });
-      } else {
-        await supabase.from('post_likes').insert([{ post_id: postId, user_id: userId }]);
-        const post = posts.find(p => p.id === postId);
-        if (post && post.user_id !== userId) {
-          await supabase.from('notifications').insert([{ user_id: post.user_id, actor_id: userId, type: 'post_like', post_id: postId }]);
-        }
-      }
-      fetchPosts();
-    } catch (e) { console.error(e); }
-  };
-
-  const submitComment = async (postId: string) => {
-    if (!commentText.trim() || !userId || !supabase) return;
-    try {
-      await supabase.from('comments').insert([{ post_id: postId, user_id: userId, content: commentText.trim() }]);
-      const post = posts.find(p => p.id === postId);
-      if (post && post.user_id !== userId) {
-        await supabase.from('notifications').insert([{ user_id: post.user_id, actor_id: userId, type: 'new_comment', post_id: postId }]);
-      }
-      setCommentText('');
-      fetchPosts();
-    } catch (e) { console.error(e); }
-  };
-
-  const handleShare = async (postId: string) => {
-    const url = `${window.location.origin}/hub?tab=community&postId=${postId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedId(postId);
-      setTimeout(() => setCopiedId(null), 2000); 
-    } catch (err) { console.error('Failed to copy link', err); }
-  };
-
-  const initiateRepost = (post: any) => {
-    setRepostTarget(post.original_post || post);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
-  };
-
-  const deletePost = async (postId: string) => {
-    if (!supabase || !window.confirm("Are you sure you want to delete this post?")) return;
-    try {
-      await supabase.from('posts').delete().eq('id', postId);
-      fetchPosts();
-    } catch (e) { console.error(e); }
-  };
-
-  const handleTextInput = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, target: 'post' | 'comment') => {
-    const val = e.target.value;
-    if (target === 'post') setNewPostText(val);
-    if (target === 'comment') setCommentText(val);
-
-    const cursorPosition = e.target.selectionStart || 0;
-    const textBeforeCursor = val.slice(0, cursorPosition);
-    const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
-
-    if (match) {
-      setMentionQuery(match[1].toLowerCase());
-      setMentionTarget(target);
-    } else {
-      setMentionQuery(null);
-      setMentionTarget(null);
-    }
-  };
-
-  const insertMention = (member: any) => {
-    const mentionName = `@${member.username || member.first_name || 'user'}`.replace(/\s+/g, '');
-    if (mentionTarget === 'post') {
-      const newText = newPostText.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1${mentionName} `);
-      setNewPostText(newText);
-    } else if (mentionTarget === 'comment') {
-      const newText = commentText.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1${mentionName} `);
-      setCommentText(newText);
-    }
-    setMentionQuery(null);
-    setMentionTarget(null);
-  };
-
-  const renderContentWithMentions = (text: string) => {
-    if (!text) return null;
-    return text.split(/(@\w+)/g).map((part, index) => {
-      if (part.startsWith('@')) {
-        return <span key={index} className="text-[#ff4d00] font-medium cursor-pointer hover:underline">{part}</span>;
-      }
-      return part;
-    });
-  };
-
-  const filteredMentions = mentionQuery !== null
-    ? allMembers.filter(m => {
-        const fullName = `${m.first_name || ''} ${m.last_name || ''} ${m.username || ''}`.toLowerCase();
-        return fullName.includes(mentionQuery);
-      }).slice(0, 5) 
-    : [];
-
-  const MentionDropdown = () => {
-    if (mentionQuery === null || filteredMentions.length === 0) return null;
-    return (
-      <div className="absolute bottom-[calc(100%+8px)] left-0 w-64 bg-[#131313] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
-        <div className="p-2 text-[10px] font-bold text-white/40 uppercase tracking-widest border-b border-white/5 bg-white/5">Mentions</div>
-        {filteredMentions.map(m => (
-          <div key={m.id} onClick={() => insertMention(m)} className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer transition-colors">
-            <div className="w-6 h-6 rounded-full bg-black overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
-              {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : <User size={12} className="text-white/20" />}
-            </div>
-            <span className="text-sm font-medium text-white truncate">{m.first_name} @{m.username}</span>
-          </div>
-        ))}
-      </div>
-    );
   };
 
   const toggleGearItem = async (index: number) => {
@@ -387,12 +96,6 @@ export default function Hub() {
     catch (error) { console.error(error); } 
     finally { navigate('/'); }
   };
-
-  const UserAvatar = ({ url, letter, size = "w-10 h-10", textClass = "text-sm" }: { url?: string | null, letter: string, size?: string, textClass?: string }) => (
-    <div className={`${size} rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center shrink-0 overflow-hidden relative`}>
-      {url ? <img src={url} alt="Avatar" className="w-full h-full object-cover" /> : <span className={`text-white/70 font-bold uppercase ${textClass}`}>{letter}</span>}
-    </div>
-  );
 
   return (
     <div className="h-screen bg-[#050505] text-[#F5F5F0] font-sans flex flex-col md:flex-row overflow-hidden">
@@ -418,8 +121,8 @@ export default function Hub() {
             <LayoutDashboard size={18} /> My Blueprint
           </button>
           
-          <button onClick={() => setActiveTab('community')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'community' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
-            <Compass size={18} /> Kingdom Network
+          <button onClick={() => setActiveTab('vault')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <FolderDown size={18} /> Asset Vault
           </button>
 
           {profile.has_retainer && (
@@ -488,19 +191,6 @@ export default function Hub() {
                         )}
                       </div>
                     </div>
-                    <div className="bg-[#131313] border border-[#ff4d00]/20 p-6 md:p-8 rounded-3xl shadow-[0_0_30px_rgba(255,77,0,0.05)] flex flex-col relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-                      <div className="flex items-center gap-3 mb-2 relative z-10 flex-wrap">
-                        <MessageSquare className="text-[#ff4d00]" size={24} />
-                        <h3 className="text-xl font-black uppercase tracking-tight text-white">Director's Hotline</h3>
-                        <span className="bg-[#ff4d00]/20 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border border-[#ff4d00]/30">Premium</span>
-                      </div>
-                      <p className="text-white/50 text-sm mb-6 relative z-10 max-w-2xl">Stuck on a tech issue? Drop a quick video or message here.</p>
-                      <div className="flex flex-col sm:flex-row gap-2 relative z-10">
-                        <input type="text" placeholder="Type your issue or drop a video link..." className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#ff4d00] text-white transition-colors" />
-                        <button className="bg-[#ff4d00] text-black font-black uppercase tracking-wider px-8 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg w-full sm:w-auto">Send</button>
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   <div className="relative rounded-3xl overflow-hidden border border-white/5 mt-4">
@@ -518,245 +208,89 @@ export default function Hub() {
               </div>
             )}
 
-            {/* KINGDOM NETWORK TAB */}
-            {activeTab === 'community' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
-                <div className="text-center mb-8 md:mb-10">
-                  <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">Kingdom Network</h1>
-                  <p className="text-white/50 text-xs md:text-sm">Connect, collaborate, and share your space.</p>
+            {/* ASSET VAULT TAB (NEW DIGITAL PRODUCTS & CREATOR KIT) */}
+            {activeTab === 'vault' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
+                <div className="text-center mb-8 md:mb-12">
+                  <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-3 inline-block">
+                    Digital Resources
+                  </span>
+                  <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-2">
+                    Asset <span className="text-[#ff4d00]">Vault</span>
+                  </h1>
+                  <p className="text-white/50 text-xs md:text-sm max-w-lg mx-auto">
+                    Exclusive guides, templates, and creator tools engineered for high-end content production.
+                  </p>
                 </div>
 
-                {error && (
-                  <div className="mb-4 bg-red-500/10 text-red-400 p-3 rounded-xl flex items-center gap-2 text-sm">
-                    <AlertCircle size={16} />
-                    <p>{error}</p>
-                    <button onClick={() => setError(null)} className="ml-auto"><X size={14}/></button>
+                {/* FEATURED: CREATOR KIT GUIDE */}
+                <div className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-6 md:p-8 mb-10 relative overflow-hidden shadow-[0_0_30px_rgba(255,77,0,0.1)]">
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-[#ff4d00]/10 rounded-full blur-[90px] pointer-events-none" />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center relative z-10">
+                    <div className="md:col-span-2 space-y-3">
+                      <div className="flex items-center gap-2 text-[#ff4d00] text-xs font-bold uppercase tracking-widest">
+                        <Sparkles size={16} /> Official Guide
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-black uppercase text-white tracking-tight">
+                        Creator Kit Guide
+                      </h2>
+                      <p className="text-white/60 text-xs md:text-sm leading-relaxed">
+                        The definitive blueprint for camera settings, lighting blueprints, audio chains, and post-production workflows used at Rise & Render.
+                      </p>
+                    </div>
+                    <div className="flex justify-start md:justify-end">
+                      <a 
+                        href="https://drive.google.com" // Swap with your actual guide PDF / Notion link
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(255,77,0,0.3)] transition-all w-full md:w-auto justify-center"
+                      >
+                        <BookOpen size={16} /> Open Guide
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DYNAMIC DIGITAL ASSETS GRID */}
+                <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4 flex items-center gap-2">
+                  <FolderDown size={16} className="text-[#ff4d00]" /> Digital Products
+                </h3>
+
+                {vaultAssets.length === 0 ? (
+                  <div className="bg-[#131313] border border-white/5 rounded-3xl p-8 text-center">
+                    <FileText size={32} className="text-white/20 mx-auto mb-3" />
+                    <p className="text-white/50 text-sm font-bold uppercase tracking-widest">More Tools Coming Soon</p>
+                    <p className="text-white/30 text-xs mt-1">New LUTs, overlays, and templates are added regularly.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {vaultAssets.map(asset => (
+                      <div key={asset.id} className="bg-[#131313] border border-white/5 hover:border-white/10 rounded-2xl p-5 transition-all flex flex-col justify-between group">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/50 group-hover:text-[#ff4d00] transition-colors">
+                            <FileText size={18} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 bg-white/5 px-2.5 py-1 rounded-md">
+                            {asset.category || 'Digital Download'}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-white text-sm mb-1">{asset.title}</h4>
+                          <p className="text-white/50 text-xs line-clamp-2 mb-4">{asset.description}</p>
+                          <a 
+                            href={asset.download_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-bold uppercase tracking-widest text-[10px] py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors w-full"
+                          >
+                            <Download size={14} /> Download File
+                          </a>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-
-                <div className="bg-[#131313] p-4 md:p-5 rounded-3xl border border-white/10 mb-8 shadow-lg focus-within:border-[#ff4d00]/50 transition-colors relative">
-                  {mentionTarget === 'post' && <MentionDropdown />}
-                  <form onSubmit={handlePost} className="flex gap-3 md:gap-4">
-                    <UserAvatar url={profile.avatar_url} letter={profile.avatar_letter} />
-                    <div className="flex-1 pt-2">
-                      <textarea 
-                        value={newPostText} 
-                        onChange={e => handleTextInput(e, 'post')} 
-                        placeholder={repostTarget ? "Add a quote to this repost..." : "Share your setup, ask for feedback... (Use @ to tag)"} 
-                        className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-sm placeholder:text-white/30 resize-none p-0" 
-                        rows={newPostText.split('\n').length > 1 ? newPostText.split('\n').length : 2}
-                      />
-                      
-                      {mediaPreview && (
-                        <div className="mt-3 relative inline-block">
-                          {mediaFile?.type.startsWith('video/') ? (
-                            <video src={mediaPreview} controls loop playsInline className="rounded-xl max-h-64 border border-white/10" />
-                          ) : (
-                            <img src={mediaPreview} className="rounded-xl max-h-64 border border-white/10" />
-                          )}
-                          <button type="button" onClick={() => {setMediaFile(null); setMediaPreview(null);}} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm p-1.5 text-white rounded-full hover:bg-black transition-colors"><X size={14}/></button>
-                        </div>
-                      )}
-
-                      {repostTarget && (
-                        <div className="mt-3 p-3 border border-white/10 rounded-xl relative bg-black/20">
-                          <button type="button" onClick={() => setRepostTarget(null)} className="absolute top-2 right-2 text-white/40 hover:text-white transition-colors"><X size={14}/></button>
-                          <div className="flex items-center gap-2 mb-1 text-white/40">
-                            <Repeat size={12} />
-                            <p className="text-[10px] font-bold uppercase tracking-wider">Quote Repost</p>
-                          </div>
-                          <p className="text-sm text-white/80 line-clamp-2">{repostTarget.content}</p>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-                         <div className="flex items-center gap-4 text-white/40">
-                           <label className="cursor-pointer hover:text-[#ff4d00] transition-colors p-2 rounded-full hover:bg-white/5">
-                             <ImageIcon size={18} />
-                             <input type="file" className="hidden" accept="image/*,video/*" onChange={e => {
-                               if (e.target.files?.[0]) { setMediaFile(e.target.files[0]); setMediaPreview(URL.createObjectURL(e.target.files[0])); }
-                             }} />
-                           </label>
-                           
-                           {verseMatch && (
-                             <button type="button" onClick={handleFetchVerse} disabled={fetchingVerse} className="flex items-center gap-1.5 text-xs text-[#ff4d00] hover:text-orange-400 transition-colors bg-[#ff4d00]/10 px-3 py-1.5 rounded-full">
-                               <BookOpen size={14} /> {fetchingVerse ? 'Fetching...' : `Fetch ${verseMatch[1]}`}
-                             </button>
-                           )}
-                         </div>
-
-                         <button type="submit" disabled={posting || (!newPostText.trim() && !mediaFile && !repostTarget)} className="bg-[#ff4d00] disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed text-black px-6 py-2 rounded-full font-bold text-sm transition-colors shadow-lg">
-                           {posting ? 'Posting...' : 'Post'}
-                         </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-
-                <div className="flex flex-col space-y-6">
-                  {posts.length === 0 && <p className="text-center text-white/40 italic">No posts yet. Be the first to share!</p>}
-                  
-                  {posts.map((post) => {
-                    const postLikes = post.post_likes || [];
-                    const postComments = post.comments || [];
-                    const isLiked = postLikes.some((l: any) => l.user_id === userId);
-                    const isTargeted = targetPostId === post.id;
-                    const isMyPost = userId === post.user_id;
-                    const isVideoMedia = post.media_url?.match(/\.(mp4|webm|ogg|mov)$/i);
-
-                    return (
-                      <div key={post.id} id={`post-${post.id}`} className={`bg-transparent group ${isTargeted ? 'bg-white/5 p-4 -mx-4 rounded-3xl' : ''}`}>
-                        
-                        {post.original_post && (
-                          <div className="flex items-center gap-2 text-white/40 text-[11px] font-bold mb-3 ml-12 md:ml-14">
-                            <Repeat size={12} /> Reposted
-                          </div>
-                        )}
-
-                        <div className="flex gap-3 md:gap-4">
-                          <div className="flex flex-col items-center">
-                            <UserAvatar url={post.profiles?.avatar_url} letter={post.profiles?.first_name?.charAt(0) || 'U'} />
-                            {(openCommentId === post.id || postComments.length > 0) && (
-                               <div className="w-[1.5px] h-full bg-white/5 mt-3 rounded-full group-last:hidden"></div>
-                            )}
-                          </div>
-
-                          <div className="flex-grow min-w-0 pb-2">
-                            <div className="flex justify-between items-start mb-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-white text-sm hover:underline cursor-pointer truncate">
-                                  {post.profiles?.first_name || 'Member'} {post.profiles?.last_name || ''}
-                                </span>
-                                <span className="text-white/30 text-xs truncate hidden sm:inline">@{post.profiles?.username}</span>
-                                {post.profiles?.instagram_handle && (
-                                  <a href={`https://instagram.com/${post.profiles.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-[#E1306C] transition-colors">
-                                    <Instagram size={14} />
-                                  </a>
-                                )}
-                                <span className="text-white/30 text-xs shrink-0 ml-1">· {new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                                {post.is_edited && <span className="text-[10px] text-white/20 italic ml-1">(edited)</span>}
-                              </div>
-                              
-                              {isMyPost && (
-                                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} className="text-white/20 hover:text-blue-400 transition-colors"><Pencil size={14} /></button>
-                                  <button onClick={() => deletePost(post.id)} className="text-white/20 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {editingPostId === post.id ? (
-                              <div className="mb-3 mt-2 bg-black/40 p-3 rounded-xl border border-[#ff4d00]/30">
-                                <textarea
-                                  value={editContent}
-                                  onChange={(e) => setEditContent(e.target.value)}
-                                  className="w-full bg-transparent border-none text-[#F5F5F0] focus:ring-0 text-sm resize-none p-0"
-                                  rows={editContent.split('\n').length > 1 ? editContent.split('\n').length : 2}
-                                />
-                                <div className="flex justify-end gap-3 mt-2 pt-2 border-t border-white/10">
-                                  <button onClick={() => setEditingPostId(null)} className="text-xs text-white/40 hover:text-white">Cancel</button>
-                                  <button onClick={() => saveEdit(post.id)} className="bg-[#ff4d00] text-black px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">Save</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-white/80 text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">
-                                {renderContentWithMentions(post.content)}
-                              </p>
-                            )}
-
-                            {post.media_url && (
-                              <div className="rounded-2xl overflow-hidden mb-4 border border-white/5 bg-black/20">
-                                {isVideoMedia ? (
-                                  <video src={post.media_url} controls playsInline className="w-full max-h-96 object-contain" />
-                                ) : (
-                                  <img src={post.media_url} className="w-full max-h-96 object-cover" />
-                                )}
-                              </div>
-                            )}
-
-                            {post.original_post && (
-                              <div className="mt-2 mb-4 p-4 border border-white/10 rounded-2xl bg-[#131313]/50">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <UserAvatar url={post.original_post.profiles?.avatar_url} letter={post.original_post.profiles?.first_name?.charAt(0) || 'U'} size="w-5 h-5" textClass="text-[10px]" />
-                                  <span className="font-bold text-white text-xs">{post.original_post.profiles?.first_name} {post.original_post.profiles?.last_name}</span>
-                                </div>
-                                <p className="text-white/70 text-sm line-clamp-3">{post.original_post.content}</p>
-                                {post.original_post.media_url && (
-                                  <div className="mt-2 rounded-xl overflow-hidden max-h-32 border border-white/5">
-                                    <img src={post.original_post.media_url} className="w-full h-full object-cover" />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-6 mt-1">
-                              <button onClick={() => toggleLike(post.id, postLikes)} className={`flex items-center gap-1.5 transition-colors group/btn ${isLiked ? 'text-red-500' : 'text-white/40 hover:text-red-400'}`}>
-                                <div className={`p-1.5 rounded-full ${isLiked ? 'bg-red-500/10' : 'group-hover/btn:bg-red-400/10'}`}>
-                                  <Heart size={16} className={isLiked ? 'fill-current' : ''} />
-                                </div>
-                                <span className="text-xs font-medium">{postLikes.length > 0 ? postLikes.length : ''}</span>
-                              </button>
-                              
-                              <button onClick={() => setOpenCommentId(openCommentId === post.id ? null : post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-blue-400 transition-colors group/btn">
-                                <div className={`p-1.5 rounded-full ${openCommentId === post.id ? 'bg-blue-400/10 text-blue-400' : 'group-hover/btn:bg-blue-400/10'}`}>
-                                  <MessageCircle size={16} className={openCommentId === post.id ? 'fill-current' : ''} />
-                                </div>
-                                <span className="text-xs font-medium">{postComments.length > 0 ? postComments.length : ''}</span>
-                              </button>
-
-                              <button onClick={() => initiateRepost(post)} className="flex items-center gap-1.5 text-white/40 hover:text-green-400 transition-colors group/btn">
-                                <div className="p-1.5 rounded-full group-hover/btn:bg-green-400/10"><Repeat size={16} /></div>
-                              </button>
-
-                              <button onClick={() => handleShare(post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-purple-400 transition-colors group/btn">
-                                <div className="p-1.5 rounded-full group-hover/btn:bg-purple-400/10"><Share2 size={16} /></div>
-                                {copiedId === post.id && <span className="text-[10px] text-purple-400">Copied!</span>}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {(openCommentId === post.id || postComments.length > 0) && (
-                          <div className="mt-2 pl-12 md:pl-14 space-y-4">
-                            {postComments.map((comment: any) => (
-                              <div key={comment.id} className="flex gap-3 relative">
-                                <UserAvatar url={comment.profiles?.avatar_url} letter={comment.profiles?.first_name?.charAt(0) || 'U'} size="w-6 h-6" textClass="text-[10px]" />
-                                <div className="flex-1 bg-black/40 rounded-2xl p-3 border border-white/5">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-bold text-white text-xs">{comment.profiles?.first_name} {comment.profiles?.last_name}</span>
-                                    <span className="text-white/30 text-[10px]">@{comment.profiles?.username} · {new Date(comment.created_at).toLocaleDateString()}</span>
-                                  </div>
-                                  <p className="text-white/70 text-xs whitespace-pre-wrap break-words">{renderContentWithMentions(comment.content)}</p>
-                                </div>
-                              </div>
-                            ))}
-
-                            {openCommentId === post.id && (
-                              <div className="flex items-start gap-3 mt-4 animate-in fade-in slide-in-from-top-2 relative">
-                                {mentionTarget === 'comment' && <MentionDropdown />}
-                                <UserAvatar url={profile.avatar_url} letter={profile.avatar_letter} size="w-8 h-8" textClass="text-xs" />
-                                <div className="flex-1 bg-black border border-[#ff4d00]/30 rounded-2xl flex items-center pr-2 focus-within:border-[#ff4d00] transition-colors">
-                                  <input 
-                                    type="text" 
-                                    autoFocus
-                                    value={commentText}
-                                    onChange={(e) => handleTextInput(e, 'comment')}
-                                    placeholder={`Reply to @${post.profiles?.username || 'member'}...`}
-                                    className="flex-1 bg-transparent border-none text-white text-xs md:text-sm px-4 py-3 focus:outline-none"
-                                    onKeyDown={(e) => e.key === 'Enter' && submitComment(post.id)}
-                                  />
-                                  <button onClick={() => submitComment(post.id)} disabled={!commentText.trim()} className="p-2 text-[#ff4d00] disabled:text-white/20 hover:bg-[#ff4d00]/10 rounded-xl transition-colors">
-                                    <Send size={16} />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
 
@@ -765,76 +299,14 @@ export default function Hub() {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
                   <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Profile</h1>
-                  <p className="text-white/50 text-xs md:text-sm">Manage how you appear in the Kingdom Network.</p>
+                  <p className="text-white/50 text-xs md:text-sm">Manage your Sanctuary account details.</p>
                 </div>
-
-                <form onSubmit={handleSaveProfile} className="bg-[#131313] border border-white/10 rounded-3xl p-5 md:p-8 shadow-xl">
-                  <div className="flex items-center gap-4 md:gap-6 mb-8">
-                    <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                      <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-[#1a1a1a] border-2 border-white/10 flex items-center justify-center text-3xl font-black text-white/50 overflow-hidden group-hover:border-[#ff4d00] transition-colors">
-                        {isUploadingAvatar ? (
-                           <div className="w-5 h-5 border-2 border-[#ff4d00] border-t-transparent rounded-full animate-spin" />
-                        ) : profile.avatar_url ? (
-                           <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                           profile.avatar_letter
-                        )}
-                      </div>
-                      <div className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <Camera size={24} className="text-white" />
-                      </div>
-                      <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
-                    </div>
-                    <div>
-                      <h3 className="text-base md:text-lg font-bold text-white">Profile Picture</h3>
-                      <p className="text-xs text-white/40 mt-1">Tap the image to upload a new avatar.</p>
-                    </div>
+                <div className="bg-[#131313] border border-white/10 rounded-3xl p-5 md:p-8 shadow-xl space-y-4">
+                  <div>
+                    <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Display Name</label>
+                    <input type="text" readOnly value={profile.display_name} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white/70" />
                   </div>
-
-                  <div className="space-y-5">
-                    <div>
-                      <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Display Name</label>
-                      <input 
-                        type="text" 
-                        value={profile.display_name} 
-                        onChange={(e) => setProfile({...profile, display_name: e.target.value, avatar_letter: profile.avatar_url ? profile.avatar_letter : e.target.value.charAt(0).toUpperCase()})}
-                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white transition-colors"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Username (For @Mentions)</label>
-                      <div className="flex relative">
-                        <span className="absolute left-4 top-3 text-white/30 font-bold">@</span>
-                        <input 
-                          type="text" 
-                          value={profile.username} 
-                          onChange={(e) => setProfile({...profile, username: e.target.value.replace('@', '')})}
-                          className="w-full bg-black border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white transition-colors"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Instagram Handle</label>
-                      <div className="flex relative">
-                        <span className="absolute left-4 top-3 text-white/30"><Instagram size={16} /></span>
-                        <input 
-                          type="text" 
-                          value={profile.instagram_handle} 
-                          placeholder="e.g. mike.creates"
-                          onChange={(e) => setProfile({...profile, instagram_handle: e.target.value.replace('@', '')})}
-                          className="w-full bg-black border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-[#ff4d00] text-white transition-colors"
-                        />
-                      </div>
-                    </div>
-                    <div className="pt-6 border-t border-white/5 mt-6">
-                      <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] text-black font-black uppercase tracking-wider px-8 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg disabled:opacity-50 w-full md:w-auto">
-                        {isSavingProfile ? 'Saving...' : 'Save Profile'}
-                      </button>
-                    </div>
-                  </div>
-                </form>
+                </div>
               </div>
             )}
 
@@ -854,9 +326,9 @@ export default function Hub() {
           <LayoutDashboard size={20} />
           <span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
         </button>
-        <button onClick={() => setActiveTab('community')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'community' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
-          <Compass size={20} />
-          <span className="text-[9px] uppercase font-bold tracking-wider">Network</span>
+        <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+          <FolderDown size={20} />
+          <span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
         </button>
         {profile.has_retainer && (
           <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
