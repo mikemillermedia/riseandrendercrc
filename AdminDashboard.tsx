@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, FolderOpen, Send, CheckCircle2, AlertTriangle, 
-  Film, Smartphone, PlayCircle, MessageSquare, X, ShieldCheck, Trash2, Pencil 
+  Film, Smartphone, PlayCircle, MessageSquare, X, ShieldCheck, Trash2, Pencil, User 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 import VideoReviewRoom from './VideoReviewRoom';
 
-// Initializes Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -33,7 +32,7 @@ const AdminDashboard: React.FC = () => {
   // Client Snippet State
   const [clientProjects, setClientProjects] = useState<any[]>([]);
   const [clientAssets, setClientAssets] = useState<any[]>([]);
-  const [projectComments, setProjectComments] = useState<any[]>([]); // NEW: Comment Tracker
+  const [projectComments, setProjectComments] = useState<any[]>([]);
   const [isLoadingClientData, setIsLoadingClientData] = useState(false);
 
   // Admin Review Room State
@@ -68,7 +67,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (selectedClient && supabase) {
       fetchClientData(selectedClient.id);
-      setIsChatOpen(false); // Close chat when switching clients
+      setIsChatOpen(false);
     }
   }, [selectedClient]);
 
@@ -76,10 +75,9 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (!selectedClient || !supabase) return;
     
-    // Subscribe to video comments to update bubbles instantly
     const commentChannel = supabase.channel(`admin_comments_${selectedClient.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments' }, () => {
-        fetchClientData(selectedClient.id); // Re-fetch silently to update comment count
+        fetchClientData(selectedClient.id);
       }).subscribe();
 
     if (isChatOpen) {
@@ -138,7 +136,6 @@ const AdminDashboard: React.FC = () => {
       setClientProjects(projects);
       setClientAssets(assetRes.data || []);
 
-      // Fetch Comment Counts for Bubbles
       if (projects.length > 0) {
         const projectIds = projects.map(p => p.id);
         const { data: comments } = await supabase!.from('video_comments').select('id, project_id, is_resolved').in('project_id', projectIds);
@@ -286,7 +283,7 @@ const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
-          {/* LEFT SIDEBAR: CLIENT LIST */}
+          {/* LEFT SIDEBAR: CLIENT LIST WITH AVATARS */}
           <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-12 w-full">
             
             {dbError && (
@@ -308,25 +305,38 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-white/40 text-sm">No clients found.</p>
               ) : (
                 <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                  {clients.map(client => (
-                    <button
-                      key={client.id}
-                      onClick={() => setSelectedClient(client)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between ${
-                        selectedClient?.id === client.id 
-                          ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 text-[#ff4d00]' 
-                          : 'bg-black border-white/5 text-white hover:border-white/20'
-                      }`}
-                    >
-                      <span className="font-bold text-sm truncate">{client.first_name || "Unknown"} {client.last_name || client.username || ""}</span>
-                    </button>
-                  ))}
+                  {clients.map(client => {
+                    const clientName = client.display_name || `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.username || "Creator";
+                    return (
+                      <button
+                        key={client.id}
+                        onClick={() => setSelectedClient(client)}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
+                          selectedClient?.id === client.id 
+                            ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 text-[#ff4d00]' 
+                            : 'bg-black border-white/5 text-white hover:border-white/20'
+                        }`}
+                      >
+                        {client.avatar_url ? (
+                          <img src={client.avatar_url} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                            {client.first_name ? client.first_name[0] : 'C'}
+                          </div>
+                        )}
+                        <div className="truncate">
+                          <p className="font-bold text-sm truncate">{clientName}</p>
+                          {client.username && <p className="text-[10px] text-white/40 truncate">{client.username}</p>}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          {/* RIGHT CONTENT: CLIENT MANAGEMENT & PREVIEW */}
+          {/* RIGHT CONTENT: CLIENT MANAGEMENT */}
           <div className="lg:col-span-2 w-full space-y-8">
             {selectedClient ? (
               <>
@@ -418,14 +428,26 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* LIVE CLIENT DASHBOARD PREVIEW & DIRECT LINE */}
+                {/* CLIENT DASHBOARD PREVIEW */}
                 <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden mt-8">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
                   
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-white/10 pb-4 gap-4">
-                    <h2 className="text-white text-lg font-black uppercase tracking-widest">
-                      Client View: <span className="text-[#ff4d00]">{selectedClient.first_name}</span>
-                    </h2>
+                    <div className="flex items-center gap-3">
+                      {selectedClient.avatar_url ? (
+                        <img src={selectedClient.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-white/20" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/30 flex items-center justify-center text-[#ff4d00] font-black uppercase">
+                          {selectedClient.first_name ? selectedClient.first_name[0] : 'C'}
+                        </div>
+                      )}
+                      <div>
+                        <h2 className="text-white text-lg font-black uppercase tracking-widest">
+                          Client View: <span className="text-[#ff4d00]">{selectedClient.display_name || selectedClient.first_name || 'Creator'}</span>
+                        </h2>
+                        {selectedClient.username && <p className="text-xs text-white/40">{selectedClient.username}</p>}
+                      </div>
+                    </div>
                     
                     <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors shadow-lg">
                       <MessageSquare size={16} className="text-[#ff4d00]" /> Open Direct Line
@@ -473,7 +495,7 @@ const AdminDashboard: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Stage 2 (WITH REVIEW ROOM LAUNCHER & BUBBLE) */}
+                        {/* Stage 2 */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 2: In Prod</h3>
                           {productionProjects.length === 0 ? <p className="text-white/30 text-xs italic">No videos in review.</p> : (
@@ -495,7 +517,6 @@ const AdminDashboard: React.FC = () => {
                                         <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
                                       </div>
                                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
-                                        {/* ADMIN REVIEW BUTTON */}
                                         <button onClick={() => setActiveReviewProject(project)} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Open Review Room"><PlayCircle size={12} /></button>
                                         <button onClick={() => openEditModal(project, 'project')} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Edit Details"><Pencil size={12} /></button>
                                         <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
@@ -548,7 +569,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* EDIT MODAL OVERLAY */}
+      {/* EDIT MODAL */}
       <AnimatePresence>
         {editModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -636,10 +657,18 @@ const AdminDashboard: React.FC = () => {
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-[#0d0d0d] border-l border-white/10 z-50 flex flex-col shadow-2xl">
               <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#131313]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/30 flex items-center justify-center text-[#ff4d00]"><ShieldCheck size={20} /></div>
+                  {selectedClient.avatar_url ? (
+                    <img src={selectedClient.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-[#ff4d00]/50 shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[#ff4d00]/10 border border-[#ff4d00]/30 flex items-center justify-center text-[#ff4d00] shrink-0 font-bold">
+                      {selectedClient.first_name ? selectedClient.first_name[0] : <User size={18} />}
+                    </div>
+                  )}
                   <div>
-                    <h3 className="font-black text-white uppercase tracking-wider text-sm">Direct Line</h3>
-                    <p className="text-[10px] text-[#ff4d00] font-bold uppercase tracking-widest">Chatting with {selectedClient.first_name}</p>
+                    <h3 className="font-black text-white uppercase tracking-wider text-sm">
+                      {selectedClient.display_name || selectedClient.first_name || 'Client Direct Line'}
+                    </h3>
+                    <p className="text-[10px] text-[#ff4d00] font-bold uppercase tracking-widest">{selectedClient.username || 'Active Chat'}</p>
                   </div>
                 </div>
                 <button onClick={() => setIsChatOpen(false)} className="p-2 text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/5"><X size={20} /></button>
@@ -650,14 +679,33 @@ const AdminDashboard: React.FC = () => {
                   <div className="h-full flex flex-col items-center justify-center text-center p-6">
                     <MessageSquare size={36} className="text-white/20 mb-3" />
                     <p className="text-white/60 text-sm font-bold mb-1">Direct Line Active</p>
-                    <p className="text-white/40 text-xs">Send a message to {selectedClient.first_name}.</p>
+                    <p className="text-white/40 text-xs">Send a message to {selectedClient.first_name || 'the client'}.</p>
                   </div>
                 ) : (
                   messages.map((msg) => (
-                    <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'admin' ? 'items-end' : 'items-start'}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-[#ff4d00] text-black font-medium rounded-tr-none' : 'bg-white/10 text-white rounded-tl-none border border-white/10'}`}>
+                    <div key={msg.id} className={`flex items-end gap-2.5 ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                      {/* CLIENT AVATAR */}
+                      {msg.sender_type !== 'admin' && (
+                        selectedClient.avatar_url ? (
+                          <img src={selectedClient.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 text-[10px] font-bold uppercase">
+                            {selectedClient.first_name ? selectedClient.first_name[0] : 'C'}
+                          </div>
+                        )
+                      )}
+
+                      {/* MESSAGE BUBBLE */}
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-[#ff4d00] text-black font-medium rounded-br-none' : 'bg-white/10 text-white rounded-bl-none border border-white/10'}`}>
                         {msg.message}
                       </div>
+
+                      {/* ADMIN AVATAR */}
+                      {msg.sender_type === 'admin' && (
+                        <div className="w-7 h-7 rounded-full bg-[#ff4d00]/20 border border-[#ff4d00]/50 flex items-center justify-center text-[#ff4d00] shrink-0 text-[10px] font-black uppercase">
+                          R
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -680,9 +728,9 @@ const AdminDashboard: React.FC = () => {
             projectId={activeReviewProject.id}
             projectTitle={activeReviewProject.title}
             videoUrl={activeReviewProject.review_link}
-            userId={selectedClient.id} // Binds the comments to the correct client project
+            userId={selectedClient.id}
             userName="Admin" 
-            isAdmin={true} // Grants Admin powers (Checkmarks & Replies)
+            isAdmin={true}
             supabase={supabase}
             onClose={() => setActiveReviewProject(null)}
           />
