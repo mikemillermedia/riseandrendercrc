@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
-import VideoReviewRoom from './VideoReviewRoom'; // <-- IMPORTED REVIEW ROOM
+import VideoReviewRoom from './VideoReviewRoom';
 
 // Initializes Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -33,6 +33,7 @@ const AdminDashboard: React.FC = () => {
   // Client Snippet State
   const [clientProjects, setClientProjects] = useState<any[]>([]);
   const [clientAssets, setClientAssets] = useState<any[]>([]);
+  const [projectComments, setProjectComments] = useState<any[]>([]); // NEW: Comment Tracker
   const [isLoadingClientData, setIsLoadingClientData] = useState(false);
 
   // Admin Review Room State
@@ -71,24 +72,36 @@ const AdminDashboard: React.FC = () => {
     }
   }, [selectedClient]);
 
-  // Chat Subscriptions
+  // Real-time Chat & Comment Subscriptions
   useEffect(() => {
-    if (!isChatOpen || !selectedClient || !supabase) return;
+    if (!selectedClient || !supabase) return;
     
-    const fetchMessages = async () => {
-      const { data } = await supabase.from('retainer_messages').select('*').eq('user_id', selectedClient.id).order('created_at', { ascending: true });
-      if (data) { setMessages(data); scrollToBottom(); }
-    };
-    
-    fetchMessages();
-
-    const channel = supabase.channel(`admin_chat_${selectedClient.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retainer_messages', filter: `user_id=eq.${selectedClient.id}` }, (payload: any) => {
-        setMessages((prev) => [...prev, payload.new]);
-        scrollToBottom();
+    // Subscribe to video comments to update bubbles instantly
+    const commentChannel = supabase.channel(`admin_comments_${selectedClient.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments' }, () => {
+        fetchClientData(selectedClient.id); // Re-fetch silently to update comment count
       }).subscribe();
-      
-    return () => { supabase.removeChannel(channel); };
+
+    if (isChatOpen) {
+      const fetchMessages = async () => {
+        const { data } = await supabase.from('retainer_messages').select('*').eq('user_id', selectedClient.id).order('created_at', { ascending: true });
+        if (data) { setMessages(data); scrollToBottom(); }
+      };
+      fetchMessages();
+
+      const chatChannel = supabase.channel(`admin_chat_${selectedClient.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retainer_messages', filter: `user_id=eq.${selectedClient.id}` }, (payload: any) => {
+          setMessages((prev) => [...prev, payload.new]);
+          scrollToBottom();
+        }).subscribe();
+        
+      return () => { 
+        supabase.removeChannel(chatChannel); 
+        supabase.removeChannel(commentChannel);
+      };
+    }
+
+    return () => { supabase.removeChannel(commentChannel); };
   }, [isChatOpen, selectedClient]);
 
   const scrollToBottom = () => setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -121,8 +134,18 @@ const AdminDashboard: React.FC = () => {
         supabase!.from('retainer_assets').select('*').eq('user_id', clientId).order('created_at', { ascending: false })
       ]);
       
-      setClientProjects(projRes.data || []);
+      const projects = projRes.data || [];
+      setClientProjects(projects);
       setClientAssets(assetRes.data || []);
+
+      // Fetch Comment Counts for Bubbles
+      if (projects.length > 0) {
+        const projectIds = projects.map(p => p.id);
+        const { data: comments } = await supabase!.from('video_comments').select('id, project_id, is_resolved').in('project_id', projectIds);
+        setProjectComments(comments || []);
+      } else {
+        setProjectComments([]);
+      }
     } catch (err) {
       console.error("Error fetching client data:", err);
     } finally {
@@ -450,28 +473,38 @@ const AdminDashboard: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Stage 2 (WITH REVIEW ROOM LAUNCHER) */}
+                        {/* Stage 2 (WITH REVIEW ROOM LAUNCHER & BUBBLE) */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 2: In Prod</h3>
                           {productionProjects.length === 0 ? <p className="text-white/30 text-xs italic">No videos in review.</p> : (
                             <div className="space-y-2">
-                              {productionProjects.map(project => (
-                                <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3 relative group overflow-hidden">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2 min-w-0 pr-2">
-                                      <PlayCircle size={12} className="text-[#ff4d00] shrink-0" />
-                                      <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                              {productionProjects.map(project => {
+                                const unresolvedCount = projectComments.filter(c => c.project_id === project.id && !c.is_resolved).length;
+                                return (
+                                  <div key={project.id} className="bg-black/50 border border-white/5 rounded-xl p-3 relative group overflow-hidden">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                                        <div className="relative">
+                                          <PlayCircle size={12} className="text-[#ff4d00] shrink-0" />
+                                          {unresolvedCount > 0 && (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full z-10 shadow-lg ring-1 ring-[#131313]">
+                                              {unresolvedCount}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
+                                      </div>
+                                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
+                                        {/* ADMIN REVIEW BUTTON */}
+                                        <button onClick={() => setActiveReviewProject(project)} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Open Review Room"><PlayCircle size={12} /></button>
+                                        <button onClick={() => openEditModal(project, 'project')} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Edit Details"><Pencil size={12} /></button>
+                                        <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
-                                      {/* NEW ADMIN REVIEW BUTTON */}
-                                      <button onClick={() => setActiveReviewProject(project)} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Open Review Room"><PlayCircle size={12} /></button>
-                                      <button onClick={() => openEditModal(project, 'project')} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Edit Details"><Pencil size={12} /></button>
-                                      <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
-                                    </div>
+                                    <span className="text-[8px] font-bold uppercase tracking-widest text-[#ff4d00] bg-[#ff4d00]/10 border border-[#ff4d00]/20 px-2 py-1 rounded inline-block">{project.status}</span>
                                   </div>
-                                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#ff4d00] bg-[#ff4d00]/10 border border-[#ff4d00]/20 px-2 py-1 rounded inline-block">{project.status}</span>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           )}
                         </div>
