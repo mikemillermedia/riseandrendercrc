@@ -15,6 +15,7 @@ const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, su
 export default function Hub() {
   const navigate = useNavigate();
   
+  // Default tab for everyone is 'vault'
   const [activeTab, setActiveTab] = useState('vault'); 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +36,7 @@ export default function Hub() {
     has_retainer: false
   });
 
-  // PROFILE SAVING STATE
+  // Profile Saving State
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -99,17 +100,12 @@ export default function Hub() {
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}-${Math.random()}.${fileExt}`;
 
-      // Upload to Supabase Storage Bucket named "avatars"
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       
-      // Update local state
       setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
-      
-      // Save directly to database
       await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
 
     } catch (error: any) {
@@ -164,22 +160,29 @@ export default function Hub() {
           <h2 className="text-xl font-black uppercase tracking-widest text-white">Sanctuary</h2>
           <p className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mt-1">Control Room</p>
         </div>
+        
         <nav className="flex-1 p-4 space-y-2 mt-2">
           
-          <button onClick={() => setActiveTab('blueprint')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
-            <LayoutDashboard size={18} /> My Blueprint
-          </button>
-          
+          {/* ALWAYS VISIBLE: Asset Vault */}
           <button onClick={() => setActiveTab('vault')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <FolderDown size={18} /> Asset Vault
           </button>
 
+          {/* UNLOCKED ONLY IF BLUEPRINT EXISTS IN DB */}
+          {blueprint && (
+            <button onClick={() => setActiveTab('blueprint')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+              <LayoutDashboard size={18} /> My Blueprint
+            </button>
+          )}
+
+          {/* UNLOCKED ONLY IF RETAINER CLIENT */}
           {profile.has_retainer && (
             <button onClick={() => setActiveTab('retainer')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'retainer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <Film size={18} /> Post-Production
             </button>
           )}
 
+          {/* ALWAYS VISIBLE: Profile */}
           <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <User size={18} /> My Profile
           </button>
@@ -205,59 +208,7 @@ export default function Hub() {
           </div>
         ) : (
           <>
-            {/* BLUEPRINT TAB */}
-            {activeTab === 'blueprint' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative max-w-6xl mx-auto md:mx-0">
-                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
-                <p className="text-white/50 text-sm md:text-base mb-6 md:mb-8">Your personalized gear list, setup instructions, and direct support access.</p>
-                
-                {blueprint ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
-                        <h3 className="text-lg font-bold text-white mb-6">Action Items / Gear to Order</h3>
-                        {blueprint.gear_list && blueprint.gear_list.length > 0 ? (
-                          <div className="space-y-3">
-                            {blueprint.gear_list.map((item: any, index: number) => (
-                              <div key={index} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors cursor-pointer" onClick={() => toggleGearItem(index)}>
-                                <input type="checkbox" checked={item.checked} readOnly className="w-5 h-5 accent-[#ff4d00] pointer-events-none shrink-0" />
-                                <span className={`text-sm ${item.checked ? 'text-white/40 line-through' : 'text-white'}`}>{item.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-white/40 text-sm italic p-4 bg-white/5 rounded-xl border border-white/5">Mike is currently building your gear list...</p>
-                        )}
-                      </div>
-                      <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 md:p-8 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl h-full min-h-[250px]">
-                        <Video size={40} className="text-[#ff4d00] mb-4" />
-                        <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
-                        <p className="text-xs text-white/50 mb-6">Watch our 1-hour session replay where we mapped out this room.</p>
-                        {blueprint.video_url ? (
-                          <a href={blueprint.video_url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-orange-500 text-black text-sm font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-colors w-full">Watch Replay</a>
-                        ) : (
-                          <button disabled className="bg-white/5 text-white/30 text-sm font-bold py-3 px-6 rounded-xl cursor-not-allowed border border-white/10 w-full">Video Processing...</button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative rounded-3xl overflow-hidden border border-white/5 mt-4">
-                    <div className="space-y-6 p-4 md:p-8 blur-md opacity-30 select-none pointer-events-none bg-[#0a0a0a]">
-                      <div className="h-48 bg-[#131313] rounded-3xl border border-white/10"></div>
-                    </div>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/70 backdrop-blur-sm p-6 text-center">
-                      <Lock size={32} className="text-[#ff4d00] mb-4" />
-                      <h2 className="text-xl md:text-3xl font-black uppercase text-white tracking-widest mb-3">Sanctuary Locked</h2>
-                      <p className="text-white/70 mb-6 text-sm">Book a session to unlock your custom gear list.</p>
-                      <button onClick={() => navigate('/#pricing-section')} className="bg-[#ff4d00] text-black px-6 py-4 rounded-xl font-black uppercase tracking-widest shadow-lg text-xs md:text-sm">Book Consultation</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ASSET VAULT TAB */}
+            {/* ASSET VAULT TAB (ALWAYS ACCESSIBLE) */}
             {activeTab === 'vault' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
                 <div className="text-center mb-8 md:mb-12">
@@ -367,7 +318,45 @@ export default function Hub() {
               </div>
             )}
 
-            {/* FULLY FUNCTIONAL PROFILE TAB */}
+            {/* BLUEPRINT TAB (UNLOCKED ONLY WHEN DB RECORD EXISTS) */}
+            {activeTab === 'blueprint' && blueprint && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative max-w-6xl mx-auto md:mx-0">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
+                <p className="text-white/50 text-sm md:text-base mb-6 md:mb-8">Your personalized gear list, setup instructions, and direct support access.</p>
+                
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
+                      <h3 className="text-lg font-bold text-white mb-6">Action Items / Gear to Order</h3>
+                      {blueprint.gear_list && blueprint.gear_list.length > 0 ? (
+                        <div className="space-y-3">
+                          {blueprint.gear_list.map((item: any, index: number) => (
+                            <div key={index} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors cursor-pointer" onClick={() => toggleGearItem(index)}>
+                              <input type="checkbox" checked={item.checked} readOnly className="w-5 h-5 accent-[#ff4d00] pointer-events-none shrink-0" />
+                              <span className={`text-sm ${item.checked ? 'text-white/40 line-through' : 'text-white'}`}>{item.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-white/40 text-sm italic p-4 bg-white/5 rounded-xl border border-white/5">Mike is currently building your gear list...</p>
+                      )}
+                    </div>
+                    <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 md:p-8 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl h-full min-h-[250px]">
+                      <Video size={40} className="text-[#ff4d00] mb-4" />
+                      <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
+                      <p className="text-xs text-white/50 mb-6">Watch our 1-hour session replay where we mapped out this room.</p>
+                      {blueprint.video_url ? (
+                        <a href={blueprint.video_url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-orange-500 text-black text-sm font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-colors w-full">Watch Replay</a>
+                      ) : (
+                        <button disabled className="bg-white/5 text-white/30 text-sm font-bold py-3 px-6 rounded-xl cursor-not-allowed border border-white/10 w-full">Video Processing...</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PROFILE TAB (ALWAYS ACCESSIBLE) */}
             {activeTab === 'profile' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
@@ -477,7 +466,7 @@ export default function Hub() {
               </div>
             )}
 
-            {/* RETAINER DASHBOARD TAB */}
+            {/* RETAINER DASHBOARD TAB (UNLOCKED ONLY WHEN HAS_RETAINER IS TRUE) */}
             {activeTab === 'retainer' && profile.has_retainer && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <RetainerDashboard userId={userId} supabase={supabase} />
@@ -489,24 +478,35 @@ export default function Hub() {
 
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#111]/95 backdrop-blur-md border-t border-white/5 flex justify-around items-center p-3 z-30 pb-safe">
-        <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
-          <LayoutDashboard size={20} />
-          <span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
-        </button>
+        
+        {/* ALWAYS VISIBLE: Asset Vault */}
         <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
           <FolderDown size={20} />
           <span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
         </button>
+
+        {/* UNLOCKED ONLY IF BLUEPRINT EXISTS IN DB */}
+        {blueprint && (
+          <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+            <LayoutDashboard size={20} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
+          </button>
+        )}
+
+        {/* UNLOCKED ONLY IF RETAINER CLIENT */}
         {profile.has_retainer && (
           <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
             <Film size={20} />
             <span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
           </button>
         )}
+
+        {/* ALWAYS VISIBLE: Profile */}
         <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
           <User size={20} />
           <span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
         </button>
+
       </nav>
     </div>
   );
