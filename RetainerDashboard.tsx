@@ -14,6 +14,7 @@ interface RetainerDashboardProps {
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
+  const [projectComments, setProjectComments] = useState<any[]>([]); // NEW: Comment Tracker
   const [isLoading, setIsLoading] = useState(true);
   
   // Link Submission State
@@ -34,15 +35,30 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     fetchData();
   }, [userId, supabase]);
 
-  // Chat Subscriptions
+  // Real-time Chat & Comment Subscriptions
   useEffect(() => {
-    if (!isChatOpen || !supabase || !userId) return;
-    fetchMessages();
-    const channel = supabase.channel(`chat_${userId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retainer_messages', filter: `user_id=eq.${userId}` }, (payload: any) => {
-        setMessages((prev) => [...prev, payload.new]);
-        scrollToBottom();
+    if (!supabase || !userId) return;
+
+    // Subscribe to video comments to instantly update the red bubbles
+    const commentChannel = supabase.channel(`client_comments_${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments' }, () => {
+        fetchData(); // Silently refresh data to update the counts
       }).subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    if (isChatOpen) {
+      fetchMessages();
+      const chatChannel = supabase.channel(`chat_${userId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retainer_messages', filter: `user_id=eq.${userId}` }, (payload: any) => {
+          setMessages((prev) => [...prev, payload.new]);
+          scrollToBottom();
+        }).subscribe();
+      return () => { 
+        supabase.removeChannel(chatChannel); 
+        supabase.removeChannel(commentChannel);
+      };
+    }
+
+    return () => { supabase.removeChannel(commentChannel); };
   }, [isChatOpen, userId, supabase]);
 
   const scrollToBottom = () => setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -55,8 +71,18 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         supabase.from('retainer_assets').select('*').eq('user_id', userId).order('created_at', { ascending: false })
       ]);
       
-      setProjects(projRes.data || []);
+      const projects = projRes.data || [];
+      setProjects(projects);
       setAssets(assetRes.data || []);
+
+      // Fetch Comment Counts for Bubbles
+      if (projects.length > 0) {
+        const projectIds = projects.map((p: any) => p.id);
+        const { data: comments } = await supabase.from('video_comments').select('id, project_id, is_resolved').in('project_id', projectIds);
+        setProjectComments(comments || []);
+      } else {
+        setProjectComments([]);
+      }
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
@@ -233,42 +259,51 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                <p className="text-white/40 text-sm relative z-10">No videos currently in production or under review.</p>
             ) : (
               <div className="space-y-4 relative z-10">
-                {productionProjects.map((project) => (
-                  <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-[#ff4d00]/30 transition-colors">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
-                        {['Vertical Clip', 'Reel', 'Short', 'Social'].includes(project.type) ? (
-                          <Smartphone size={18} className="text-[#ff4d00]" />
-                        ) : (
-                          <Film size={18} className="text-[#ff4d00]" />
-                        )}
+                {productionProjects.map((project) => {
+                  const unresolvedCount = projectComments.filter(c => c.project_id === project.id && !c.is_resolved).length;
+                  return (
+                    <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-[#ff4d00]/30 transition-colors">
+                      <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                          {['Vertical Clip', 'Reel', 'Short', 'Social'].includes(project.type) ? (
+                            <Smartphone size={18} className="text-[#ff4d00]" />
+                          ) : (
+                            <Film size={18} className="text-[#ff4d00]" />
+                          )}
+                          {/* UNRESOLVED COMMENT BUBBLE */}
+                          {unresolvedCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-lg ring-2 ring-[#131313]">
+                              {unresolvedCount}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-white text-xs md:text-sm line-clamp-1">{project.title}</h4>
+                          <p className="text-[10px] text-[#ff4d00] uppercase tracking-widest font-bold mt-1">{project.type}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-white text-xs md:text-sm line-clamp-1">{project.title}</h4>
-                        <p className="text-[10px] text-[#ff4d00] uppercase tracking-widest font-bold mt-1">{project.type}</p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-none">
-                      <div className="flex items-center gap-2">
-                        {project.status === "Review" && <span className="w-2 h-2 rounded-full bg-[#ff4d00] animate-pulse"></span>}
-                        <span className="text-xs font-bold uppercase tracking-widest text-white/50">{project.status}</span>
+                      <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-none">
+                        <div className="flex items-center gap-2">
+                          {project.status === "Review" && <span className="w-2 h-2 rounded-full bg-[#ff4d00] animate-pulse"></span>}
+                          <span className="text-xs font-bold uppercase tracking-widest text-white/50">{project.status}</span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            if (!project.review_link) {
+                              alert("No video URL linked to this project!");
+                              return;
+                            }
+                            setActiveReviewProject(project);
+                          }}
+                          className="text-xs bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-500 transition-all shrink-0 cursor-pointer shadow-lg shadow-[#ff4d00]/20"
+                        >
+                          <PlayCircle size={14} /> Review Room
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => {
-                          if (!project.review_link) {
-                            alert("No video URL linked to this project!");
-                            return;
-                          }
-                          setActiveReviewProject(project);
-                        }}
-                        className="text-xs bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-500 transition-all shrink-0 cursor-pointer shadow-lg shadow-[#ff4d00]/20"
-                      >
-                        <PlayCircle size={14} /> Review Room
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
