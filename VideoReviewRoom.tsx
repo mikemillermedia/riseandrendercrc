@@ -22,11 +22,10 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Check if this is a demo project
   const isDemo = projectId.includes('demo');
 
   useEffect(() => {
-    if (isDemo) return; // Don't try to fetch or subscribe to demo IDs
+    if (isDemo) return;
 
     fetchComments();
 
@@ -48,7 +47,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       .select('*')
       .eq('project_id', projectId)
       .order('timestamp', { ascending: true });
-    
     if (data) setComments(data);
   };
 
@@ -74,7 +72,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     if (!newComment.trim() || !videoRef.current) return;
 
     if (isDemo) {
-      setErrorMsg("Cannot save comments to a demo project. Please use a real project from your database.");
+      setErrorMsg("Cannot save comments to a demo project.");
       setTimeout(() => setErrorMsg(''), 4000);
       return;
     }
@@ -94,25 +92,31 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       }]);
       
       if (error) throw error;
-      
       setNewComment('');
     } catch (err: any) {
       console.error('Error submitting comment:', err);
-      setErrorMsg("Failed to save comment. Check console for details.");
+      setErrorMsg("Failed to save comment.");
       setTimeout(() => setErrorMsg(''), 4000);
     } finally {
       setIsSending(false);
     }
   };
 
+  // Seamless UX: Click video to play/pause
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+    } else {
+      videoRef.current.pause();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans text-white">
       
-      {/* LEFT: VIDEO PLAYER AREA */}
-      {/* On mobile: strictly 55vh. On desktop: flex-1 to fill the remaining width */}
+      {/* VIDEO PLAYER AREA */}
       <div className="w-full md:flex-1 h-[55vh] md:h-full flex flex-col relative bg-black/50 shrink-0">
-        
-        {/* Top Header */}
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
           <div className="pointer-events-auto">
             <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded mb-2 inline-block shadow-[0_0_15px_rgba(255,77,0,0.4)]">
@@ -125,19 +129,20 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </button>
         </div>
 
-        {/* Video Container */}
-        {/* Reduced padding on mobile so the video fits better */}
+        {/* Seamless container: ensures aspect ratio won't collapse on bad loads */}
         <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-4 md:p-8 md:pt-24 md:pb-12 w-full h-full relative">
-          
-          {/* Ambient background glow for the video */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-[#ff4d00]/10 blur-[100px] pointer-events-none" />
           
-          <div className="relative w-full max-w-4xl h-full flex items-center justify-center rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0a0a0a]">
+          <div 
+            onClick={togglePlay}
+            className="relative w-full max-w-4xl h-full flex items-center justify-center rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0a0a0a] cursor-pointer min-h-[250px]"
+          >
             <video 
               ref={videoRef}
               src={videoUrl} 
               controls
-              playsInline 
+              playsInline
+              preload="metadata"
               onTimeUpdate={handleTimeUpdate}
               className="w-auto h-auto max-w-full max-h-full object-contain"
             />
@@ -145,8 +150,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         </div>
       </div>
 
-      {/* RIGHT: COMMENTS PANEL */}
-      {/* On mobile: strictly 45vh. On desktop: full height and fixed width */}
+      {/* COMMENTS PANEL */}
       <div className="w-full md:w-[400px] bg-[#0d0d0d] border-t md:border-t-0 md:border-l border-white/5 flex flex-col shrink-0 h-[45vh] md:h-full z-20 shadow-2xl">
         <div className="p-4 md:p-6 border-b border-white/5 bg-[#111]">
           <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-2">
@@ -154,7 +158,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </h3>
         </div>
 
-        {/* Error Message Toast */}
         {errorMsg && (
           <div className="mx-4 mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3 text-red-500 text-xs">
             <AlertCircle size={14} className="shrink-0 mt-0.5" />
@@ -162,13 +165,12 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </div>
         )}
 
-        {/* Comments Feed */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {isDemo ? (
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <AlertCircle size={24} className="text-[#ff4d00] mx-auto mb-2" />
               <p className="text-white/70 text-xs font-medium">You are viewing a Demo Project.</p>
-              <p className="text-white/40 text-[10px] mt-2">Comments cannot be saved. To test commenting, link a real project from your database.</p>
+              <p className="text-white/40 text-[10px] mt-2">Comments cannot be saved. To test commenting, link a real project.</p>
             </div>
           ) : comments.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center opacity-30 mt-6 md:mt-10">
@@ -183,9 +185,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
                 onClick={() => jumpToTime(comment.timestamp)}
                 className="bg-black border border-white/5 p-4 rounded-xl hover:border-[#ff4d00]/40 cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(255,77,0,0.1)] group relative overflow-hidden"
               >
-                {/* Subtle highlight bar on the left */}
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#ff4d00] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
                 <div className="flex justify-between items-start mb-2 pl-2">
                   <span className="text-xs font-bold text-white">
                     {comment.is_admin ? <span className="text-[#ff4d00]">Rise & Render Team</span> : comment.user_name}
@@ -200,7 +200,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           )}
         </div>
 
-        {/* Input Area */}
         <div className="p-4 md:p-5 bg-[#111] border-t border-white/5 shrink-0">
           <div className="flex items-center justify-between mb-2 md:mb-3 px-1">
             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Marking Time:</span>
@@ -224,7 +223,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </form>
         </div>
       </div>
-      
     </div>
   );
 };
