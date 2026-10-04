@@ -79,3 +79,7 @@ const handleDeliverAsset = async (e: React.FormEvent) => {
     </button>
   </form>
 </div>
+);
+};
+
+export default AdminDashboard;
