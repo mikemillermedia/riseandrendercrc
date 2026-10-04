@@ -219,7 +219,7 @@ export default function Hub() {
                     </div>
                     <div className="flex justify-start md:justify-end">
                       <a 
-                        href="file:///C:/Users/immed/Downloads/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" // <-- REPLACE WITH YOUR URL LINK
+                        href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit.pdf" // <-- REPLACE WITH YOUR URL LINK
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(255,77,0,0.3)] transition-all w-full md:w-auto justify-center"
