@@ -29,6 +29,8 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   // Fetch the logged-in user's profile & the video comments
   useEffect(() => {
     const fetchSessionAndComments = async () => {
+      if (!supabase) return;
+      
       // 1. Get current logged-in user profile for their avatar
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -43,6 +45,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     fetchSessionAndComments();
 
     // Subscribe to new comments in real-time
+    if (!supabase) return;
     const channel = supabase.channel(`review_${projectId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments', filter: `project_id=eq.${projectId}` }, () => {
         fetchComments();
@@ -52,7 +55,8 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   }, [projectId, supabase]);
 
   const fetchComments = async () => {
-    const { data } = await supabase
+    if (!supabase) return;
+    const { data, error } = await supabase
       .from('video_comments')
       .select('*')
       .eq('project_id', projectId)
@@ -67,13 +71,14 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   };
 
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds === null) return "0:00"; // Fail-safe
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleSeek = (time: number) => {
-    if (videoRef.current) {
+    if (videoRef.current && time !== null) {
       videoRef.current.currentTime = time;
       videoRef.current.play();
     }
@@ -115,8 +120,14 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   };
 
   const toggleResolve = async (commentId: string, currentStatus: boolean) => {
-    if (!isAdmin) return; // Only admin can check off tasks
+    if (!isAdmin || !supabase) return; // Only admin can check off tasks
     await supabase.from('video_comments').update({ is_resolved: !currentStatus }).eq('id', commentId);
+  };
+
+  // Safe fallback to get the first letter of a name
+  const getInitial = (name?: string) => {
+    if (!name || typeof name !== 'string') return 'U';
+    return name.charAt(0).toUpperCase();
   };
 
   return (
@@ -183,22 +194,22 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
                     {comment.author_avatar ? (
                       <img src={comment.author_avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover border border-white/10" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                        {comment.author.charAt(0)}
+                      <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white uppercase shrink-0">
+                        {getInitial(comment.author)}
                       </div>
                     )}
-                    <span className={`text-[11px] font-black uppercase tracking-wider ${comment.is_admin ? 'text-[#ff4d00]' : 'text-green-500'}`}>
-                      {comment.author}
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${comment.is_admin ? 'text-[#ff4d00]' : 'text-green-500'} line-clamp-1`}>
+                      {comment.author || 'User'}
                     </span>
                   </div>
 
                   {/* Badges & Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     <button 
-                      onClick={() => handleSeek(comment.timestamp)} 
+                      onClick={() => handleSeek(comment.timestamp || 0)} 
                       className={`px-2 py-1 rounded text-[10px] font-black shadow transition-opacity hover:opacity-80 flex items-center gap-1 ${comment.is_admin ? 'bg-[#ff4d00]/20 text-[#ff4d00]' : 'bg-green-500/20 text-green-500'}`}
                     >
-                      <PlayCircle size={10} /> {formatTime(comment.timestamp)}
+                      <PlayCircle size={10} /> {formatTime(comment.timestamp || 0)}
                     </button>
                     
                     <button className="p-1 rounded bg-white/5 text-white/40 hover:text-white transition-colors" title="Reply">
@@ -217,7 +228,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
                   </div>
                 </div>
                 
-                <p className={`text-xs pl-8 leading-relaxed ${comment.is_resolved ? 'line-through text-white/30' : 'text-white/80'}`}>
+                <p className={`text-xs pl-8 leading-relaxed break-words ${comment.is_resolved ? 'line-through text-white/30' : 'text-white/80'}`}>
                   {comment.text}
                 </p>
               </div>
