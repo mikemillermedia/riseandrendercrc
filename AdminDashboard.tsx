@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
+import VideoReviewRoom from './VideoReviewRoom'; // <-- IMPORTED REVIEW ROOM
 
 // Initializes Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -33,6 +34,9 @@ const AdminDashboard: React.FC = () => {
   const [clientProjects, setClientProjects] = useState<any[]>([]);
   const [clientAssets, setClientAssets] = useState<any[]>([]);
   const [isLoadingClientData, setIsLoadingClientData] = useState(false);
+
+  // Admin Review Room State
+  const [activeReviewProject, setActiveReviewProject] = useState<any>(null);
 
   // Edit Modal State
   const [editModal, setEditModal] = useState<{
@@ -126,7 +130,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // ACTION: Send Chat Message (Admin Side)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !supabase || !selectedClient) return;
@@ -140,7 +143,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // ACTION: Send to "In Production" (Review Room)
   const handleSendForReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !reviewLink.trim() || !reviewTitle.trim() || !supabase) return;
@@ -163,7 +165,6 @@ const AdminDashboard: React.FC = () => {
     } finally { setIsSendingReview(false); }
   };
 
-  // ACTION: Send to "Final Videos" (Delivered)
   const handleDeliverAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !deliverLink.trim() || !deliverTitle.trim() || !supabase) return;
@@ -186,7 +187,6 @@ const AdminDashboard: React.FC = () => {
     } finally { setIsDelivering(false); }
   };
 
-  // EDIT & DELETE ACTIONS
   const handleDeleteItem = async (id: string, type: 'project' | 'asset') => {
     if (!confirm(`Are you sure you want to delete this ${type}? This will remove it from the client's feed.`)) return;
     if (!supabase || !selectedClient) return;
@@ -308,7 +308,7 @@ const AdminDashboard: React.FC = () => {
             {selectedClient ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* FORM 1: SEND TO "IN PRODUCTION" (REVIEW ROOM) */}
+                  {/* FORM 1: SEND TO "IN PRODUCTION" */}
                   <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col justify-between focus-within:border-[#ff4d00]/50 transition-colors">
                     <div>
                       <h2 className="text-white text-sm font-black uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -404,7 +404,6 @@ const AdminDashboard: React.FC = () => {
                       Client View: <span className="text-[#ff4d00]">{selectedClient.first_name}</span>
                     </h2>
                     
-                    {/* ADMIN CHAT BUTTON */}
                     <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors shadow-lg">
                       <MessageSquare size={16} className="text-[#ff4d00]" /> Open Direct Line
                     </button>
@@ -415,7 +414,6 @@ const AdminDashboard: React.FC = () => {
                   ) : (
                     <div className="space-y-8 relative z-10">
                       
-                      {/* Tracker Snippet */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-4 flex justify-between items-center">
                           <span className="text-xs font-bold text-white/50 uppercase tracking-wider">Podcasts</span>
@@ -428,7 +426,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Stage 1 Snippet */}
+                        {/* Stage 1 */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 1: Delivery</h3>
                           {deliveryProjects.length === 0 ? <p className="text-white/30 text-xs italic">No raw folders.</p> : (
@@ -452,7 +450,7 @@ const AdminDashboard: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Stage 2 Snippet */}
+                        {/* Stage 2 (WITH REVIEW ROOM LAUNCHER) */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 2: In Prod</h3>
                           {productionProjects.length === 0 ? <p className="text-white/30 text-xs italic">No videos in review.</p> : (
@@ -465,8 +463,10 @@ const AdminDashboard: React.FC = () => {
                                       <p className="text-[10px] font-bold text-white truncate">{project.title}</p>
                                     </div>
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
-                                      <button onClick={() => openEditModal(project, 'project')} className="text-[#ff4d00]/70 hover:text-[#ff4d00]"><Pencil size={12} /></button>
-                                      <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500"><Trash2 size={12} /></button>
+                                      {/* NEW ADMIN REVIEW BUTTON */}
+                                      <button onClick={() => setActiveReviewProject(project)} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Open Review Room"><PlayCircle size={12} /></button>
+                                      <button onClick={() => openEditModal(project, 'project')} className="text-[#ff4d00]/70 hover:text-[#ff4d00]" title="Edit Details"><Pencil size={12} /></button>
+                                      <button onClick={() => handleDeleteItem(project.id, 'project')} className="text-white/40 hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
                                     </div>
                                   </div>
                                   <span className="text-[8px] font-bold uppercase tracking-widest text-[#ff4d00] bg-[#ff4d00]/10 border border-[#ff4d00]/20 px-2 py-1 rounded inline-block">{project.status}</span>
@@ -476,7 +476,7 @@ const AdminDashboard: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Stage 3 Snippet */}
+                        {/* Stage 3 */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
                           <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 3: Final</h3>
                           {clientAssets.length === 0 ? <p className="text-white/30 text-xs italic">No delivered assets.</p> : (
@@ -640,6 +640,21 @@ const AdminDashboard: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* ADMIN REVIEW ROOM OVERLAY */}
+      <AnimatePresence>
+        {activeReviewProject && (
+          <VideoReviewRoom 
+            projectId={activeReviewProject.id}
+            projectTitle={activeReviewProject.title}
+            videoUrl={activeReviewProject.review_link}
+            userId={selectedClient.id} // Binds the comments to the correct client project
+            userName="Admin" 
+            isAdmin={true} // Grants Admin powers (Checkmarks & Replies)
+            supabase={supabase}
+            onClose={() => setActiveReviewProject(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
