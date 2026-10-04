@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, PlayCircle, CheckCircle2, MessageSquare, 
-  Film, Smartphone, Clock, Link as LinkIcon, Download, Send, Image as ImageIcon, X, ShieldCheck, FolderOpen
+  Film, Smartphone, Link as LinkIcon, Download, Send, X, ShieldCheck, FolderOpen
 } from 'lucide-react';
 import VideoReviewRoom from './VideoReviewRoom';
 
@@ -10,20 +10,6 @@ interface RetainerDashboardProps {
   userId: string | null;
   supabase: any;
 }
-
-const DEMO_PROJECTS = [
-  { 
-    id: '82d05483-0a15-4439-a028-fb8d3b7a3ef6', 
-    title: "EP 30 - Collecting Data Reel Review", 
-    status: "Review", 
-    type: "Full Length", 
-    review_link: "https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Collecting%20Evidence%20-%20EP%2030.mp4" 
-  }
-];
-
-const DEMO_ASSETS = [
-  { id: 'demo-101', title: "Ep 29: Mindset (4K Master)", asset_type: "Horizontal Podcast", created_at: new Date().toISOString(), file_size: "Link", download_url: "#" }
-];
 
 const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase }) => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -58,21 +44,15 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const scrollToBottom = () => setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
   const fetchData = async () => {
-    if (!supabase || !userId) {
-      setProjects(DEMO_PROJECTS);
-      setAssets(DEMO_ASSETS);
-      setIsLoading(false);
-      return;
-    }
+    if (!supabase || !userId) return;
     try {
       const [projRes, assetRes] = await Promise.all([
         supabase.from('retainer_projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('retainer_assets').select('*').eq('user_id', userId).order('created_at', { ascending: false })
       ]);
       
-      const realProjects = projRes.data || [];
-      setProjects(realProjects.length > 0 ? realProjects : DEMO_PROJECTS);
-      setAssets(assetRes.data && assetRes.data.length > 0 ? assetRes.data : DEMO_ASSETS);
+      setProjects(projRes.data || []);
+      setAssets(assetRes.data || []);
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
@@ -113,6 +93,10 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     } finally { setIsSubmittingLink(false); }
   };
 
+  // Pipeline Filtering Logic
+  const deliveryProjects = projects.filter(p => p.type === 'Raw Folder');
+  const productionProjects = projects.filter(p => p.type !== 'Raw Folder');
+
   // Tracking Logic for Delivered Assets
   const horizontalDelivered = assets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
   const verticalDelivered = assets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
@@ -138,7 +122,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         {/* LEFT SIDEBAR (STICKY ON DESKTOP) */}
         <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 w-full">
           
-          {/* CLIENT SUBMIT FORM */}
           <div className="bg-[#131313] border border-dashed border-white/20 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center focus-within:border-[#ff4d00]/50">
             <div className="w-14 h-14 md:w-16 md:h-16 bg-[#ff4d00]/10 rounded-full flex items-center justify-center mb-4"><LinkIcon size={28} className="text-[#ff4d00]" /></div>
             <h3 className="font-black uppercase tracking-widest text-white mb-2 text-sm md:text-base">Link Raw Footage</h3>
@@ -149,7 +132,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             </form>
           </div>
 
-          {/* DELIVERED ASSETS TRACKER */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
             <h3 className="font-black uppercase tracking-widest text-white mb-6 text-sm flex items-center gap-2">
               <CheckCircle2 size={16} className="text-green-500" /> Delivered Assets
@@ -170,62 +152,39 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
         {/* RIGHT MAIN CONTENT (SINGLE SCROLL FEED) */}
         <div className="lg:col-span-2 w-full space-y-8">
           
-          {/* ACTIVE PRODUCTION */}
+          {/* STAGE 1: DELIVERY */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
-            <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl">Active Production & Review</h2>
-            {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading...</p> : projects.length === 0 ? (
-               <p className="text-white/40 text-sm">No active projects in the pipeline right now.</p>
+            <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl flex items-center gap-2">
+              <UploadCloud size={20} className="text-white/40" /> Stage 1: Delivery
+            </h2>
+            {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading...</p> : deliveryProjects.length === 0 ? (
+               <p className="text-white/40 text-sm">No raw footage folders active.</p>
             ) : (
               <div className="space-y-4">
-                {projects.map((project) => (
+                {deliveryProjects.map((project) => (
                   <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4 w-full md:w-auto">
                       <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
-                        {project.type === 'Raw Folder' ? (
-                          <FolderOpen size={18} className="text-white/50" />
-                        ) : ['Vertical Clip', 'Reel', 'Short', 'Social'].includes(project.type) ? (
-                          <Smartphone size={18} className="text-[#ff4d00]" />
-                        ) : (
-                          <Film size={18} className="text-[#ff4d00]" />
-                        )}
+                        <FolderOpen size={18} className="text-white/50" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-white text-xs md:text-sm line-clamp-1">{project.title}</h4>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">{project.type}</p>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">Raw Footage</p>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-none">
                       <div className="flex items-center gap-2">
-                        {project.status === "Completed" && <CheckCircle2 size={16} className="text-green-500" />}
                         {project.status === "Processing" && <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>}
-                        {project.status === "Review" && <span className="w-2 h-2 rounded-full bg-[#ff4d00] animate-pulse"></span>}
                         <span className="text-xs font-bold uppercase tracking-widest text-white/50">{project.status}</span>
                       </div>
-                      
-                      {project.type === "Raw Folder" ? (
-                        <a 
-                          href={project.review_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs bg-white text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-gray-200 transition-all shrink-0 cursor-pointer shadow-lg"
-                        >
-                          <LinkIcon size={14} /> Open Folder
-                        </a>
-                      ) : project.status === "Review" ? (
-                        <button 
-                          onClick={() => {
-                            if (!project.review_link) {
-                              alert("No video URL linked to this project!");
-                              return;
-                            }
-                            setActiveReviewProject(project);
-                          }}
-                          className="text-xs bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-500 transition-all shrink-0 cursor-pointer shadow-lg shadow-[#ff4d00]/20"
-                        >
-                          <PlayCircle size={14} /> Review Room
-                        </button>
-                      ) : null}
+                      <a 
+                        href={project.review_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs bg-white text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-gray-200 transition-all shrink-0 cursor-pointer shadow-lg"
+                      >
+                        <LinkIcon size={14} /> Open Folder
+                      </a>
                     </div>
                   </div>
                 ))}
@@ -233,9 +192,61 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             )}
           </div>
 
-          {/* ASSET VAULT */}
+          {/* STAGE 2: IN PRODUCTION (REVIEW ROOM) */}
+          <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
+            <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl flex items-center gap-2 relative z-10">
+              <PlayCircle size={20} className="text-[#ff4d00]" /> Stage 2: In Production
+            </h2>
+            {isLoading ? <p className="text-white/40 text-sm animate-pulse relative z-10">Loading...</p> : productionProjects.length === 0 ? (
+               <p className="text-white/40 text-sm relative z-10">No videos currently in production or under review.</p>
+            ) : (
+              <div className="space-y-4 relative z-10">
+                {productionProjects.map((project) => (
+                  <div key={project.id} className="bg-black/50 border border-white/5 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-[#ff4d00]/30 transition-colors">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                        {['Vertical Clip', 'Reel', 'Short', 'Social'].includes(project.type) ? (
+                          <Smartphone size={18} className="text-[#ff4d00]" />
+                        ) : (
+                          <Film size={18} className="text-[#ff4d00]" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-white text-xs md:text-sm line-clamp-1">{project.title}</h4>
+                        <p className="text-[10px] text-[#ff4d00] uppercase tracking-widest font-bold mt-1">{project.type}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-none">
+                      <div className="flex items-center gap-2">
+                        {project.status === "Review" && <span className="w-2 h-2 rounded-full bg-[#ff4d00] animate-pulse"></span>}
+                        <span className="text-xs font-bold uppercase tracking-widest text-white/50">{project.status}</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          if (!project.review_link) {
+                            alert("No video URL linked to this project!");
+                            return;
+                          }
+                          setActiveReviewProject(project);
+                        }}
+                        className="text-xs bg-[#ff4d00] text-black font-black uppercase tracking-widest px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-500 transition-all shrink-0 cursor-pointer shadow-lg shadow-[#ff4d00]/20"
+                      >
+                        <PlayCircle size={14} /> Review Room
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* STAGE 3: FINAL VIDEOS */}
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
-            <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl">Asset Vault</h2>
+            <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl flex items-center gap-2">
+              <CheckCircle2 size={20} className="text-green-500" /> Stage 3: Final Videos
+            </h2>
             {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading vault...</p> : assets.length === 0 ? (
                <p className="text-white/40 text-sm">No completed assets yet.</p>
             ) : (
