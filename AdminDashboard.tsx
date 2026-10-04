@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Users, FolderOpen, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
-// IMPORTS THE DATABASE CONNECTION DIRECTLY
-import { supabase } from './supabase'; 
+import { createClient } from '@supabase/supabase-js';
+
+// Initializes Supabase exactly how your Hub.tsx does it
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const AdminDashboard: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
@@ -16,13 +20,18 @@ const AdminDashboard: React.FC = () => {
   const [isDelivering, setIsDelivering] = useState(false);
 
   useEffect(() => {
-    fetchClients();
+    if (supabase) {
+      fetchClients();
+    } else {
+      setDbError("Supabase keys are missing from environment variables.");
+      setIsLoading(false);
+    }
   }, []);
 
   const fetchClients = async () => {
     try {
       setDbError(null);
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('profiles')
         .select('*');
       
@@ -41,7 +50,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleDeliverAsset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClient || !deliverLink.trim() || !deliverTitle.trim()) return;
+    if (!selectedClient || !deliverLink.trim() || !deliverTitle.trim() || !supabase) return;
     
     setIsDelivering(true);
     try {
