@@ -61,9 +61,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     if (error) console.error("Error fetching comments:", error);
     if (data) {
       setComments(data);
-      setTimeout(() => {
-        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
     }
   };
 
@@ -113,6 +110,9 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       }
       
       setNewComment('');
+      setTimeout(() => {
+        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (error) {
       console.error("Failed to add comment:", error);
     } finally {
@@ -132,13 +132,13 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col md:flex-row bg-black/95 backdrop-blur-md font-sans overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex flex-col md:flex-row bg-black/95 backdrop-blur-md font-sans overflow-y-auto md:overflow-hidden">
       
-      {/* VIDEO PLAYER SECTION (TOP ON MOBILE, LEFT ON DESKTOP) */}
-      <div className="w-full md:flex-1 h-[38vh] md:h-full flex flex-col relative bg-[#050505] shrink-0 border-b md:border-b-0 border-white/10">
+      {/* VIDEO PLAYER SECTION (PINNED AT TOP ON MOBILE, LEFT PANEL ON DESKTOP) */}
+      <div className="w-full md:flex-1 md:h-full flex flex-col relative bg-[#050505] shrink-0 border-b md:border-b-0 border-white/10 sticky top-0 z-30 md:static">
         
         {/* Header Bar */}
-        <div className="absolute top-0 left-0 w-full p-3 md:p-6 flex justify-between items-center z-20 bg-gradient-to-b from-black/90 via-black/50 to-transparent">
+        <div className="p-3 md:p-6 flex justify-between items-center bg-[#111] md:bg-transparent border-b md:border-b-0 border-white/10">
           <div className="flex items-center gap-2 md:gap-3 truncate pr-2">
             <span className="bg-[#ff4d00] text-black text-[9px] md:text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded shadow-lg shrink-0">
               Review Room
@@ -151,20 +151,20 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </button>
         </div>
 
-        {/* Video Frame */}
-        <div className="flex-1 flex items-center justify-center p-2 md:p-6 pt-12 md:pt-20 pb-2 md:pb-10">
+        {/* Video Box */}
+        <div className="p-2 md:p-6 flex items-center justify-center bg-[#050505] max-h-[35vh] md:max-h-full md:flex-1">
           <video 
             ref={videoRef}
             src={videoUrl}
             controls
-            className="max-h-full max-w-full rounded-xl md:rounded-2xl shadow-2xl border border-white/10 object-contain"
+            className="max-h-[30vh] md:max-h-full w-auto max-w-full rounded-xl md:rounded-2xl shadow-2xl border border-white/10 object-contain"
             controlsList="nodownload"
           />
         </div>
       </div>
 
-      {/* REVISION NOTES SECTION (BOTTOM ON MOBILE, RIGHT ON DESKTOP) */}
-      <div className="w-full md:w-[400px] flex-1 md:h-full min-h-0 bg-[#0a0a0a] border-l-0 md:border-l border-white/10 flex flex-col shrink-0 shadow-2xl relative overflow-hidden">
+      {/* REVISION NOTES SECTION (SCROLLS BELOW VIDEO ON MOBILE, RIGHT PANEL ON DESKTOP) */}
+      <div className="w-full md:w-[420px] flex-1 md:h-full bg-[#0a0a0a] border-l-0 md:border-l border-white/10 flex flex-col shrink-0 min-h-[50vh] md:min-h-0">
         
         {/* Sidebar Header */}
         <div className="p-3 md:p-5 border-b border-white/10 flex items-center justify-between bg-[#111] shrink-0">
@@ -177,9 +177,9 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         </div>
 
         {/* Comments Feed */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-[#0d0d0d] min-h-0">
+        <div className="flex-1 md:overflow-y-auto p-3 md:p-4 space-y-3 bg-[#0d0d0d]">
           {comments.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center opacity-40 p-4">
+            <div className="py-12 flex flex-col items-center justify-center text-center opacity-40 p-4">
               <MessageSquare size={28} className="mb-2 text-[#ff4d00]" />
               <p className="text-xs font-bold uppercase tracking-widest text-white">No Notes Yet</p>
               <p className="text-[10px] text-white/70 mt-1">Play the video and drop a comment below to leave a timestamped note.</p>
@@ -214,7 +214,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
                     </span>
                   </div>
 
-                  {/* Timestamp Button & Resolve Action */}
+                  {/* Timestamp Button & Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button 
                       onClick={() => handleSeek(comment.timestamp || 0)} 
@@ -251,7 +251,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         </div>
 
         {/* Comment Input */}
-        <form onSubmit={handleAddComment} className="p-3 md:p-4 border-t border-white/10 bg-[#111] shrink-0">
+        <form onSubmit={handleAddComment} className="p-3 md:p-4 border-t border-white/10 bg-[#111] shrink-0 sticky bottom-0 md:static">
           <div className="relative flex items-center">
             <input 
               type="text" 
