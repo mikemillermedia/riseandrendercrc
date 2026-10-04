@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Clock, AlertCircle } from 'lucide-react';
+import { X, Send, Clock, AlertCircle, CheckCircle, CheckCircle2, MessageSquareReply } from 'lucide-react';
 
 interface VideoReviewRoomProps {
   projectId: string;
@@ -32,9 +32,15 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     const channel = supabase
       .channel(`video_review_${projectId}`)
       .on('postgres_changes', { 
-        event: 'INSERT', schema: 'public', table: 'video_comments', filter: `project_id=eq.${projectId}` 
+        event: '*', schema: 'public', table: 'video_comments', filter: `project_id=eq.${projectId}` 
       }, (payload: any) => {
-        setComments(prev => [...prev, payload.new].sort((a, b) => a.timestamp - b.timestamp));
+        if (payload.eventType === 'INSERT') {
+          setComments(prev => [...prev, payload.new].sort((a, b) => a.timestamp - b.timestamp));
+        } else if (payload.eventType === 'UPDATE') {
+          setComments(prev => prev.map(c => c.id === payload.new.id ? payload.new : c));
+        } else if (payload.eventType === 'DELETE') {
+          setComments(prev => prev.filter(c => c.id !== payload.old.id));
+        }
       })
       .subscribe();
 
@@ -67,6 +73,24 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     }
   };
 
+  const handleReplyClick = (time: number, authorName: string) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+      videoRef.current.pause();
+    }
+    setNewComment(`@${authorName.replace(/\s+/g, '')} `);
+    // Focus logic can be added here if needed
+  };
+
+  const toggleResolve = async (commentId: string, currentStatus: boolean) => {
+    if (!isAdmin || !supabase) return;
+    try {
+      await supabase.from('video_comments').update({ is_resolved: !currentStatus }).eq('id', commentId);
+    } catch (err) {
+      console.error('Failed to resolve comment', err);
+    }
+  };
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !videoRef.current) return;
@@ -82,27 +106,38 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     const timeToSave = videoRef.current.currentTime;
 
     try {
+      // Adding is_resolved explicitly false for new comments
       const { error } = await supabase.from('video_comments').insert([{
         project_id: projectId,
         user_id: userId,
         user_name: userName,
         is_admin: isAdmin,
         timestamp: timeToSave,
-        text: newComment.trim()
+        text: newComment.trim(),
+        is_resolved: false
       }]);
       
       if (error) throw error;
       setNewComment('');
     } catch (err: any) {
       console.error('Error submitting comment:', err);
-      setErrorMsg("Failed to save comment.");
-      setTimeout(() => setErrorMsg(''), 4000);
+      // Suppress silent database errors if column 'is_resolved' isn't fully migrated yet 
+      // but try a fallback without it just in case
+      try {
+         await supabase.from('video_comments').insert([{
+          project_id: projectId, user_id: userId, user_name: userName,
+          is_admin: isAdmin, timestamp: timeToSave, text: newComment.trim()
+        }]);
+        setNewComment('');
+      } catch (fallbackErr) {
+        setErrorMsg("Failed to save comment.");
+        setTimeout(() => setErrorMsg(''), 4000);
+      }
     } finally {
       setIsSending(false);
     }
   };
 
-  // Seamless UX: Click video to play/pause
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
@@ -119,8 +154,8 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       <div className="w-full md:flex-1 h-[55vh] md:h-full flex flex-col relative bg-black/50 shrink-0">
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-start z-20 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
           <div className="pointer-events-auto">
-            <span className="bg-[#ff4d00] text-black text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded mb-2 inline-block shadow-[0_0_15px_rgba(255,77,0,0.4)]">
-              Review Room
+            <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded mb-2 inline-block shadow-lg ${isAdmin ? 'bg-green-500 text-black' : 'bg-[#ff4d00] text-black shadow-[0_0_15px_rgba(255,77,0,0.4)]'}`}>
+              {isAdmin ? 'Admin Review Room' : 'Review Room'}
             </span>
             <h2 className="text-xl md:text-2xl font-black tracking-tight drop-shadow-md line-clamp-1">{projectTitle}</h2>
           </div>
@@ -129,7 +164,6 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
           </button>
         </div>
 
-        {/* Seamless container: ensures aspect ratio won't collapse on bad loads */}
         <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-4 md:p-8 md:pt-24 md:pb-12 w-full h-full relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-[#ff4d00]/10 blur-[100px] pointer-events-none" />
           
@@ -182,19 +216,53 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
             comments.map(comment => (
               <div 
                 key={comment.id} 
-                onClick={() => jumpToTime(comment.timestamp)}
-                className="bg-black border border-white/5 p-4 rounded-xl hover:border-[#ff4d00]/40 cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(255,77,0,0.1)] group relative overflow-hidden"
+                className={`bg-black border p-4 rounded-xl transition-all group relative overflow-hidden flex flex-col ${
+                  comment.is_resolved 
+                    ? 'border-green-500/30 opacity-70 hover:opacity-100 bg-green-500/5' 
+                    : 'border-white/5 hover:border-[#ff4d00]/40 hover:shadow-[0_0_15px_rgba(255,77,0,0.1)]'
+                }`}
               >
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#ff4d00] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {!comment.is_resolved && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#ff4d00] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />}
+                
                 <div className="flex justify-between items-start mb-2 pl-2">
-                  <span className="text-xs font-bold text-white">
-                    {comment.is_admin ? <span className="text-[#ff4d00]">Rise & Render Team</span> : comment.user_name}
-                  </span>
-                  <span className="bg-white/5 text-white/50 text-[10px] font-black px-2 py-1 rounded group-hover:bg-[#ff4d00] group-hover:text-black transition-colors">
-                    {formatTime(comment.timestamp)}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      {comment.is_admin ? <span className="text-[#ff4d00]">Rise & Render Team</span> : comment.user_name}
+                      {comment.is_resolved && <CheckCircle2 size={12} className="text-green-500" title="Addressed" />}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => jumpToTime(comment.timestamp)}
+                      className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${comment.is_resolved ? 'bg-green-500/20 text-green-500' : 'bg-white/5 text-white/50 group-hover:bg-[#ff4d00] group-hover:text-black'}`}
+                    >
+                      {formatTime(comment.timestamp)}
+                    </button>
+                    
+                    {/* ADMIN CONTROLS */}
+                    {isAdmin && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleReplyClick(comment.timestamp, comment.user_name)}
+                          className="p-1 rounded bg-white/5 hover:bg-blue-500 text-white/50 hover:text-white" title="Reply to comment"
+                        >
+                          <MessageSquareReply size={12} />
+                        </button>
+                        <button 
+                          onClick={() => toggleResolve(comment.id, comment.is_resolved)}
+                          className={`p-1 rounded text-white/50 hover:text-white ${comment.is_resolved ? 'bg-white/5 hover:bg-red-500' : 'bg-white/5 hover:bg-green-500'}`} 
+                          title={comment.is_resolved ? "Mark Unresolved" : "Mark as Addressed"}
+                        >
+                          {comment.is_resolved ? <X size={12} /> : <CheckCircle size={12} />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm text-white/70 pl-2 leading-relaxed">{comment.text}</p>
+                <p className={`text-sm pl-2 leading-relaxed ${comment.is_resolved ? 'text-white/40 line-through' : 'text-white/70'}`}>
+                  {comment.text}
+                </p>
               </div>
             ))
           )}
