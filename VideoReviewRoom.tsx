@@ -62,6 +62,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
       .eq('project_id', projectId)
       .order('timestamp', { ascending: true });
     
+    if (error) console.error("Error fetching comments:", error);
     if (data) {
       setComments(data);
       setTimeout(() => {
@@ -101,7 +102,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
     }
 
     try {
-      await supabase.from('video_comments').insert([{
+      const { error } = await supabase.from('video_comments').insert([{
         project_id: projectId,
         text: newComment.trim(),
         timestamp: time,
@@ -110,6 +111,12 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
         is_admin: isAdmin,
         is_resolved: false
       }]);
+      
+      // Explicitly alert if Supabase rejects the message
+      if (error) {
+        alert(`Database Error: ${error.message}`);
+        throw error;
+      }
       
       setNewComment('');
     } catch (error) {
@@ -121,7 +128,8 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
 
   const toggleResolve = async (commentId: string, currentStatus: boolean) => {
     if (!isAdmin || !supabase) return; // Only admin can check off tasks
-    await supabase.from('video_comments').update({ is_resolved: !currentStatus }).eq('id', commentId);
+    const { error } = await supabase.from('video_comments').update({ is_resolved: !currentStatus }).eq('id', commentId);
+    if (error) alert(`Error resolving comment: ${error.message}`);
   };
 
   // Safe fallback to get the first letter of a name
@@ -192,7 +200,7 @@ const VideoReviewRoom: React.FC<VideoReviewRoomProps> = ({
                   {/* Avatar & Name */}
                   <div className="flex items-center gap-2.5">
                     {comment.author_avatar ? (
-                      <img src={comment.author_avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover border border-white/10" />
+                      <img src={comment.author_avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0" />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white uppercase shrink-0">
                         {getInitial(comment.author)}
