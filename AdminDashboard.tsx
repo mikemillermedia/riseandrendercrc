@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Users, FolderOpen, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
+// IMPORTS THE DATABASE CONNECTION DIRECTLY
+import { supabase } from './supabase'; 
 
-interface AdminDashboardProps {
-  supabase: any;
-}
-
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
+const AdminDashboard: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,12 +17,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
 
   useEffect(() => {
     fetchClients();
-  }, [supabase]);
+  }, []);
 
   const fetchClients = async () => {
     try {
       setDbError(null);
-      // We removed the .order() clause to prevent silent column-mismatch crashes
       const { data, error } = await supabase
         .from('profiles')
         .select('*');
@@ -70,12 +67,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
   };
 
   return (
-    <div className="text-[#F5F5F0] font-sans relative pb-28 md:pb-12 px-4 md:px-0 max-w-6xl mx-auto">
+    <div className="text-[#F5F5F0] font-sans relative pb-28 md:pb-12 px-4 md:px-0 max-w-6xl mx-auto min-h-screen bg-[#050505]">
       
-      <div className="mb-8 pt-4 md:pt-0 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/10 pb-8">
+      <div className="mb-8 pt-8 md:pt-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/10 pb-8">
         <div>
           <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-2 flex items-center gap-3">
-            Command <span className="text-green-500">Center</span>
+            Command <span className="text-[#ff4d00]">Center</span>
           </h1>
           <p className="text-white/50 text-xs md:text-sm tracking-widest uppercase font-bold">Admin Dashboard • Rise & Render</p>
         </div>
@@ -86,7 +83,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
         {/* LEFT SIDEBAR: CLIENT LIST */}
         <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 w-full">
           
-          {/* NEW ERROR CATCHER BOX */}
           {dbError && (
             <div className="bg-red-500/10 border border-red-500/50 p-5 rounded-3xl shadow-xl">
               <h4 className="text-red-500 font-black text-sm uppercase tracking-widest flex items-center gap-2 mb-2">
@@ -98,7 +94,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
 
           <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
             <h3 className="font-black uppercase tracking-widest text-white mb-4 flex items-center gap-2">
-              <Users size={18} className="text-green-500" /> Active Clients
+              <Users size={18} className="text-[#ff4d00]" /> Active Clients
             </h3>
             {isLoading ? (
               <p className="text-white/40 text-sm animate-pulse">Loading clients...</p>
@@ -112,7 +108,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
                     onClick={() => setSelectedClient(client)}
                     className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between ${
                       selectedClient?.id === client.id 
-                        ? 'bg-green-500/10 border-green-500/50 text-green-500' 
+                        ? 'bg-[#ff4d00]/10 border-[#ff4d00]/50 text-[#ff4d00]' 
                         : 'bg-black border-white/5 text-white hover:border-white/20'
                     }`}
                   >
@@ -131,7 +127,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
               {/* DELIVER ASSET FORM */}
               <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl">
                 <h2 className="text-white text-lg font-black uppercase tracking-widest mb-6 flex items-center gap-2">
-                  <CheckCircle2 size={20} className="text-green-500" /> Deliver Final Asset
+                  <CheckCircle2 size={20} className="text-[#ff4d00]" /> Deliver Final Asset
                 </h2>
                 
                 <p className="text-white/50 text-xs mb-6">
@@ -147,7 +143,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
                         value={deliverTitle} 
                         onChange={(e) => setDeliverTitle(e.target.value)} 
                         placeholder="e.g. EP 30 Final Version" 
-                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-green-500 transition-colors" 
+                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
                         required 
                       />
                     </div>
@@ -156,7 +152,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
                       <select 
                         value={deliverType} 
                         onChange={(e) => setDeliverType(e.target.value)} 
-                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white appearance-none focus:outline-none focus:border-green-500 transition-colors"
+                        className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white appearance-none focus:outline-none focus:border-[#ff4d00] transition-colors"
                       >
                         <option value="Horizontal Podcast">Horizontal Podcast</option>
                         <option value="Vertical Reel">Vertical Reel / Short</option>
@@ -171,21 +167,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ supabase }) => {
                       value={deliverLink} 
                       onChange={(e) => setDeliverLink(e.target.value)} 
                       placeholder="https://..." 
-                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-green-500 transition-colors" 
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
                       required 
                     />
                   </div>
                   <button 
                     type="submit" 
                     disabled={isDelivering} 
-                    className="bg-green-500 text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl hover:bg-green-400 transition-all text-sm w-full md:w-auto flex items-center justify-center gap-2"
+                    className="bg-[#ff4d00] text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl hover:bg-orange-500 transition-all text-sm w-full md:w-auto flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,77,0,0.3)]"
                   >
                     <Send size={16} />
                     {isDelivering ? 'Pushing to Client Vault...' : 'Deliver to Asset Vault'}
                   </button>
                 </form>
               </div>
-
             </>
           ) : (
             <div className="bg-[#131313] border border-white/5 rounded-3xl p-12 text-center flex flex-col items-center justify-center">
