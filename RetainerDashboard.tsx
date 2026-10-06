@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, PlayCircle, CheckCircle2, MessageSquare, 
-  Film, Smartphone, Link as LinkIcon, Download, Send, X, ShieldCheck, FolderOpen, User
+  Film, Smartphone, Link as LinkIcon, Download, Send, X, ShieldCheck, FolderOpen, Image as ImageIcon
 } from 'lucide-react';
 import VideoReviewRoom from './VideoReviewRoom';
 
@@ -36,7 +36,6 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
     fetchData();
   }, [userId, supabase]);
 
-  // Real-time Chat & Comment Subscriptions
   useEffect(() => {
     if (!supabase || !userId) return;
 
@@ -136,8 +135,11 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
   const deliveryProjects = projects.filter(p => p.type === 'Raw Folder');
   const productionProjects = projects.filter(p => p.type !== 'Raw Folder');
 
-  const horizontalDelivered = assets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
-  const verticalDelivered = assets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
+  const videoAssets = assets.filter(a => a.asset_type !== 'Thumbnail');
+  const thumbnailAssets = assets.filter(a => a.asset_type === 'Thumbnail');
+
+  const horizontalDelivered = videoAssets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
+  const verticalDelivered = videoAssets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
 
   return (
     <div className="text-[#F5F5F0] font-sans relative pb-28 md:pb-12 px-4 md:px-0">
@@ -303,16 +305,53 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
             )}
           </div>
 
-          {/* STAGE 3: FINAL VIDEOS */}
-          <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl">
-            <h2 className="font-black uppercase tracking-widest text-white mb-6 text-lg md:text-xl flex items-center gap-2">
-              <CheckCircle2 size={20} className="text-green-500" /> Stage 3: Final Videos
+          {/* STAGE 3: FINAL VIDEOS & THUMBNAILS */}
+          <div className="bg-[#131313] border border-white/5 rounded-3xl p-5 md:p-8 shadow-xl space-y-8">
+            <h2 className="font-black uppercase tracking-widest text-white text-lg md:text-xl flex items-center gap-2">
+              <CheckCircle2 size={20} className="text-green-500" /> Stage 3: Final Assets
             </h2>
-            {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading vault...</p> : assets.length === 0 ? (
+
+            {/* THUMBNAILS IMAGE GALLERY */}
+            {thumbnailAssets.length > 0 && (
+              <div className="space-y-4 border-b border-white/10 pb-8">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-white/60 flex items-center gap-2">
+                  <ImageIcon size={16} className="text-[#ff4d00]" /> Cover Art & Thumbnails ({thumbnailAssets.length})
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {thumbnailAssets.map((thumb) => (
+                    <div key={thumb.id} className="bg-black border border-white/10 rounded-2xl overflow-hidden group hover:border-[#ff4d00]/50 transition-all flex flex-col justify-between shadow-lg">
+                      <div className="aspect-video relative overflow-hidden bg-black">
+                        <img 
+                          src={thumb.download_url} 
+                          alt={thumb.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="p-3 flex justify-between items-center bg-[#111]">
+                        <span className="text-[10px] font-bold text-white truncate pr-1">{thumb.title}</span>
+                        <a 
+                          href={thumb.download_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          download
+                          className="p-1.5 bg-[#ff4d00] text-black rounded-lg hover:bg-orange-500 transition-colors shrink-0" 
+                          title="Download High-Res Image"
+                        >
+                          <Download size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* COMPLETED VIDEO DELIVERABLES */}
+            {isLoading ? <p className="text-white/40 text-sm animate-pulse">Loading vault...</p> : videoAssets.length === 0 && thumbnailAssets.length === 0 ? (
                <p className="text-white/40 text-sm">No completed assets yet.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {assets.map(asset => (
+                {videoAssets.map(asset => (
                   <div key={asset.id} className="bg-black/50 border border-white/5 rounded-2xl p-5 hover:border-green-500/30 transition-colors group flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-6">
                       <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-white/50 group-hover:text-green-500 transition-colors">
@@ -364,25 +403,22 @@ const RetainerDashboard: React.FC<RetainerDashboardProps> = ({ userId, supabase 
                 ) : (
                   messages.map((msg) => (
                     <div key={msg.id} className={`flex items-end gap-2.5 ${msg.sender_type === 'admin' ? 'justify-start' : 'justify-end'}`}>
-                      {/* ADMIN AVATAR */}
                       {msg.sender_type === 'admin' && (
                         <div className="w-7 h-7 rounded-full bg-[#ff4d00]/20 border border-[#ff4d00]/50 flex items-center justify-center text-[#ff4d00] shrink-0 text-[10px] font-black uppercase">
                           R
                         </div>
                       )}
 
-                      {/* MESSAGE BUBBLE */}
                       <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-white/10 text-white rounded-bl-none border border-white/10' : 'bg-[#ff4d00] text-black font-medium rounded-br-none'}`}>
                         {msg.message}
                       </div>
 
-                      {/* CLIENT AVATAR FROM PROFILE */}
                       {msg.sender_type !== 'admin' && (
                         userProfile?.avatar_url ? (
                           <img src={userProfile.avatar_url} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0" />
                         ) : (
                           <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 text-[10px] font-bold uppercase">
-                            {userProfile?.first_name ? userProfile.first_name[0] : <User size={12} />}
+                            {userProfile?.first_name ? userProfile.first_name[0] : 'C'}
                           </div>
                         )
                       )}
