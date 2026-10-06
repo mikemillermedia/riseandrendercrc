@@ -68,7 +68,7 @@ export default function Hub() {
 
       } catch (err) {
         console.error("Initialization error:", err);
-      } font-sans finally {
+      } finally {
         setIsLoading(false);
       }
     };
@@ -325,14 +325,17 @@ export default function Hub() {
                     <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
                       <div>
                         {/* Image Banner Container */}
-                        <div className="h-52 overflow-hidden relative bg-black">
+                        <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
                           <img 
-                            src="/virtual%20studio%20consultation%20mockup.jpg"
+                            src="/consultation.jpg"
                             alt="Virtual Studio Consultation"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
-                          <div className="absolute top-4 left-4">
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
+                          <div className="absolute top-4 left-4 z-10">
                             <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
                               1-on-1 Strategy
                             </span>
@@ -367,14 +370,17 @@ export default function Hub() {
                     <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
                       <div>
                         {/* Image Banner Container */}
-                        <div className="h-52 overflow-hidden relative bg-black">
+                        <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
                           <img 
-                            src="/Post%20Production%20Retainer%20mockup.jpg"
+                            src="/retainer.jpg"
                             alt="Post Production Retainer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
-                          <div className="absolute top-4 left-4">
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
+                          <div className="absolute top-4 left-4 z-10">
                             <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
                               Turnkey Editing
                             </span>
@@ -409,14 +415,17 @@ export default function Hub() {
                     <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
                       <div>
                         {/* Image Banner Container */}
-                        <div className="h-52 overflow-hidden relative bg-black">
+                        <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
                           <img 
-                            src="/the%20build-out%20mockup.jpg"
+                            src="/buildout.jpg"
                             alt="The Build Out"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
-                          <div className="absolute top-4 left-4">
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
+                          <div className="absolute top-4 left-4 z-10">
                             <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
                               Full-Service On-Site
                             </span>
