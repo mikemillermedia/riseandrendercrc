@@ -182,14 +182,12 @@ const AdminDashboard: React.FC = () => {
     } finally { setIsSendingReview(false); }
   };
 
-  // UPLOAD FILES (THUMBNAILS / ASSETS) DIRECTLY FROM PHONE OR PC
   const handleDeliverAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !supabase) return;
 
     setIsDelivering(true);
     try {
-      // Direct File Upload Flow (Supports up to 4 thumbnails)
       if (selectedFiles.length > 0) {
         for (let i = 0; i < selectedFiles.length; i++) {
           const file = selectedFiles[i];
@@ -213,9 +211,7 @@ const AdminDashboard: React.FC = () => {
             file_size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
           }]);
         }
-      } 
-      // Link Flow (Google Drive / Dropbox)
-      else if (deliverLink.trim()) {
+      } else if (deliverLink.trim()) {
         const { error } = await supabase.from('retainer_assets').insert([{
           user_id: selectedClient.id,
           title: deliverTitle.trim() || "Delivered Asset",
@@ -299,8 +295,11 @@ const AdminDashboard: React.FC = () => {
 
   const deliveryProjects = clientProjects.filter(p => p.type === 'Raw Folder');
   const productionProjects = clientProjects.filter(p => p.type !== 'Raw Folder');
+  
+  // METRIC COUNTERS
   const horizontalDelivered = clientAssets.filter(a => ['Horizontal Podcast', 'Long Form', 'Full Length', 'Video'].includes(a.asset_type)).length;
   const verticalDelivered = clientAssets.filter(a => ['Vertical Reel', 'Social', 'Reel', 'Short', 'Vertical Clip'].includes(a.asset_type)).length;
+  const thumbnailDelivered = clientAssets.filter(a => a.asset_type === 'Thumbnail').length;
 
   return (
     <div className="min-h-screen bg-[#050505] text-[#F5F5F0] font-sans">
@@ -451,7 +450,7 @@ const AdminDashboard: React.FC = () => {
                           </select>
                         </div>
 
-                        {/* DIRECT FILE UPLOADER (FOR PHONE / COMPUTER) */}
+                        {/* DIRECT FILE UPLOADER */}
                         <div className="border border-dashed border-white/20 rounded-xl p-4 bg-black/40 text-center">
                           <label className="cursor-pointer block">
                             <Upload size={20} className="mx-auto text-green-500 mb-2" />
@@ -476,7 +475,6 @@ const AdminDashboard: React.FC = () => {
                           </label>
                         </div>
 
-                        {/* OR PASTE URL */}
                         <div>
                           <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Or Paste Download Link</label>
                           <input 
@@ -524,7 +522,8 @@ const AdminDashboard: React.FC = () => {
                   ) : (
                     <div className="space-y-8 relative z-10">
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* STAT COUNTERS GRID WITH THUMBNAIL COUNT */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-4 flex justify-between items-center">
                           <span className="text-xs font-bold text-white/50 uppercase tracking-wider">Podcasts</span>
                           <span className="text-lg font-black text-[#ff4d00]">{horizontalDelivered}</span>
@@ -532,6 +531,10 @@ const AdminDashboard: React.FC = () => {
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-4 flex justify-between items-center">
                           <span className="text-xs font-bold text-white/50 uppercase tracking-wider">Reels / Shorts</span>
                           <span className="text-lg font-black text-[#ff4d00]">{verticalDelivered}</span>
+                        </div>
+                        <div className="bg-[#131313] border border-white/5 rounded-2xl p-4 flex justify-between items-center">
+                          <span className="text-xs font-bold text-white/50 uppercase tracking-wider">Thumbnails</span>
+                          <span className="text-lg font-black text-[#ff4d00]">{thumbnailDelivered}</span>
                         </div>
                       </div>
 
@@ -754,7 +757,6 @@ const AdminDashboard: React.FC = () => {
                 ) : (
                   messages.map((msg) => (
                     <div key={msg.id} className={`flex items-end gap-2.5 ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                      {/* CLIENT AVATAR */}
                       {msg.sender_type !== 'admin' && (
                         selectedClient.avatar_url ? (
                           <img src={selectedClient.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0" />
@@ -765,12 +767,10 @@ const AdminDashboard: React.FC = () => {
                         )
                       )}
 
-                      {/* MESSAGE BUBBLE */}
                       <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.sender_type === 'admin' ? 'bg-[#ff4d00] text-black font-medium rounded-br-none' : 'bg-white/10 text-white rounded-bl-none border border-white/10'}`}>
                         {msg.message}
                       </div>
 
-                      {/* ADMIN AVATAR */}
                       {msg.sender_type === 'admin' && (
                         <div className="w-7 h-7 rounded-full bg-[#ff4d00]/20 border border-[#ff4d00]/50 flex items-center justify-center text-[#ff4d00] shrink-0 text-[10px] font-black uppercase">
                           R
