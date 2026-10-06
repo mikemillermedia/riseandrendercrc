@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, FolderOpen, Send, CheckCircle2, AlertTriangle, 
-  Film, Smartphone, PlayCircle, MessageSquare, X, ShieldCheck, Trash2, Pencil, User 
+  Film, Smartphone, PlayCircle, MessageSquare, X, ShieldCheck, Trash2, Pencil, User, Upload, Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
@@ -26,7 +26,8 @@ const AdminDashboard: React.FC = () => {
   // Form State: Final Delivery
   const [deliverLink, setDeliverLink] = useState('');
   const [deliverTitle, setDeliverTitle] = useState('');
-  const [deliverType, setDeliverType] = useState('Horizontal Podcast');
+  const [deliverType, setDeliverType] = useState('Thumbnail');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDelivering, setIsDelivering] = useState(false);
 
   // Client Snippet State
@@ -71,7 +72,6 @@ const AdminDashboard: React.FC = () => {
     }
   }, [selectedClient]);
 
-  // Real-time Chat & Comment Subscriptions
   useEffect(() => {
     if (!selectedClient || !supabase) return;
     
@@ -107,10 +107,7 @@ const AdminDashboard: React.FC = () => {
   const fetchClients = async () => {
     try {
       setDbError(null);
-      const { data, error } = await supabase!
-        .from('profiles')
-        .select('*');
-      
+      const { data, error } = await supabase!.from('profiles').select('*');
       if (error) throw error;
       if (data) {
         setClients(data);
@@ -185,30 +182,68 @@ const AdminDashboard: React.FC = () => {
     } finally { setIsSendingReview(false); }
   };
 
+  // UPLOAD FILES (THUMBNAILS / ASSETS) DIRECTLY FROM PHONE OR PC
   const handleDeliverAsset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClient || !deliverLink.trim() || !deliverTitle.trim() || !supabase) return;
-    
+    if (!selectedClient || !supabase) return;
+
     setIsDelivering(true);
     try {
-      const { error } = await supabase.from('retainer_assets').insert([{
-        user_id: selectedClient.id,
-        title: deliverTitle,
-        asset_type: deliverType,
-        download_url: deliverLink,
-        file_size: "Link"
-      }]);
-      if (error) throw error;
+      // Direct File Upload Flow (Supports up to 4 thumbnails)
+      if (selectedFiles.length > 0) {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          const fileExt = file.name.split('.').pop();
+          const filePath = `${selectedClient.id}/${Date.now()}_${i}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage.from('thumbnails').upload(filePath, file);
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage.from('thumbnails').getPublicUrl(filePath);
+          
+          const title = deliverTitle.trim() 
+            ? (selectedFiles.length > 1 ? `${deliverTitle.trim()} Option ${i + 1}` : deliverTitle.trim())
+            : `Thumbnail Option ${i + 1}`;
+
+          await supabase.from('retainer_assets').insert([{
+            user_id: selectedClient.id,
+            title: title,
+            asset_type: deliverType,
+            download_url: urlData.publicUrl,
+            file_size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+          }]);
+        }
+      } 
+      // Link Flow (Google Drive / Dropbox)
+      else if (deliverLink.trim()) {
+        const { error } = await supabase.from('retainer_assets').insert([{
+          user_id: selectedClient.id,
+          title: deliverTitle.trim() || "Delivered Asset",
+          asset_type: deliverType,
+          download_url: deliverLink.trim(),
+          file_size: "Link"
+        }]);
+        if (error) throw error;
+      } else {
+        alert("Please select a file to upload or enter a download link.");
+        setIsDelivering(false);
+        return;
+      }
+
       setDeliverTitle('');
       setDeliverLink('');
+      setSelectedFiles([]);
       fetchClientData(selectedClient.id);
+      alert("Asset(s) delivered successfully!");
     } catch (error: any) {
       alert(`Delivery Failed: ${error.message}`);
-    } finally { setIsDelivering(false); }
+    } finally { 
+      setIsDelivering(false); 
+    }
   };
 
   const handleDeleteItem = async (id: string, type: 'project' | 'asset') => {
-    if (!confirm(`Are you sure you want to delete this ${type}? This will remove it from the client's feed.`)) return;
+    if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
     if (!supabase || !selectedClient) return;
 
     try {
@@ -283,9 +318,8 @@ const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
-          {/* LEFT SIDEBAR: CLIENT LIST WITH AVATARS */}
+          {/* LEFT SIDEBAR: CLIENT LIST */}
           <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-12 w-full">
-            
             {dbError && (
               <div className="bg-red-500/10 border border-red-500/50 p-5 rounded-3xl shadow-xl">
                 <h4 className="text-red-500 font-black text-sm uppercase tracking-widest flex items-center gap-2 mb-2">
@@ -341,6 +375,7 @@ const AdminDashboard: React.FC = () => {
             {selectedClient ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
                   {/* FORM 1: SEND TO "IN PRODUCTION" */}
                   <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col justify-between focus-within:border-[#ff4d00]/50 transition-colors">
                     <div>
@@ -348,7 +383,7 @@ const AdminDashboard: React.FC = () => {
                         <PlayCircle size={18} className="text-[#ff4d00]" /> Send for Review
                       </h2>
                       <p className="text-white/50 text-[10px] mb-6 leading-relaxed">
-                        Push a Cloudflare .mp4 link to the client's <strong className="text-white">In Production</strong> stage.
+                        Push a Cloudflare .mp4 video link to the client's <strong className="text-white">In Production</strong> stage.
                       </p>
 
                       <form onSubmit={handleSendForReview} className="space-y-4">
@@ -384,44 +419,74 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* FORM 2: DELIVER FINAL ASSET */}
+                  {/* FORM 2: DELIVER FINAL ASSET & THUMBNAIL UPLOADER */}
                   <div className="bg-[#131313] border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col justify-between focus-within:border-green-500/50 transition-colors">
                     <div>
                       <h2 className="text-white text-sm font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                        <CheckCircle2 size={18} className="text-green-500" /> Deliver Final Asset
+                        <CheckCircle2 size={18} className="text-green-500" /> Deliver Final Asset / Thumbnails
                       </h2>
                       <p className="text-white/50 text-[10px] mb-6 leading-relaxed">
-                        Push a final link to the client's <strong className="text-white">Final Videos</strong> section to update quotas.
+                        Upload up to <strong className="text-white">4 thumbnails directly from your phone/PC</strong> or paste a video link.
                       </p>
 
                       <form onSubmit={handleDeliverAsset} className="space-y-4">
                         <div>
-                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Asset Title</label>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Deliverable Title</label>
                           <input 
                             type="text" value={deliverTitle} onChange={(e) => setDeliverTitle(e.target.value)} 
-                            placeholder="e.g. EP 30 Final" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-green-500" required 
+                            placeholder="e.g. Episode 30 Cover Art" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-green-500" 
                           />
                         </div>
+                        
                         <div>
                           <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Format Type</label>
                           <select 
                             value={deliverType} onChange={(e) => setDeliverType(e.target.value)} 
                             className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white appearance-none focus:outline-none focus:border-green-500"
                           >
+                            <option value="Thumbnail">Thumbnail / Image (Up to 4)</option>
                             <option value="Horizontal Podcast">Horizontal Podcast</option>
                             <option value="Vertical Reel">Vertical Reel / Short</option>
                             <option value="Other">Other Media</option>
                           </select>
                         </div>
+
+                        {/* DIRECT FILE UPLOADER (FOR PHONE / COMPUTER) */}
+                        <div className="border border-dashed border-white/20 rounded-xl p-4 bg-black/40 text-center">
+                          <label className="cursor-pointer block">
+                            <Upload size={20} className="mx-auto text-green-500 mb-2" />
+                            <span className="text-[10px] font-bold text-white uppercase tracking-wider block">
+                              {selectedFiles.length > 0 
+                                ? `${selectedFiles.length} File(s) Selected` 
+                                : 'Upload Image(s) From Phone/PC'}
+                            </span>
+                            <span className="text-[9px] text-white/40 block mt-1">Select up to 4 thumbnail images</span>
+                            <input 
+                              type="file" 
+                              accept="image/*,video/*" 
+                              multiple 
+                              onChange={(e) => {
+                                if (e.target.files) {
+                                  const filesArray = Array.from(e.target.files).slice(0, 4);
+                                  setSelectedFiles(filesArray);
+                                }
+                              }} 
+                              className="hidden" 
+                            />
+                          </label>
+                        </div>
+
+                        {/* OR PASTE URL */}
                         <div>
-                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Folder / Download Link</label>
+                          <label className="block text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1.5">Or Paste Download Link</label>
                           <input 
                             type="url" value={deliverLink} onChange={(e) => setDeliverLink(e.target.value)} 
-                            placeholder="https://..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-green-500" required 
+                            placeholder="https://drive.google.com/..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-green-500" 
                           />
                         </div>
+
                         <button type="submit" disabled={isDelivering} className="w-full bg-green-500 text-black font-black uppercase tracking-widest px-4 py-3.5 rounded-xl hover:bg-green-400 transition-all text-[10px] flex items-center justify-center gap-2 mt-2">
-                          <Send size={14} /> {isDelivering ? 'Delivering...' : 'Push to Final Videos'}
+                          <Send size={14} /> {isDelivering ? 'Uploading & Delivering...' : 'Push Deliverable(s)'}
                         </button>
                       </form>
                     </div>
@@ -532,14 +597,18 @@ const AdminDashboard: React.FC = () => {
 
                         {/* Stage 3 */}
                         <div className="bg-[#131313] border border-white/5 rounded-2xl p-5">
-                          <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 3: Final</h3>
+                          <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Stage 3: Final Assets</h3>
                           {clientAssets.length === 0 ? <p className="text-white/30 text-xs italic">No delivered assets.</p> : (
                             <div className="space-y-2">
                               {clientAssets.map(asset => (
                                 <div key={asset.id} className="bg-black/50 border border-white/5 rounded-xl p-3 relative group overflow-hidden">
                                   <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2 min-w-0 pr-2">
-                                      <CheckCircle2 size={12} className="text-green-500 shrink-0" />
+                                      {asset.asset_type === 'Thumbnail' ? (
+                                        <ImageIcon size={12} className="text-green-500 shrink-0" />
+                                      ) : (
+                                        <CheckCircle2 size={12} className="text-green-500 shrink-0" />
+                                      )}
                                       <p className="text-[10px] font-bold text-white truncate">{asset.title}</p>
                                     </div>
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-black/80 px-1.5 py-0.5 rounded shadow">
@@ -608,6 +677,7 @@ const AdminDashboard: React.FC = () => {
                       </>
                     ) : (
                       <>
+                        <option value="Thumbnail">Thumbnail / Cover Art</option>
                         <option value="Horizontal Podcast">Horizontal Podcast</option>
                         <option value="Vertical Reel">Vertical Reel / Short</option>
                         <option value="Other">Other Media</option>
