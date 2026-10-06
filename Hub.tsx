@@ -68,7 +68,7 @@ export default function Hub() {
 
       } catch (err) {
         console.error("Initialization error:", err);
-      } finally {
+      } font-sans finally {
         setIsLoading(false);
       }
     };
@@ -325,15 +325,11 @@ export default function Hub() {
                     <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
                       <div>
                         {/* Image Banner Container */}
-                        <div className="h-48 overflow-hidden relative bg-black">
+                        <div className="h-52 overflow-hidden relative bg-black">
                           <img 
-                            src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/studio-consultation.jpg" // <-- Replace with your image link
+                            src="/virtual%20studio%20consultation%20mockup.jpg"
                             alt="Virtual Studio Consultation"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                            onError={(e: any) => {
-                              // Fallback if image link is not uploaded yet
-                              e.target.style.display = 'none';
-                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
                           <div className="absolute top-4 left-4">
@@ -357,7 +353,7 @@ export default function Hub() {
                       {/* Card Action */}
                       <div className="p-6 pt-0">
                         <a 
-                          href="https://your-booking-link.com" // <-- Replace with your booking link
+                          href="https://your-booking-link.com" 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
@@ -371,14 +367,11 @@ export default function Hub() {
                     <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
                       <div>
                         {/* Image Banner Container */}
-                        <div className="h-48 overflow-hidden relative bg-black">
+                        <div className="h-52 overflow-hidden relative bg-black">
                           <img 
-                            src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/post-production-retainer.jpg" // <-- Replace with your image link
+                            src="/Post%20Production%20Retainer%20mockup.jpg"
                             alt="Post Production Retainer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                            onError={(e: any) => {
-                              e.target.style.display = 'none';
-                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
                           <div className="absolute top-4 left-4">
@@ -402,7 +395,7 @@ export default function Hub() {
                       {/* Card Action */}
                       <div className="p-6 pt-0">
                         <a 
-                          href="https://your-retainer-link.com" // <-- Replace with your retainer link
+                          href="https://your-retainer-link.com" 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
@@ -416,14 +409,11 @@ export default function Hub() {
                     <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
                       <div>
                         {/* Image Banner Container */}
-                        <div className="h-48 overflow-hidden relative bg-black">
+                        <div className="h-52 overflow-hidden relative bg-black">
                           <img 
-                            src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/studio-buildout.jpg" // <-- Replace with your image link
+                            src="/the%20build-out%20mockup.jpg"
                             alt="The Build Out"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                            onError={(e: any) => {
-                              e.target.style.display = 'none';
-                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
                           <div className="absolute top-4 left-4">
@@ -447,7 +437,7 @@ export default function Hub() {
                       {/* Card Action */}
                       <div className="p-6 pt-0">
                         <a 
-                          href="https://your-buildout-link.com" // <-- Replace with your discovery call link
+                          href="https://your-buildout-link.com" 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
