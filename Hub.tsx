@@ -40,6 +40,10 @@ export default function Hub() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  // Password Update State
+  const [newPassword, setNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   // INITIALIZATION
   useEffect(() => {
     const initApp = async () => {
@@ -139,6 +143,30 @@ export default function Hub() {
       alert(`Error saving profile: ${error.message}`);
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  // PASSWORD UPDATE HANDLER
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || !newPassword) return;
+    
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters long.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      
+      alert("Password updated successfully!");
+      setNewPassword(''); // Clear the input field
+    } catch (error: any) {
+      alert(`Error updating password: ${error.message}`);
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -606,6 +634,34 @@ export default function Hub() {
                     </div>
 
                   </form>
+
+                  {/* SECURITY / CHANGE PASSWORD SECTION */}
+                  <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
+                    <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
+                      <Lock size={16} className="text-[#ff4d00]" /> Account Security
+                    </h3>
+                    <p className="text-white/40 text-xs mb-6">Update your password to keep your Sanctuary assets secure.</p>
+                    
+                    <form onSubmit={handleUpdatePassword} className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <input 
+                          type="password" 
+                          value={newPassword} 
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
+                          placeholder="Enter new password"
+                        />
+                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={isUpdatingPassword || !newPassword}
+                        className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center transition-all disabled:opacity-50 shrink-0"
+                      >
+                        {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </form>
+                  </div>
+
                 </div>
               </div>
             )}
