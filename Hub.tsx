@@ -327,7 +327,7 @@ export default function Hub() {
                         {/* Image Banner Container */}
                         <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
                           <img 
-                            src="/consultation.jpg"
+                            src="/virtual-studio-consultation-mockup.jpg"
                             alt="Virtual Studio Consultation"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                             onError={(e: any) => {
@@ -372,7 +372,7 @@ export default function Hub() {
                         {/* Image Banner Container */}
                         <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
                           <img 
-                            src="/retainer.jpg"
+                            src="/post-production-retainer-mockup.jpg"
                             alt="Post Production Retainer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                             onError={(e: any) => {
@@ -417,7 +417,7 @@ export default function Hub() {
                         {/* Image Banner Container */}
                         <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
                           <img 
-                            src="/buildout.jpg"
+                            src="/the-build-out-mockup.jpg"
                             alt="The Build Out"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                             onError={(e: any) => {
