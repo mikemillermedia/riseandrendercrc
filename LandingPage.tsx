@@ -133,14 +133,14 @@ const LandingPage: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
                 </div>
                 <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "10/10 recommended! Mike transformed my spare room into a <span className="text-[#ff4d00]">high-end studio</span>. I don't have to worry about tech anymore, I just <span className="text-[#ff4d00]">show up and record</span>."
+                  "10/10 recommended! Mike transformed my office into a <span className="text-[#ff4d00]">high-end studio</span>. I don't have to worry about tech anymore, I just <span className="text-[#ff4d00]">show up and record</span>."
                 </h3>
                 <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
                   <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                     <span className="text-white/50 font-bold text-sm">C</span>
                   </div>
                   <div>
-                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Candace J.</p>
+                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Barron D.</p>
                     <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
                   </div>
                 </div>
@@ -152,14 +152,14 @@ const LandingPage: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
                 </div>
                 <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "The Virtual Consultation blew my mind. Mike gave me a custom blueprint for my exact office layout. I finally know <span className="text-[#ff4d00]">what gear to buy</span> and <span className="text-[#ff4d00]">where to put it</span>."
+                  "Mike came to our consult prepared with a plan for my podcast. I wasn't sure what to expect, as it wasn't a process I had gone through before. However, thanks to his curiosity and suggestions, I trusted that I had chosen the right person to create my logo. <span className="text-[#ff4d00]">Mike was excited and brought experience that also</span> and <span className="text-[#ff4d00]">increased my excitement for the final product!</span>."
                 </h3>
                 <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
                   <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                     <span className="text-white/50 font-bold text-sm">M</span>
                   </div>
                   <div>
-                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Marcus T.</p>
+                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Jasmine M.</p>
                     <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Consultation Client</p>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ const LandingPage: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
                 </div>
                 <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "The White-Glove service is a lifesaver. They came in, <span className="text-[#ff4d00]">routed all the messy cables</span>, and trained me on the system. Now my podcast looks incredibly professional."
+                  "The Build-Out service is a lifesaver. Mike came in, <span className="text-[#ff4d00]">routed all the messy cables</span>, and trained me on the system. Now my podcast looks incredibly professional."
                 </h3>
                 <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
                   <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
@@ -179,7 +179,7 @@ const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-white font-black uppercase tracking-widest text-[10px]">Sarah L.</p>
-                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
+                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Build-Out Client</p>
                   </div>
                 </div>
               </div>
