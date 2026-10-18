@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag
+  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -193,7 +193,56 @@ const LandingPage: React.FC = () => {
       <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
 
       {/* PROCESS & PRICING SECTION */}
-      <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-10 scroll-m-20">
+      <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-4 scroll-m-20">
+
+        {/* FREE ASSET VAULT TEASER SECTION */}
+        <section className="py-12 md:py-16 px-5 max-w-6xl mx-auto relative z-20">
+          <motion.div 
+            initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
+            className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]"
+          >
+            {/* Orange Background Glow */}
+            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[120px] pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+              
+              {/* Content Side */}
+              <div className="flex-1 text-center md:text-left space-y-4">
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                  <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md inline-block">
+                    Free Resource
+                  </span>
+                  <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                    Inside The Sanctuary Hub
+                  </span>
+                </div>
+                
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white leading-tight">
+                  The Content Creator <span className="text-[#ff4d00]">Studio Kit</span>
+                </h2>
+                
+                <p className="text-white/70 text-sm md:text-base leading-relaxed max-w-xl mx-auto md:mx-0">
+                  Frustrated by expensive hourly studio rentals and complicated camera gear that leaves your videos looking dark and amateur? 
+                  Download our free digital guide for a proven, no-guesswork at-home studio setup.
+                </p>
+              </div>
+              
+              {/* Action Side */}
+              <div className="shrink-0 w-full md:w-auto flex flex-col items-center">
+                <button 
+                  onClick={() => navigate('/login')} 
+                  className="w-full md:w-auto bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,77,0,0.35)] transition-all hover:scale-105"
+                >
+                  Create Free Account <ArrowUpRight size={18} />
+                </button>
+                <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mt-4 text-center">
+                  Instant Download Upon Sign-In
+                </p>
+              </div>
+              
+            </div>
+          </motion.div>
+        </section>
         
         {/* THE 4-STEP SANCTUARY PROCESS */}
         <section className="py-12 relative z-10 w-full">
