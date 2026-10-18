@@ -141,7 +141,7 @@ const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-white font-black uppercase tracking-widest text-[10px]">Barron D.</p>
-                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
+                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Build-Out Client</p>
                   </div>
                 </div>
               </div>
