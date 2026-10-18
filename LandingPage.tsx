@@ -152,7 +152,7 @@ const LandingPage: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
                 </div>
                 <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "Mike came to our consult prepared with a plan for my podcast. I wasn't sure what to expect, as it wasn't a process I had gone through before. However, thanks to his curiosity and suggestions, I trusted that I had chosen the right person to create my logo. <span className="text-[#ff4d00]">Mike was excited and brought experience that also</span> and <span className="text-[#ff4d00]">increased my excitement for the final product!</span>."
+                  "Mike came to our consult prepared with a plan for my podcast. I wasn't sure what to expect, as it wasn't a process I had gone through before. However, thanks to his curiosity and suggestions, I trusted that I had chosen the right person. <span className="text-[#ff4d00]">Mike was excited and brought experience that also</span> and <span className="text-[#ff4d00]">increased my excitement for the final product!</span>."
                 </h3>
                 <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
                   <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
