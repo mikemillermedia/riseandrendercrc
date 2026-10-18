@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight
+  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight, FolderDown
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -92,12 +92,12 @@ const LandingPage: React.FC = () => {
       <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-48 pb-20">
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-6xl w-full flex flex-col items-center">
           
-          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black mb-4 md:mb-6 leading-[0.9] tracking-tighter uppercase text-white drop-shadow-2xl">
-            Build Your Personal <br /> Content Sanctuary
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-[6.5rem] font-black mb-4 md:mb-6 leading-[0.95] tracking-tighter uppercase text-white drop-shadow-2xl">
+            End the Studio Struggle. <br /> Just Press Record.
           </motion.h1>
           
-          <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-3xl font-bold mb-12 md:mb-16 tracking-tight max-w-3xl text-white drop-shadow-lg">
-            We transform your room or office into a frictionless broadcast studio. <br className="hidden md:block"/>
+          <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-2xl font-bold mb-12 md:mb-16 tracking-tight max-w-2xl text-white/90 drop-shadow-lg mx-auto">
+            Frictionless, broadcast-ready setups engineered for your space. <br className="hidden md:block"/>
             <span className="text-[#ff4d00] mt-2 block drop-shadow-md">Rise In Your Purpose. Render Your Calling.</span>
           </motion.h2>
 
@@ -108,8 +108,8 @@ const LandingPage: React.FC = () => {
             >
               Book Virtual Consultation
             </button>
-            <button onClick={() => navigate('/login')} className="w-full sm:w-64 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
-              Sanctuary Hub
+            <button onClick={() => navigate('/login')} className="flex items-center justify-center gap-2 w-full sm:w-72 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
+              <FolderDown size={18} /> Freebie Asset Vault
             </button>
           </motion.div>
 
@@ -141,7 +141,7 @@ const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-white font-black uppercase tracking-widest text-[10px]">Barron D.</p>
-                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Build-Out Client</p>
+                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
                   </div>
                 </div>
               </div>
@@ -152,7 +152,7 @@ const LandingPage: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
                 </div>
                 <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "Mike came to our consult prepared with a plan for my podcast. I wasn't sure what to expect, as it wasn't a process I had gone through before. However, thanks to his curiosity and suggestions, I trusted that I had chosen the right person. <span className="text-[#ff4d00]">Mike was excited and brought experience that also</span> and <span className="text-[#ff4d00]">increased my excitement for the final product!</span>."
+                  "Mike came to our consult prepared with a plan for my podcast. I wasn't sure what to expect, as it wasn't a process I had gone through before. However, thanks to his curiosity and suggestions, I trusted that I had chosen the right person to create my logo. <span className="text-[#ff4d00]">Mike was excited and brought experience that also</span> and <span className="text-[#ff4d00]">increased my excitement for the final product!</span>."
                 </h3>
                 <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
                   <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
