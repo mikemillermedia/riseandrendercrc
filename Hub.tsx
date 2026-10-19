@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
-  User, Film, Sparkles, BookOpen, Camera, Save, Wrench, Calendar, ArrowUpRight
+  User, Film, Sparkles, BookOpen, Camera, Save
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -249,7 +249,7 @@ export default function Hub() {
                     Asset <span className="text-[#ff4d00]">Vault</span>
                   </h1>
                   <p className="text-white/50 text-xs md:text-sm max-w-lg mx-auto">
-                    Exclusive guides, 1-on-1 consultations, post-production retainers, and full studio buildouts engineered by Rise & Render.
+                    Exclusive guides, tools, and blueprints engineered by Rise & Render.
                   </p>
                 </div>
 
@@ -338,152 +338,29 @@ export default function Hub() {
                   </div>
                 </div>
 
-                {/* 2. SERVICES & UPGRADES SHOWCASE GRID */}
-                <div className="space-y-6">
-                  <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-                      <Sparkles className="text-[#ff4d00]" size={22} /> Studio Services & Upgrades
-                    </h2>
-                    <p className="text-white/40 text-xs uppercase tracking-widest font-bold">White-Glove Production Services</p>
+                {/* 2. HIDDEN / COMING SOON SECTION */}
+                <div className="relative w-full pb-8">
+                  
+                  {/* Overlay Lock Message */}
+                  <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-[#ff4d00]/40 text-[#ff4d00] font-black uppercase tracking-widest px-6 md:px-10 py-5 rounded-2xl shadow-[0_0_50px_rgba(255,77,0,0.3)] flex items-center gap-3 text-sm md:text-base">
+                      <Lock size={20} className="text-[#ff4d00]" /> MORE FREEBIES COMING SOON
+                    </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    
-                    {/* SERVICE CARD 1: VIRTUAL STUDIO CONSULTATION */}
-                    <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
-                      <div>
-                        {/* Image Banner Container */}
-                        <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
-                          <img 
-                            src="/virtual-studio-consultation-mockup.jpg"
-                            alt="Virtual Studio Consultation"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                            onError={(e: any) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
-                          <div className="absolute top-4 left-4 z-10">
-                            <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
-                              1-on-1 Strategy
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Card Content */}
-                        <div className="p-6 space-y-3">
-                          <h3 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                            <Video size={18} className="text-[#ff4d00]" /> Virtual Studio Consultation
-                          </h3>
-                          <p className="text-white/60 text-xs leading-relaxed">
-                            Complete remote audit of your room layout, acoustic treatment, lighting setup, audio chain, and camera settings to build a broadcast-ready studio environment.
-                          </p>
+                  
+                  {/* Blurred Placeholder Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-30 filter blur-[6px] select-none pointer-events-none">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col h-[380px]">
+                        <div className="h-48 bg-[#1a1a1a]"></div>
+                        <div className="p-6 md:p-8 flex-grow flex flex-col gap-4">
+                          <div className="h-4 bg-white/20 rounded w-1/3"></div>
+                          <div className="h-8 bg-white/20 rounded w-3/4"></div>
+                          <div className="h-16 bg-white/10 rounded w-full mt-2"></div>
+                          <div className="h-12 bg-[#333333] rounded w-full mt-auto"></div>
                         </div>
                       </div>
-
-                      {/* Card Action */}
-                      <div className="p-6 pt-0">
-                        <a 
-                          href="https://your-booking-link.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
-                        >
-                          <Calendar size={14} /> Book Session <ArrowUpRight size={14} />
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* SERVICE CARD 2: POST PRODUCTION RETAINER */}
-                    <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
-                      <div>
-                        {/* Image Banner Container */}
-                        <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
-                          <img 
-                            src="/post-production-retainer-mockup.jpg"
-                            alt="Post Production Retainer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                            onError={(e: any) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
-                          <div className="absolute top-4 left-4 z-10">
-                            <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
-                              Turnkey Editing
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Card Content */}
-                        <div className="p-6 space-y-3">
-                          <h3 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                            <Film size={18} className="text-[#ff4d00]" /> Post Production Retainer
-                          </h3>
-                          <p className="text-white/60 text-xs leading-relaxed">
-                            Monthly editing subscription for podcasts and vertical content. Includes full interactive Review Room feedback, timestamped revision notes, and direct team chat.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Card Action */}
-                      <div className="p-6 pt-0">
-                        <a 
-                          href="https://your-retainer-link.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
-                        >
-                          <Film size={14} /> Apply for Retainer <ArrowUpRight size={14} />
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* SERVICE CARD 3: THE BUILD OUT */}
-                    <div className="bg-[#131313] border border-white/10 rounded-3xl overflow-hidden hover:border-[#ff4d00]/40 transition-all group flex flex-col justify-between shadow-xl">
-                      <div>
-                        {/* Image Banner Container */}
-                        <div className="h-52 overflow-hidden relative bg-black flex items-center justify-center">
-                          <img 
-                            src="/the-build-out-mockup.jpg"
-                            alt="The Build Out"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                            onError={(e: any) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
-                          <div className="absolute top-4 left-4 z-10">
-                            <span className="bg-black/80 backdrop-blur-md border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md">
-                              Full-Service On-Site
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Card Content */}
-                        <div className="p-6 space-y-3">
-                          <h3 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                            <Wrench size={18} className="text-[#ff4d00]" /> The Build Out
-                          </h3>
-                          <p className="text-white/60 text-xs leading-relaxed">
-                            White-glove, in-person studio design and installation. From physical acoustic treatment and custom wiring to camera rigging, lighting grid installation, and staff training.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Card Action */}
-                      <div className="p-6 pt-0">
-                        <a 
-                          href="https://your-buildout-link.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="w-full bg-white/5 hover:bg-[#ff4d00] text-white hover:text-black font-black uppercase tracking-widest py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff4d00] transition-all"
-                        >
-                          <Wrench size={14} /> Schedule Discovery Call <ArrowUpRight size={14} />
-                        </a>
-                      </div>
-                    </div>
-
+                    ))}
                   </div>
                 </div>
 
