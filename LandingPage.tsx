@@ -106,7 +106,7 @@ const LandingPage: React.FC = () => {
             <div className="relative aspect-video bg-black rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-10">
               <iframe 
                 className="w-full h-full"
-                src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE" 
+                src="https://youtu.be/TQ9gDU9QtZg" 
                 title="Rise & Render VSL" 
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
