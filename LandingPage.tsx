@@ -94,7 +94,6 @@ const LandingPage: React.FC = () => {
           
           <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-2xl font-bold mb-8 md:mb-10 tracking-tight max-w-2xl text-white/90 drop-shadow-lg mx-auto">
             Frictionless, broadcast-ready setups engineered for your space. <br className="hidden md:block"/>
-            <span className="text-[#ff4d00] mt-1 md:mt-2 block drop-shadow-md">Rise In Your Purpose. Render Your Calling.</span>
           </motion.h2>
 
           {/* VSL VIDEO CONTAINER */}
