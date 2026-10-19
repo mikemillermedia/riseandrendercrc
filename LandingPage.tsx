@@ -61,10 +61,6 @@ const LandingPage: React.FC = () => {
     window.open(url, '_blank');
   };
 
-  const scrollToPricing = () => {
-    document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
       
@@ -89,21 +85,40 @@ const LandingPage: React.FC = () => {
       </motion.nav>
 
       {/* HERO SECTION */}
-      <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-48 pb-20">
+      <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-32 md:pt-40 pb-20">
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-6xl w-full flex flex-col items-center">
           
-          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-[6.5rem] font-black mb-4 md:mb-6 leading-[0.95] tracking-tighter uppercase text-white drop-shadow-2xl">
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-[6.5rem] font-black mb-4 leading-[0.95] tracking-tighter uppercase text-white drop-shadow-2xl">
             End the Studio Struggle. <br /> Just Press Record.
           </motion.h1>
           
-          <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-2xl font-bold mb-12 md:mb-16 tracking-tight max-w-2xl text-white/90 drop-shadow-lg mx-auto">
+          <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-2xl font-bold mb-8 md:mb-10 tracking-tight max-w-2xl text-white/90 drop-shadow-lg mx-auto">
             Frictionless, broadcast-ready setups engineered for your space. <br className="hidden md:block"/>
-            <span className="text-[#ff4d00] mt-2 block drop-shadow-md">Rise In Your Purpose. Render Your Calling.</span>
+            <span className="text-[#ff4d00] mt-1 md:mt-2 block drop-shadow-md">Rise In Your Purpose. Render Your Calling.</span>
           </motion.h2>
 
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16">
+          {/* VSL VIDEO CONTAINER */}
+          <motion.div variants={fadeUp} className="w-full max-w-3xl mx-auto mb-10 md:mb-12 relative group z-50">
+            {/* Orange Glow Effect Behind Video */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#ff4d00]/40 to-orange-600/40 rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition duration-1000 pointer-events-none"></div>
+            
+            {/* Actual Video Player */}
+            <div className="relative aspect-video bg-black rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-10">
+              <iframe 
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE" 
+                title="Rise & Render VSL" 
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            </div>
+          </motion.div>
+
+          {/* CTA BUTTONS (Now directly linking to Jotform & Login) */}
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16 relative z-50">
             <button 
-              onClick={scrollToPricing}
+              onClick={handleBookConsultation}
               className="flex items-center justify-center w-full sm:w-72 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,77,0,0.3)]"
             >
               Book Virtual Consultation
