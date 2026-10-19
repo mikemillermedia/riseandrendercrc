@@ -298,7 +298,7 @@ const LandingPage: React.FC = () => {
                 
                 {/* Top Image Section - Now fully filling the space without text overlay */}
                 <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
-                  <img src="/box-consult.png" alt="Virtual Studio Consultation" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <img src="/virtual-studio-consultation-mockup.jpg" alt="Virtual Studio Consultation" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   {/* Subtle bottom fade so it blends perfectly into the card body */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
                 </div>
@@ -346,7 +346,7 @@ const LandingPage: React.FC = () => {
                 
                 {/* Top Image Section - Now fully filling the space without text overlay */}
                 <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
-                  <img src="/box-retainer.png" alt="Post Production Retainer" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <img src="/post-production-retainer-mockup.jpg" alt="Post Production Retainer" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
                 </div>
 
@@ -375,7 +375,7 @@ const LandingPage: React.FC = () => {
                 
                 {/* Top Image Section - Now fully filling the space without text overlay */}
                 <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
-                  <img src="/box-buildout.png" alt="The Build-Out" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <img src="/the-build-out-mockup.jpg" alt="The Build-Out" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
                 </div>
 
