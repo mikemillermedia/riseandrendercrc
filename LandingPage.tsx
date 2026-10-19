@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight, FolderDown
+  Star, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight, FolderDown, Video, Film, Calendar, ClipboardList, Sparkles
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -50,14 +50,10 @@ const LandingPage: React.FC = () => {
 
   // DYNAMIC JOTFORM CHECKOUT LINK FOR TIER 1
   const handleBookConsultation = () => {
-    // Your exact Jotform PCI Booking Link
     let url = "https://pci.jotform.com/form/262714847150054";
-    
-    // If they typed a promo code, append it to the URL
     if (promoCode.trim()) {
        url += `?coupon=${encodeURIComponent(promoCode.trim())}`;
     }
-    
     window.open(url, '_blank');
   };
 
@@ -96,25 +92,27 @@ const LandingPage: React.FC = () => {
             Frictionless, broadcast-ready setups engineered for your space. <br className="hidden md:block"/>
           </motion.h2>
 
-          {/* VSL VIDEO CONTAINER */}
+          {/* VSL VIDEO CONTAINER (NATIVE SUPABASE PLAYER) */}
           <motion.div variants={fadeUp} className="w-full max-w-3xl mx-auto mb-10 md:mb-12 relative group z-50">
             {/* Orange Glow Effect Behind Video */}
             <div className="absolute -inset-1 bg-gradient-to-r from-[#ff4d00]/40 to-orange-600/40 rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition duration-1000 pointer-events-none"></div>
             
-            {/* Actual Video Player */}
+            {/* Native HTML5 Video Player */}
             <div className="relative aspect-video bg-black rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-10">
-              <iframe 
-                className="w-full h-full"
-                src="https://www.youtube.com/embed/TQ9gDU9QtZg?modestbranding=1&rel=0&iv_load_policy=3"
-                title="Rise & Render VSL" 
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen
-              ></iframe>
+              <video 
+                className="w-full h-full object-cover outline-none"
+                controls
+                playsInline
+                preload="metadata"
+                // poster="/optional-thumbnail-image.jpg" // Uncomment and add an image URL here if you want a custom cover image before they hit play
+              >
+                <source src="PASTE_YOUR_SUPABASE_LINK_HERE.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </motion.div>
 
-          {/* CTA BUTTONS (Now directly linking to Jotform & Login) */}
+          {/* CTA BUTTONS */}
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16 relative z-50">
             <button 
               onClick={handleBookConsultation}
@@ -206,7 +204,6 @@ const LandingPage: React.FC = () => {
       {/* GRADIENT TRANSITION */}
       <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
 
-      {/* PROCESS & PRICING SECTION */}
       <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-4 scroll-m-20">
 
         {/* FREE ASSET VAULT TEASER SECTION */}
@@ -215,12 +212,9 @@ const LandingPage: React.FC = () => {
             initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
             className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]"
           >
-            {/* Orange Background Glow */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[120px] pointer-events-none" />
             
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-              
-              {/* Content Side */}
               <div className="flex-1 text-center md:text-left space-y-4">
                 <div className="flex items-center justify-center md:justify-start gap-2">
                   <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md inline-block">
@@ -230,18 +224,14 @@ const LandingPage: React.FC = () => {
                     Inside The Sanctuary Hub
                   </span>
                 </div>
-                
                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white leading-tight">
                   The Content Creator <span className="text-[#ff4d00]">Studio Kit</span>
                 </h2>
-                
                 <p className="text-white/70 text-sm md:text-base leading-relaxed max-w-xl mx-auto md:mx-0">
                   Frustrated by expensive hourly studio rentals and complicated camera gear that leaves your videos looking dark and amateur? 
                   Download our free digital guide for a proven, no-guesswork at-home studio setup.
                 </p>
               </div>
-              
-              {/* Action Side */}
               <div className="shrink-0 w-full md:w-auto flex flex-col items-center">
                 <button 
                   onClick={() => navigate('/login')} 
@@ -253,7 +243,6 @@ const LandingPage: React.FC = () => {
                   Instant Download Upon Sign-In
                 </p>
               </div>
-              
             </div>
           </motion.div>
         </section>
@@ -261,7 +250,6 @@ const LandingPage: React.FC = () => {
         {/* THE 4-STEP SANCTUARY PROCESS */}
         <section className="py-12 relative z-10 w-full">
           <div className="max-w-7xl mx-auto px-6 md:px-12">
-            
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp} className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Sanctuary Process</h2>
               <p className="text-[#F5F5F0]/60 max-w-xl mx-auto">Our 4-step framework to transform your space into a frictionless production powerhouse.</p>
@@ -290,107 +278,142 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* PRICING PACKAGES */}
+        {/* HUB-STYLE PRICING SECTION */}
         <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full mb-16">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-white">Choose Your <span className="text-[#ff4d00]">Path</span></h2>
-            <p className="text-xl text-[#F5F5F0]/80 max-w-2xl mx-auto leading-relaxed">
-              From DIY consulting to fully managed, done-for-you studio build-outs.
-            </p>
-          </motion.div>
-
-          {/* VIRTUAL CONSULTATION FEATURED ROW */}
-          <motion.div 
-            initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} 
-            className="bg-[#131313]/80 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-[#ff4d00]/40 flex flex-col md:flex-row items-center justify-between shadow-[0_0_40px_rgba(255,77,0,0.1)] max-w-5xl mx-auto mb-10 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="w-full mb-12">
             
-            <div className="flex-1 mb-8 md:mb-0 md:pr-12 w-full text-left relative z-10">
-              <div className="inline-block bg-[#ff4d00]/10 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-[#ff4d00]/30 mb-4">Most Popular</div>
-              <h3 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-3">Virtual Studio Consultation</h3>
-              <p className="text-white/70 text-sm md:text-base mb-6 max-w-lg leading-relaxed">Stop guessing what gear to buy. We will design a frictionless, high-end broadcast studio tailored to your exact room and budget.</p>
-              
-              <ul className="space-y-3 text-sm text-[#F5F5F0]/80">
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 1-Hour Zoom Strategy Session</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom Studio Blueprint & Gear List</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Exact Room & Acoustic Layout Plan</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Lifetime Access to the Sanctuary Hub</li>
-              </ul>
+            {/* Header matching the hub layout */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 border-b border-white/10 pb-6 gap-4">
+              <div className="flex items-center gap-3">
+                 <Sparkles className="text-[#ff4d00] shrink-0" size={28} />
+                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white m-0 leading-none">Studio Services & Upgrades</h2>
+              </div>
+              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-white/40 mb-1">White-Glove Production Services</p>
             </div>
 
-            <div className="w-full md:w-auto bg-black/50 p-6 md:p-8 rounded-2xl border border-white/5 flex flex-col items-center md:items-start min-w-[320px] relative z-10">
-              <p className="text-5xl font-black text-white mb-1">$197</p>
-              <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-6">One-Time Payment</p>
+            {/* 3-Column Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
-              <div className="w-full flex flex-col gap-3">
-                {showPromo ? (
-                   <div className="flex w-full items-center bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden focus-within:border-[#ff4d00]/50 transition-colors shadow-inner">
-                    <div className="pl-4 text-white/30"><Tag size={16} /></div>
-                    <input 
-                      type="text" 
-                      placeholder="ENTER PROMO CODE" 
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                      className="bg-transparent border-none text-white text-xs px-3 py-4 w-full focus:outline-none uppercase font-bold tracking-widest placeholder:text-white/20"
-                    />
+              {/* CARD 1: VIRTUAL STUDIO CONSULTATION */}
+              <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
+                {/* Top Section */}
+                <div className="relative h-64 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-6 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-500/10 via-transparent to-[#ff4d00]/20 pointer-events-none" />
+                  <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">1-ON-1 STRATEGY</span>
+                  <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">Virtual Studio Consultation</h3>
+                  <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
+                    <img src="/box-consult.png" alt="Consultation 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
                   </div>
-                ) : (
-                  <button onClick={() => setShowPromo(true)} className="text-[10px] text-white/40 uppercase font-bold tracking-widest hover:text-[#ff4d00] transition-colors text-left flex items-center gap-1.5">
-                    <Tag size={12} /> Have a promo code?
-                  </button>
-                )}
-
-                <button onClick={handleBookConsultation} className="w-full bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-4.5 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(255,77,0,0.3)] hover:scale-105 mt-1">
-                  Book Now
-                </button>
-                
-                <div className="flex justify-center items-center mt-2 opacity-50">
-                   <span className="text-[9px] uppercase font-bold tracking-widest">Pay in 4 with Klarna at checkout</span>
+                </div>
+                {/* Bottom Section */}
+                <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
+                  <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
+                    <Video size={18} className="text-[#ff4d00]" /> VIRTUAL STUDIO CONSULTATION
+                  </div>
+                  <p className="text-xl font-black text-white mb-4">$197<span className="text-xs text-white/40 font-medium"> / one-time</span></p>
+                  <p className="text-[#F5F5F0]/60 text-sm leading-relaxed mb-8 flex-grow">
+                    Complete remote audit of your room layout, acoustic treatment, lighting setup, audio chain, and camera settings to build a broadcast-ready studio environment.
+                  </p>
+                  
+                  {/* Promo Code Logic merged into the new card style */}
+                  <div className="w-full flex flex-col gap-3">
+                    {showPromo ? (
+                       <div className="flex w-full items-center bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden focus-within:border-[#ff4d00]/50 transition-colors shadow-inner">
+                        <div className="pl-4 text-white/30"><Tag size={16} /></div>
+                        <input 
+                          type="text" 
+                          placeholder="ENTER CODE" 
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          className="bg-transparent border-none text-white text-xs px-3 py-3 w-full focus:outline-none uppercase font-bold tracking-widest placeholder:text-white/20"
+                        />
+                      </div>
+                    ) : (
+                      <button onClick={() => setShowPromo(true)} className="text-[10px] text-white/40 uppercase font-bold tracking-widest hover:text-[#ff4d00] transition-colors text-left flex items-center gap-1.5 justify-center mb-1">
+                        <Tag size={12} /> Have a promo code?
+                      </button>
+                    )}
+                    <button 
+                      onClick={handleBookConsultation} 
+                      className="w-full bg-[#333333] hover:bg-[#ff4d00] border border-white/10 hover:border-[#ff4d00] text-white hover:text-black py-4 rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Calendar size={14} /> BOOK SESSION <ArrowUpRight size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* CARD 2: POST PRODUCTION RETAINER */}
+              <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
+                {/* Top Section */}
+                <div className="relative h-64 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-6 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-500/10 via-transparent to-[#ff4d00]/20 pointer-events-none" />
+                  <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">TURNKEY EDITING</span>
+                  <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">Post Production Retainer</h3>
+                  <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
+                    <img src="/box-retainer.png" alt="Retainer 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
+                  </div>
+                </div>
+                {/* Bottom Section */}
+                <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
+                  <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
+                    <Film size={18} className="text-[#ff4d00]" /> POST PRODUCTION RETAINER
+                  </div>
+                  <p className="text-xl font-black text-white mb-4">$1,500<span className="text-xs text-white/40 font-medium"> / mo</span></p>
+                  <p className="text-[#F5F5F0]/60 text-sm leading-relaxed mb-8 flex-grow">
+                    Monthly editing subscription for podcasts and vertical content. Includes full interactive Review Room feedback, timestamped revision notes, and direct team chat.
+                  </p>
+                  <a 
+                    href={JOTFORM_LINKS.retainer}
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="mt-auto w-full bg-[#333333] hover:bg-white/20 border border-white/10 text-white py-4 rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all"
+                  >
+                    <ClipboardList size={14} /> APPLY FOR RETAINER <ArrowUpRight size={14} />
+                  </a>
+                </div>
+              </div>
+
+              {/* CARD 3: THE BUILD OUT */}
+              <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
+                {/* Top Section */}
+                <div className="relative h-64 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-6 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-500/10 via-transparent to-[#ff4d00]/20 pointer-events-none" />
+                  <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">FULL-SERVICE ON-SITE</span>
+                  <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">The <br/> Build-Out</h3>
+                  <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
+                    <img src="/box-buildout.png" alt="Build-Out 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
+                  </div>
+                </div>
+                {/* Bottom Section */}
+                <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
+                  <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
+                    <Wrench size={18} className="text-[#ff4d00]" /> THE BUILD OUT
+                  </div>
+                  <p className="text-xl font-black text-white mb-4">$2,500+<span className="text-xs text-white/40 font-medium"> / one-time</span></p>
+                  <p className="text-[#F5F5F0]/60 text-sm leading-relaxed mb-4 flex-grow">
+                    White-glove, in-person studio design and installation. From physical acoustic treatment and custom wiring to camera rigging, lighting grid installation, and staff training.
+                  </p>
+                  
+                  {/* DISCLAIMER MOVED HERE */}
+                  <div className="mt-auto flex flex-col gap-3">
+                    <p className="text-[#ff4d00] text-[9px] font-bold uppercase tracking-widest text-center mt-2">
+                      * Virtual Studio Consultation Required
+                    </p>
+                    <a 
+                      href={JOTFORM_LINKS.buildOut}
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="w-full bg-[#333333] hover:bg-white/20 border border-white/10 text-white py-4 rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Wrench size={14} /> SCHEDULE DISCOVERY CALL <ArrowUpRight size={14} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto">
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#131313]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col shadow-xl">
-              <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">The Build-Out</h3>
-              <p className="text-4xl font-black text-white mb-6">$2,500+<span className="text-sm text-white/40 font-medium"> / one-time</span></p>
-              <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Deep Space Strategy & Acoustic Plan</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Full Gear Procurement (Cameras, Mics, Lights)</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Local DFW On-Site Installation & Wire Hiding</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 1-on-1 Operational Training</li>
-              </ul>
-              <a 
-                href={JOTFORM_LINKS.buildOut}
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center justify-center w-full bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors border border-white/10"
-              >
-                Apply For Build-Out
-              </a>
-            </motion.div>
-
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="bg-[#0a0a0a]/90 backdrop-blur-xl p-8 rounded-3xl border border-white/20 flex flex-col shadow-[0_0_40px_rgba(255,77,0,0.1)] relative">
-              <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Post-Production Retainer</h3>
-              <p className="text-4xl font-black text-white mb-6">$1,500<span className="text-sm text-white/40 font-medium"> / mo</span></p>
-              <ul className="space-y-4 text-sm text-[#F5F5F0]/80 mb-10 flex-grow">
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Hit record in your new space, we handle the rest.</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 4 Full-Length 4K Video Edits per month</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> 12 Social Media Vertical Clips</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-[#ff4d00] shrink-0 mt-0.5" /> Custom YouTube Thumbnails</li>
-              </ul>
-              <a 
-                href={JOTFORM_LINKS.retainer}
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center justify-center w-full bg-white text-black font-black uppercase tracking-widest py-4 rounded-xl transition-colors hover:bg-gray-200"
-              >
-                Apply For Retainer
-              </a>
-            </motion.div>
-          </div>
         </section>
 
         {/* FOOTER */}
