@@ -302,7 +302,7 @@ const LandingPage: React.FC = () => {
                   <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">1-ON-1 STRATEGY</span>
                   <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">Virtual Studio Consultation</h3>
                   <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                    <img src="/box-consult.png" alt="Consultation 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
+                    <img src="/virtual-studio-consultation-mockup.jpg" alt="Consultation 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
                   </div>
                 </div>
                 {/* Bottom Section */}
@@ -351,7 +351,7 @@ const LandingPage: React.FC = () => {
                   <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">TURNKEY EDITING</span>
                   <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">Post Production Retainer</h3>
                   <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                    <img src="/box-retainer.png" alt="Retainer 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
+                    <img src="/post-production-retainer-mockup.jpg" alt="Retainer 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
                   </div>
                 </div>
                 {/* Bottom Section */}
@@ -382,7 +382,7 @@ const LandingPage: React.FC = () => {
                   <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">FULL-SERVICE ON-SITE</span>
                   <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">The <br/> Build-Out</h3>
                   <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                    <img src="/box-buildout.png" alt="Build-Out 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
+                    <img src="/the-build-out-mockup.jpg" alt="Build-Out 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
                   </div>
                 </div>
                 {/* Bottom Section */}
