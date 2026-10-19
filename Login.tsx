@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
-  FolderDown, LayoutDashboard, Film, Sparkles, ArrowRight, 
-  Lock, Mail, Key, CheckCircle2, ShieldCheck
+  FolderDown, LayoutDashboard, Film, ArrowRight, 
+  Lock, CheckCircle2, ShieldCheck
 } from 'lucide-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -82,11 +82,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#F5F5F0] font-sans flex flex-col justify-between relative overflow-hidden">
+    // FIXED: Changed min-h-screen to min-h-[100dvh] and overflow-hidden to overflow-x-hidden
+    <div className="min-h-[100dvh] bg-[#050505] text-[#F5F5F0] font-sans flex flex-col justify-between relative overflow-x-hidden">
       
-      {/* Background Glow Accents */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#ff4d00]/10 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#ff4d00]/5 rounded-full blur-[150px] pointer-events-none" />
+      {/* FIXED: Reduced blur on mobile, added transform-gpu to prevent iOS Safari crashes */}
+      <div className="absolute top-0 left-0 md:left-1/4 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#ff4d00]/10 rounded-full blur-[80px] md:blur-[150px] pointer-events-none transform-gpu" />
+      <div className="absolute bottom-0 right-0 md:right-1/4 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#ff4d00]/5 rounded-full blur-[80px] md:blur-[150px] pointer-events-none transform-gpu" />
 
       {/* TOP HEADER */}
       <header className="p-6 md:p-10 flex justify-between items-center relative z-10 max-w-7xl mx-auto w-full">
@@ -107,7 +108,8 @@ export default function Login() {
       </header>
 
       {/* MAIN CONTENT GRID */}
-      <main className="flex-1 flex items-center justify-center p-5 md:p-10 relative z-10 my-auto">
+      {/* FIXED: Added py-10 so top/bottom content doesn't hit the edges on scroll */}
+      <main className="flex-1 flex items-center justify-center p-5 py-10 md:p-10 relative z-10 my-auto">
         <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-16 items-center">
           
           {/* LEFT COLUMN: WHAT'S POSSIBLE SHOWCASE */}
