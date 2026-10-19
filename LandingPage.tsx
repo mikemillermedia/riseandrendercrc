@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight, FolderDown, Video, Film, Calendar, ClipboardList, Sparkles
+  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight, FolderDown, Video, Film, Calendar, ClipboardList, Sparkles
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -36,7 +36,7 @@ const LandingPage: React.FC = () => {
 
   // EXTERNAL JOTFORM LINKS FOR TIERS 2 & 3
   const JOTFORM_LINKS = {
-    buildOut: "https://pci.jotform.com/form/262714847150054",
+    buildOut: "https://form.jotform.com/your-buildout-id",
     retainer: "https://pci.jotform.com/form/262728038546060"
   };
 
@@ -104,7 +104,6 @@ const LandingPage: React.FC = () => {
                 controls
                 playsInline
                 preload="metadata"
-                // poster="/optional-thumbnail-image.jpg" // Uncomment and add an image URL here if you want a custom cover image before they hit play
               >
                 <source src="PASTE_YOUR_SUPABASE_LINK_HERE.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
@@ -296,15 +295,14 @@ const LandingPage: React.FC = () => {
               
               {/* CARD 1: VIRTUAL STUDIO CONSULTATION */}
               <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
-                {/* Top Section */}
-                <div className="relative h-64 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-6 overflow-hidden">
-                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-500/10 via-transparent to-[#ff4d00]/20 pointer-events-none" />
-                  <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">1-ON-1 STRATEGY</span>
-                  <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">Virtual Studio Consultation</h3>
-                  <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                    <img src="/virtual-studio-consultation-mockup.jpg" alt="Consultation 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
-                  </div>
+                
+                {/* Top Image Section - Now fully filling the space without text overlay */}
+                <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
+                  <img src="/box-consult.png" alt="Virtual Studio Consultation" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  {/* Subtle bottom fade so it blends perfectly into the card body */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
                 </div>
+
                 {/* Bottom Section */}
                 <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
                   <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
@@ -345,15 +343,13 @@ const LandingPage: React.FC = () => {
 
               {/* CARD 2: POST PRODUCTION RETAINER */}
               <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
-                {/* Top Section */}
-                <div className="relative h-64 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-6 overflow-hidden">
-                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-500/10 via-transparent to-[#ff4d00]/20 pointer-events-none" />
-                  <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">TURNKEY EDITING</span>
-                  <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">Post Production Retainer</h3>
-                  <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                    <img src="/post-production-retainer-mockup.jpg" alt="Retainer 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
-                  </div>
+                
+                {/* Top Image Section - Now fully filling the space without text overlay */}
+                <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
+                  <img src="/box-retainer.png" alt="Post Production Retainer" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
                 </div>
+
                 {/* Bottom Section */}
                 <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
                   <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
@@ -376,15 +372,13 @@ const LandingPage: React.FC = () => {
 
               {/* CARD 3: THE BUILD OUT */}
               <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
-                {/* Top Section */}
-                <div className="relative h-64 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-6 overflow-hidden">
-                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-500/10 via-transparent to-[#ff4d00]/20 pointer-events-none" />
-                  <span className="bg-black/50 border border-white/10 text-[#ff4d00] text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md inline-block mb-3 relative z-10">FULL-SERVICE ON-SITE</span>
-                  <h3 className="text-2xl md:text-3xl font-black text-white leading-tight relative z-10 w-2/3">The <br/> Build-Out</h3>
-                  <div className="absolute -bottom-4 -right-4 w-48 h-48 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                    <img src="/the-build-out-mockup.jpg" alt="Build-Out 3D Box" className="w-full h-full object-contain drop-shadow-2xl" />
-                  </div>
+                
+                {/* Top Image Section - Now fully filling the space without text overlay */}
+                <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
+                  <img src="/box-buildout.png" alt="The Build-Out" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
                 </div>
+
                 {/* Bottom Section */}
                 <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
                   <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
