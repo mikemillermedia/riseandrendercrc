@@ -207,8 +207,6 @@ const LandingPage: React.FC = () => {
                 </div>
                 <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
                   <span>$2,500+</span>
-                  <a href={JOTFORM_LINKS.buildOut} target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#ff4d00] transition-colors flex items-center gap-1">
-                    Inquire <ArrowUpRight size={14} />
                   </a>
                 </div>
               </div>
