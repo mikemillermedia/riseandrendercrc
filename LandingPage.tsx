@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, FolderDown, Sparkles
+  FolderDown, Sparkles, ArrowUpRight
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -33,6 +33,12 @@ const LandingPage: React.FC = () => {
   // PROMO CODE STATE
   const [promoCode, setPromoCode] = useState('');
   const [showPromo, setShowPromo] = useState(false);
+
+  // EXTERNAL JOTFORM LINKS FOR TIERS 2 & 3
+  const JOTFORM_LINKS = {
+    buildOut: "https://form.jotform.com/your-buildout-id",
+    retainer: "https://pci.jotform.com/form/262728038546060"
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -156,45 +162,54 @@ const LandingPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
-              {/* Card 1 */}
-              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
-                <div>
+              {/* Card 1: Consultation */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
+                <div className="flex-grow">
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Virtual Consultation</h3>
                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
                     1-hour Zoom deep-dive into your room layout, acoustics, and gear list to eliminate guesswork.
                   </p>
                 </div>
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
                   <span>$197 One-Time</span>
-                  <span className="text-[#ff4d00]">Most Popular</span>
+                  <button onClick={handleBookConsultation} className="text-[#ff4d00] hover:text-white transition-colors flex items-center gap-1">
+                    Book <ArrowUpRight size={14} />
+                  </button>
                 </div>
               </div>
 
-              {/* Card 2 */}
-              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
-                <div>
+              {/* Card 2: Retainer */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
+                <div className="flex-grow">
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Post-Production Retainer</h3>
                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
                     Hit record in your space, and we handle 4K edits, vertical social clips, and custom thumbnails.
                   </p>
                 </div>
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
                   <span>$1,500 / mo</span>
-                  <span className="text-white">Turnkey</span>
+                  <a href={JOTFORM_LINKS.retainer} target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#ff4d00] transition-colors flex items-center gap-1">
+                    Apply <ArrowUpRight size={14} />
+                  </a>
                 </div>
               </div>
 
-              {/* Card 3 */}
-              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
-                <div>
+              {/* Card 3: Build-Out */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
+                <div className="flex-grow">
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">The Build-Out</h3>
-                  <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
+                  <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-4">
                     White-glove on-site DFW studio design, acoustic treatment, mounting, cable management, and training.
                   </p>
+                  <p className="text-[#ff4d00] text-[9px] font-bold uppercase tracking-widest mb-6">
+                    * Virtual Studio Consultation Required
+                  </p>
                 </div>
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
                   <span>$2,500+</span>
-                  <span className="text-white">On-Site</span>
+                  <a href={JOTFORM_LINKS.buildOut} target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#ff4d00] transition-colors flex items-center gap-1">
+                    Inquire <ArrowUpRight size={14} />
+                  </a>
                 </div>
               </div>
 
