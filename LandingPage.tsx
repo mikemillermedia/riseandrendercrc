@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, ArrowUpRight, FolderDown, Video, Film, Calendar, Wrench, Sparkles, Shield, Zap, Layers
+  Star, FolderDown, Sparkles
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -79,11 +79,11 @@ const LandingPage: React.FC = () => {
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-5xl w-full flex flex-col items-center">
           
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-[0.25em] px-4 py-1.5 rounded-full mb-6">
-            <Sparkles size={14} /> Broadcast-Ready Setups
+            <Sparkles size={14} /> End the struggle. Just press record.
           </motion.div>
 
           <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-[0.95] tracking-tighter uppercase text-white drop-shadow-2xl">
-            End the Studio Struggle. <br /> Just Press Record.
+            Broadcast-Ready <br /> Setups.
           </motion.h1>
           
           <motion.h2 variants={fadeUp} className="text-base sm:text-lg md:text-xl font-medium mb-10 tracking-tight max-w-2xl text-white/70 mx-auto leading-relaxed">
@@ -147,7 +147,7 @@ const LandingPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* STREAMLINED FEATURE CARDS (Inspired by Sift's clean card structure) */}
+          {/* STREAMLINED FEATURE CARDS */}
           <motion.div variants={fadeUp} className="w-full max-w-6xl mx-auto mb-28 text-left">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Engineered For Creators</h2>
@@ -159,9 +159,6 @@ const LandingPage: React.FC = () => {
               {/* Card 1 */}
               <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#ff4d00]/10 border border-[#ff4d00]/20 flex items-center justify-center text-[#ff4d00] mb-6">
-                    <Video size={22} />
-                  </div>
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Virtual Consultation</h3>
                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
                     1-hour Zoom deep-dive into your room layout, acoustics, and gear list to eliminate guesswork.
@@ -176,9 +173,6 @@ const LandingPage: React.FC = () => {
               {/* Card 2 */}
               <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80 mb-6">
-                    <Film size={22} />
-                  </div>
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Post-Production Retainer</h3>
                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
                     Hit record in your space, and we handle 4K edits, vertical social clips, and custom thumbnails.
@@ -193,9 +187,6 @@ const LandingPage: React.FC = () => {
               {/* Card 3 */}
               <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80 mb-6">
-                    <Wrench size={22} />
-                  </div>
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">The Build-Out</h3>
                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
                     White-glove on-site DFW studio design, acoustic treatment, mounting, cable management, and training.
@@ -210,7 +201,7 @@ const LandingPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* STREAMLINED TESTIMONIALS (Clean minimalist card grid) */}
+          {/* STREAMLINED TESTIMONIALS */}
           <motion.div variants={fadeUp} className="w-full max-w-5xl mx-auto mb-20 text-left">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">Trusted By Creators</h2>
