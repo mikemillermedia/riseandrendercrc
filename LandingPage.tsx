@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Star, CheckCircle2, TrendingUp, FileText, Wrench, Compass, Tag, ArrowUpRight, FolderDown, Video, Film, Calendar, ClipboardList, Sparkles
+  Star, CheckCircle2, ArrowUpRight, FolderDown, Video, Film, Calendar, Wrench, Sparkles, Shield, Zap, Layers
 } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
@@ -34,12 +34,6 @@ const LandingPage: React.FC = () => {
   const [promoCode, setPromoCode] = useState('');
   const [showPromo, setShowPromo] = useState(false);
 
-  // EXTERNAL JOTFORM LINKS FOR TIERS 2 & 3
-  const JOTFORM_LINKS = {
-    buildOut: "https://form.jotform.com/your-buildout-id",
-    retainer: "https://pci.jotform.com/form/262728038546060"
-  };
-
   useEffect(() => {
     window.scrollTo(0, 0);
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -58,47 +52,48 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden">
+    <div className="relative min-h-[100dvh] w-full bg-[#0a0a0a] text-[#F5F5F0] font-sans flex flex-col overflow-x-hidden selection:bg-[#ff4d00] selection:text-black">
       
       {/* BACKGROUND WITH FADE-IN */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.5 }} className="fixed inset-0 z-0 bg-[#0a0a0a]">
-        <div className="absolute inset-0 bg-black/70 z-10" />
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60">
+        <div className="absolute inset-0 bg-black/75 z-10" />
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-40">
           <source src="/studio-bg.mp4" type="video/mp4" />
         </video>
       </motion.div>
 
       {/* NAVBAR */}
-      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="fixed top-0 left-0 w-full z-50 p-6 md:p-12 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent">
+      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="fixed top-0 left-0 w-full z-50 px-6 md:px-12 py-6 flex justify-between items-center bg-gradient-to-b from-black/90 via-black/50 to-transparent backdrop-blur-sm">
         <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-          <BrandLogo className="h-10 md:h-16 w-auto drop-shadow-lg" />
+          <BrandLogo className="h-8 md:h-12 w-auto drop-shadow-lg" />
         </div>
         <div className="flex items-center gap-4 text-sm font-medium">
-          <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_20px_rgba(255,77,0,0.4)]">
+          <button onClick={() => navigate('/login')} className="bg-[#ff4d00] hover:bg-orange-500 text-black px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_20px_rgba(255,77,0,0.3)] text-xs uppercase tracking-wider">
             Client Login
           </button>
         </div>
       </motion.nav>
 
       {/* HERO SECTION */}
-      <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-32 md:pt-40 pb-20">
-        <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-6xl w-full flex flex-col items-center">
+      <main className="relative z-40 flex-grow flex flex-col items-center justify-start px-6 text-center pt-32 md:pt-44 pb-16">
+        <motion.div variants={staggerContainer} initial="hidden" animate="show" className="max-w-5xl w-full flex flex-col items-center">
           
-          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-[6.5rem] font-black mb-4 leading-[0.95] tracking-tighter uppercase text-white drop-shadow-2xl">
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-[0.25em] px-4 py-1.5 rounded-full mb-6">
+            <Sparkles size={14} /> Broadcast-Ready Setups
+          </motion.div>
+
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-[0.95] tracking-tighter uppercase text-white drop-shadow-2xl">
             End the Studio Struggle. <br /> Just Press Record.
           </motion.h1>
           
-          <motion.h2 variants={fadeUp} className="text-lg sm:text-xl md:text-2xl font-bold mb-8 md:mb-10 tracking-tight max-w-2xl text-white/90 drop-shadow-lg mx-auto">
-            Frictionless, broadcast-ready setups engineered for your space. <br className="hidden md:block"/>
+          <motion.h2 variants={fadeUp} className="text-base sm:text-lg md:text-xl font-medium mb-10 tracking-tight max-w-2xl text-white/70 mx-auto leading-relaxed">
+            Frictionless, professional studio engineering tailored to your exact space, equipment, and budget.
           </motion.h2>
 
           {/* VSL VIDEO CONTAINER (YOUTUBE PLAYER) */}
-          <motion.div variants={fadeUp} className="w-full max-w-3xl mx-auto mb-10 md:mb-12 relative group z-50">
-            {/* Orange Glow Effect Behind Video */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#ff4d00]/40 to-orange-600/40 rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition duration-1000 pointer-events-none"></div>
-            
-            {/* YouTube Video Player */}
-            <div className="relative aspect-video bg-black rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-10">
+          <motion.div variants={fadeUp} className="w-full max-w-4xl mx-auto mb-12 relative group z-50">
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#ff4d00]/30 to-orange-600/30 rounded-3xl blur-2xl opacity-50 group-hover:opacity-80 transition duration-1000 pointer-events-none"></div>
+            <div className="relative aspect-video bg-black rounded-3xl border border-white/10 overflow-hidden shadow-2xl z-10">
               <iframe 
                 className="w-full h-full"
                 src="https://www.youtube.com/embed/TQ9gDU9QtZg?modestbranding=1&rel=0&iv_load_policy=3" 
@@ -110,318 +105,160 @@ const LandingPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* CTA BUTTONS */}
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full mb-16 relative z-50">
+          {/* CTA BUTTONS & PROMO */}
+          <motion.div variants={fadeUp} className="flex flex-col items-center gap-4 w-full max-w-md mb-20 relative z-50">
             <button 
               onClick={handleBookConsultation}
-              className="flex items-center justify-center w-full sm:w-72 bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,77,0,0.3)]"
+              className="flex items-center justify-center w-full bg-[#ff4d00] hover:bg-orange-500 text-black py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-[1.02] shadow-[0_0_35px_rgba(255,77,0,0.35)]"
             >
-              Book Virtual Consultation
+              Book Virtual Consultation — $197
             </button>
-            <button onClick={() => navigate('/login')} className="flex items-center justify-center gap-2 w-full sm:w-72 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white py-4 md:py-5 rounded-2xl font-bold uppercase tracking-widest text-xs md:text-sm transition-all hover:scale-105 shadow-xl">
-              <FolderDown size={18} /> Freebie Asset Vault
-            </button>
+            
+            <div className="flex items-center justify-between w-full px-2">
+              <button onClick={() => navigate('/login')} className="text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors flex items-center gap-1.5">
+                <FolderDown size={14} /> Freebie Asset Vault
+              </button>
+              
+              {showPromo ? (
+                <div className="flex items-center bg-[#131313] border border-white/10 rounded-lg overflow-hidden">
+                  <input 
+                    type="text" 
+                    placeholder="CODE" 
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    className="bg-transparent text-white text-[10px] px-3 py-1.5 w-24 focus:outline-none uppercase font-bold tracking-widest"
+                  />
+                </div>
+              ) : (
+                <button onClick={() => setShowPromo(true)} className="text-[10px] text-[#ff4d00] font-bold uppercase tracking-widest hover:underline">
+                  Have a promo code?
+                </button>
+              )}
+            </div>
           </motion.div>
 
-          {/* BRANDS STATIC LIST */}
-          <motion.div variants={fadeUp} className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-80 mb-20 md:mb-24">
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6 drop-shadow-md">Trusted by creators from</p>
+          {/* BRANDS TICKER */}
+          <motion.div variants={fadeUp} className="w-full max-w-4xl mx-auto flex flex-col items-center opacity-70 mb-28">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">Trusted by creators from</p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12">
               {BRANDS.map((brand, index) => (
-                <span key={index} className="text-white/60 font-black uppercase tracking-widest text-xs md:text-sm drop-shadow-sm text-center">{brand}</span>
+                <span key={index} className="text-white/60 font-black uppercase tracking-widest text-xs md:text-sm">{brand}</span>
               ))}
             </div>
           </motion.div>
 
-          {/* 3 GRID TESTIMONIALS */}
-          <motion.div variants={fadeUp} className="w-full max-w-6xl mx-auto mb-20">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          {/* STREAMLINED FEATURE CARDS (Inspired by Sift's clean card structure) */}
+          <motion.div variants={fadeUp} className="w-full max-w-6xl mx-auto mb-28 text-left">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Engineered For Creators</h2>
+              <p className="text-white/50 max-w-xl mx-auto text-sm md:text-base">Everything you need from your first remote consultation to fully managed post-production.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
-              <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+              {/* Card 1 */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-[#ff4d00]/10 border border-[#ff4d00]/20 flex items-center justify-center text-[#ff4d00] mb-6">
+                    <Video size={22} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Virtual Consultation</h3>
+                  <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
+                    1-hour Zoom deep-dive into your room layout, acoustics, and gear list to eliminate guesswork.
+                  </p>
                 </div>
-                <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "10/10 recommended! Mike transformed my office into a <span className="text-[#ff4d00]">high-end studio</span>. I don't have to worry about tech anymore, I just <span className="text-[#ff4d00]">show up and record</span>."
-                </h3>
-                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
-                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    <span className="text-white/50 font-bold text-sm">C</span>
-                  </div>
-                  <div>
-                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Barron D.</p>
-                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">White-Glove Client</p>
-                  </div>
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                  <span>$197 One-Time</span>
+                  <span className="text-[#ff4d00]">Most Popular</span>
                 </div>
               </div>
 
-              <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+              {/* Card 2 */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80 mb-6">
+                    <Film size={22} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Post-Production Retainer</h3>
+                  <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
+                    Hit record in your space, and we handle 4K edits, vertical social clips, and custom thumbnails.
+                  </p>
                 </div>
-                <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "Mike came to our consult prepared with a plan for my podcast. I wasn't sure what to expect, as it wasn't a process I had gone through before. However, thanks to his curiosity and suggestions, I trusted that I had chosen the right person to create my logo. <span className="text-[#ff4d00]">Mike was excited and brought experience that also</span> and <span className="text-[#ff4d00]">increased my excitement for the final product!</span>."
-                </h3>
-                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
-                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    <span className="text-white/50 font-bold text-sm">M</span>
-                  </div>
-                  <div>
-                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Jasmine M.</p>
-                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Consultation Client</p>
-                  </div>
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                  <span>$1,500 / mo</span>
+                  <span className="text-white">Turnkey</span>
                 </div>
               </div>
 
-              <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] text-left shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors flex flex-col h-full">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#ff4d00] fill-[#ff4d00]" />)}
+              {/* Card 3 */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col justify-between hover:border-[#ff4d00]/30 transition-all">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80 mb-6">
+                    <Wrench size={22} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">The Build-Out</h3>
+                  <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
+                    White-glove on-site DFW studio design, acoustic treatment, mounting, cable management, and training.
+                  </p>
                 </div>
-                <h3 className="text-sm md:text-base font-bold text-white leading-relaxed mb-6 flex-grow">
-                  "The Build-Out service is a lifesaver. Mike came in, <span className="text-[#ff4d00]">routed all the messy cables</span>, and trained me on the system. Now my podcast looks incredibly professional."
-                </h3>
-                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-white/5">
-                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    <span className="text-white/50 font-bold text-sm">S</span>
-                  </div>
-                  <div>
-                    <p className="text-white font-black uppercase tracking-widest text-[10px]">Sarah L.</p>
-                    <p className="text-white/50 text-[10px] font-medium uppercase tracking-wider">Build-Out Client</p>
-                  </div>
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                  <span>$2,500+</span>
+                  <span className="text-white">On-Site</span>
                 </div>
               </div>
 
             </div>
           </motion.div>
+
+          {/* STREAMLINED TESTIMONIALS (Clean minimalist card grid) */}
+          <motion.div variants={fadeUp} className="w-full max-w-5xl mx-auto mb-20 text-left">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">Trusted By Creators</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-[#111] border border-white/10 p-8 rounded-3xl flex flex-col justify-between">
+                <p className="text-white/80 text-sm md:text-base leading-relaxed mb-6 font-medium">
+                  "Mike transformed my office into a high-end studio. I don't have to worry about tech anymore, I just show up and record."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#222] flex items-center justify-center text-xs font-bold text-white/60">B</div>
+                  <div>
+                    <p className="text-white font-bold text-xs uppercase tracking-wider">Barron D.</p>
+                    <p className="text-white/40 text-[10px] uppercase">White-Glove Client</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#111] border border-white/10 p-8 rounded-3xl flex flex-col justify-between">
+                <p className="text-white/80 text-sm md:text-base leading-relaxed mb-6 font-medium">
+                  "The Build-Out service is a lifesaver. He routed all the messy cables and trained me on the system. Incredible work."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#222] flex items-center justify-center text-xs font-bold text-white/60">S</div>
+                  <div>
+                    <p className="text-white font-bold text-xs uppercase tracking-wider">Sarah L.</p>
+                    <p className="text-white/40 text-[10px] uppercase">Build-Out Client</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
         </motion.div>
       </main>
 
-      {/* GRADIENT TRANSITION */}
-      <div className="relative z-40 w-full h-32 bg-gradient-to-b from-transparent to-[#0a0a0a] pointer-events-none -mb-1" />
-
-      <div id="pricing-section" className="relative z-40 bg-[#0a0a0a] w-full pt-4 scroll-m-20">
-
-        {/* FREE ASSET VAULT TEASER SECTION */}
-        <section className="py-12 md:py-16 px-5 max-w-6xl mx-auto relative z-20">
-          <motion.div 
-            initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
-            className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]"
-          >
-            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[120px] pointer-events-none" />
-            
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-              <div className="flex-1 text-center md:text-left space-y-4">
-                <div className="flex items-center justify-center md:justify-start gap-2">
-                  <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md inline-block">
-                    Free Resource
-                  </span>
-                  <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                    Inside The Sanctuary Hub
-                  </span>
-                </div>
-                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white leading-tight">
-                  The Content Creator <span className="text-[#ff4d00]">Studio Kit</span>
-                </h2>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed max-w-xl mx-auto md:mx-0">
-                  Frustrated by expensive hourly studio rentals and complicated camera gear that leaves your videos looking dark and amateur? 
-                  Download our free digital guide for a proven, no-guesswork at-home studio setup.
-                </p>
-              </div>
-              <div className="shrink-0 w-full md:w-auto flex flex-col items-center">
-                <button 
-                  onClick={() => navigate('/login')} 
-                  className="w-full md:w-auto bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,77,0,0.35)] transition-all hover:scale-105"
-                >
-                  Create Free Account <ArrowUpRight size={18} />
-                </button>
-                <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mt-4 text-center">
-                  Instant Download Upon Sign-In
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </section>
-        
-        {/* THE 4-STEP SANCTUARY PROCESS */}
-        <section className="py-12 relative z-10 w-full">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp} className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Sanctuary Process</h2>
-              <p className="text-[#F5F5F0]/60 max-w-xl mx-auto">Our 4-step framework to transform your space into a frictionless production powerhouse.</p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { icon: Compass, title: "1. Strategy", lines: ["Space Assessment", "Content Goals", "Budget Mapping", "Tech Audit"] },
-                { icon: FileText, title: "2. The Blueprint", lines: ["Custom Gear List", "Acoustic Treatment", "Lighting Layout", "Camera Settings"] },
-                { icon: Wrench, title: "3. Installation", lines: ["Wire Hiding", "Equipment Mounting", "Audio Tuning", "1-on-1 Training"] },
-                { icon: TrendingUp, title: "4. Execution", lines: ["Hit Record", "Frictionless Workflow", "Post-Production", "Audience Growth"] }
-              ].map((item, idx) => (
-                <motion.div 
-                  key={idx}
-                  initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
-                  className="bg-[#0a0a0a]/80 backdrop-blur-md p-8 rounded-3xl border border-white/5 hover:bg-[#131313]/90 transition-all duration-300 hover:-translate-y-2 hover:border-[#ff4d00]/30 shadow-lg"
-                >
-                  <item.icon className="w-10 h-10 text-[#ff4d00] mb-6" />
-                  <h3 className="text-xl font-bold text-white mb-3 uppercase">{item.title}</h3>
-                  <ul className="space-y-2 text-sm text-[#F5F5F0]/70">
-                    {item.lines.map((line, lidx) => <li key={lidx}>• {line}</li>)}
-                  </ul>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* HUB-STYLE PRICING SECTION */}
-        <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto relative z-10 w-full mb-16">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="w-full mb-12">
-            
-            {/* Header matching the hub layout */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 border-b border-white/10 pb-6 gap-4">
-              <div className="flex items-center gap-3">
-                 <Sparkles className="text-[#ff4d00] shrink-0" size={28} />
-                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white m-0 leading-none">Studio Services & Upgrades</h2>
-              </div>
-              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-white/40 mb-1">White-Glove Production Services</p>
-            </div>
-
-            {/* 3-Column Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* CARD 1: VIRTUAL STUDIO CONSULTATION */}
-              <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
-                
-                {/* Top Image Section - Now fully filling the space without text overlay */}
-                <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
-                  <img src="/virtual-studio-consultation-mockup.jpg" alt="Virtual Studio Consultation" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  {/* Subtle bottom fade so it blends perfectly into the card body */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
-                </div>
-
-                {/* Bottom Section */}
-                <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
-                  <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
-                    <Video size={18} className="text-[#ff4d00]" /> VIRTUAL STUDIO CONSULTATION
-                  </div>
-                  <p className="text-xl font-black text-white mb-4">$197<span className="text-xs text-white/40 font-medium"> / one-time</span></p>
-                  <p className="text-[#F5F5F0]/60 text-sm leading-relaxed mb-8 flex-grow">
-                    Complete remote audit of your room layout, acoustic treatment, lighting setup, audio chain, and camera settings to build a broadcast-ready studio environment.
-                  </p>
-                  
-                  {/* Promo Code Logic merged into the new card style */}
-                  <div className="w-full flex flex-col gap-3">
-                    {showPromo ? (
-                       <div className="flex w-full items-center bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden focus-within:border-[#ff4d00]/50 transition-colors shadow-inner">
-                        <div className="pl-4 text-white/30"><Tag size={16} /></div>
-                        <input 
-                          type="text" 
-                          placeholder="ENTER CODE" 
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                          className="bg-transparent border-none text-white text-xs px-3 py-3 w-full focus:outline-none uppercase font-bold tracking-widest placeholder:text-white/20"
-                        />
-                      </div>
-                    ) : (
-                      <button onClick={() => setShowPromo(true)} className="text-[10px] text-white/40 uppercase font-bold tracking-widest hover:text-[#ff4d00] transition-colors text-left flex items-center gap-1.5 justify-center mb-1">
-                        <Tag size={12} /> Have a promo code?
-                      </button>
-                    )}
-                    <button 
-                      onClick={handleBookConsultation} 
-                      className="w-full bg-[#333333] hover:bg-[#ff4d00] border border-white/10 hover:border-[#ff4d00] text-white hover:text-black py-4 rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Calendar size={14} /> BOOK SESSION <ArrowUpRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* CARD 2: POST PRODUCTION RETAINER */}
-              <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
-                
-                {/* Top Image Section - Now fully filling the space without text overlay */}
-                <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
-                  <img src="/post-production-retainer-mockup.jpg" alt="Post Production Retainer" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
-                </div>
-
-                {/* Bottom Section */}
-                <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
-                  <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
-                    <Film size={18} className="text-[#ff4d00]" /> POST PRODUCTION RETAINER
-                  </div>
-                  <p className="text-xl font-black text-white mb-4">$1,500<span className="text-xs text-white/40 font-medium"> / mo</span></p>
-                  <p className="text-[#F5F5F0]/60 text-sm leading-relaxed mb-8 flex-grow">
-                    Monthly editing subscription for podcasts and vertical content. Includes full interactive Review Room feedback, timestamped revision notes, and direct team chat.
-                  </p>
-                  <a 
-                    href={JOTFORM_LINKS.retainer}
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="mt-auto w-full bg-[#333333] hover:bg-white/20 border border-white/10 text-white py-4 rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all"
-                  >
-                    <ClipboardList size={14} /> APPLY FOR RETAINER <ArrowUpRight size={14} />
-                  </a>
-                </div>
-              </div>
-
-              {/* CARD 3: THE BUILD OUT */}
-              <div className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col group hover:border-[#ff4d00]/30 transition-all duration-500 relative">
-                
-                {/* Top Image Section - Now fully filling the space without text overlay */}
-                <div className="relative h-56 md:h-64 bg-[#0a0a0a] overflow-hidden">
-                  <img src="/the-build-out-mockup.jpg" alt="The Build-Out" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none" />
-                </div>
-
-                {/* Bottom Section */}
-                <div className="p-6 md:p-8 flex-grow flex flex-col bg-[#131313] z-20">
-                  <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm mb-2">
-                    <Wrench size={18} className="text-[#ff4d00]" /> THE BUILD OUT
-                  </div>
-                  <p className="text-xl font-black text-white mb-4">$2,500+<span className="text-xs text-white/40 font-medium"> / one-time</span></p>
-                  <p className="text-[#F5F5F0]/60 text-sm leading-relaxed mb-4 flex-grow">
-                    White-glove, in-person studio design and installation. From physical acoustic treatment and custom wiring to camera rigging, lighting grid installation, and staff training.
-                  </p>
-                  
-                  {/* DISCLAIMER MOVED HERE */}
-                  <div className="mt-auto flex flex-col gap-3">
-                    <p className="text-[#ff4d00] text-[9px] font-bold uppercase tracking-widest text-center mt-2">
-                      * Virtual Studio Consultation Required
-                    </p>
-                    <a 
-                      href={JOTFORM_LINKS.buildOut}
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="w-full bg-[#333333] hover:bg-white/20 border border-white/10 text-white py-4 rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Wrench size={14} /> SCHEDULE DISCOVERY CALL <ArrowUpRight size={14} />
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </motion.div>
-        </section>
-
-        {/* FOOTER */}
-        <footer className="relative z-50 w-full p-6 md:p-12 pb-8 border-t border-white/5 bg-[#0a0a0a]">
-          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50">
-            <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
-            <a href="mailto:booking@riseandrenderdfw.com" className="hover:text-white transition-colors">Contact</a>
-            <div className="hidden md:block w-px h-4 bg-white/20"></div>
-            <a href="https://mikemillermedia.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Designed by Mike Miller Media</a>
-          </div>
-          <p className="text-[9px] md:text-[10px] text-center mt-6 text-white/30 uppercase tracking-widest">
-            ©2026 Rise + Render. All Rights Reserved.
-          </p>
-        </footer>
-      </div>
+      {/* FOOTER */}
+      <footer className="relative z-50 w-full p-8 md:p-12 border-t border-white/5 bg-[#080808] text-center">
+        <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50 mb-6">
+          <a href="https://instagram.com/riseandrenderdfw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
+          <a href="mailto:booking@riseandrenderdfw.com" className="hover:text-white transition-colors">Contact</a>
+          <a href="https://mikemillermedia.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Designed by Mike Miller Media</a>
+        </div>
+        <p className="text-[9px] md:text-[10px] text-white/30 uppercase tracking-widest">
+          ©2026 Rise + Render. All Rights Reserved.
+        </p>
+      </footer>
 
       {showBackToTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="fixed bottom-6 left-6 z-50 bg-white/10 hover:bg-[#ff4d00] text-white p-3 rounded-full transition-all shadow-xl backdrop-blur-md border border-white/10">
