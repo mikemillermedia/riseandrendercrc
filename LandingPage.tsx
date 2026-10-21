@@ -34,9 +34,8 @@ const LandingPage: React.FC = () => {
   const [promoCode, setPromoCode] = useState('');
   const [showPromo, setShowPromo] = useState(false);
 
-  // EXTERNAL JOTFORM LINKS FOR TIERS 2 & 3
+  // EXTERNAL JOTFORM LINKS FOR TIERS
   const JOTFORM_LINKS = {
-    buildOut: "https://form.jotform.com/your-buildout-id",
     retainer: "https://pci.jotform.com/form/262728038546060"
   };
 
@@ -154,15 +153,31 @@ const LandingPage: React.FC = () => {
           </motion.div>
 
           {/* STREAMLINED FEATURE CARDS */}
-          <motion.div variants={fadeUp} className="w-full max-w-6xl mx-auto mb-28 text-left">
+          <motion.div variants={fadeUp} className="w-full max-w-7xl mx-auto mb-28 text-left">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Engineered For Creators</h2>
               <p className="text-white/50 max-w-xl mx-auto text-sm md:text-base">Everything you need from your first remote consultation to fully managed post-production.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
-              {/* Card 1: Consultation */}
+              {/* Card 1: Freebie Asset Vault */}
+              <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
+                <div className="flex-grow">
+                  <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">The Asset Vault</h3>
+                  <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-6">
+                    Instant access to our free Content Creator Studio Kit. Create a free account to instantly access the download.
+                  </p>
+                </div>
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
+                  <span>Free</span>
+                  <button onClick={() => navigate('/login')} className="text-[#ff4d00] hover:text-white transition-colors flex items-center gap-1">
+                    Sign Up <ArrowUpRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2: Consultation */}
               <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
                 <div className="flex-grow">
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Virtual Consultation</h3>
@@ -178,7 +193,7 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 2: Retainer */}
+              {/* Card 3: Retainer */}
               <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
                 <div className="flex-grow">
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">Post-Production Retainer</h3>
@@ -194,7 +209,7 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 3: Build-Out */}
+              {/* Card 4: Build-Out */}
               <div className="bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col hover:border-[#ff4d00]/30 transition-all">
                 <div className="flex-grow">
                   <h3 className="text-xl font-bold text-white uppercase tracking-wider mb-3">The Build-Out</h3>
@@ -207,7 +222,6 @@ const LandingPage: React.FC = () => {
                 </div>
                 <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-white/40">
                   <span>$2,500+</span>
-                  </a>
                 </div>
               </div>
 
