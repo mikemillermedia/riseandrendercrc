@@ -40,6 +40,7 @@ export default function Hub() {
   const [newPost, setNewPost] = useState('');
   const [newPrayer, setNewPrayer] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [isPraying, setIsPraying] = useState(false);
   const [postMediaUrl, setPostMediaUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +49,6 @@ export default function Hub() {
   const [editContent, setEditContent] = useState('');
   const [replyingToPostId, setReplyingToPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   // MEMBER PROFILE VIEW STATE
@@ -72,7 +72,8 @@ export default function Hub() {
           setProfile({
             ...profileData,
             first_name: profileData.first_name || '', last_name: profileData.last_name || '',
-            username: profileData.username || '', bio: profileData.bio || '', bible_verse: profileData.bible_verse || '',
+            username: profileData.username || '', instagram_handle: profileData.instagram_handle || '',
+            bio: profileData.bio || '', bible_verse: profileData.bible_verse || '',
             avatar_url: profileData.avatar_url || '', is_millerite: profileData.is_millerite ?? false,
             is_client: profileData.is_client ?? true 
           });
@@ -121,7 +122,7 @@ export default function Hub() {
     try {
       const file = e.target.files[0];
       const filePath = `post-media/${userId}-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from('avatars').upload(filePath, file); // Using avatars bucket for simplicity unless you create a new one
+      const { error } = await supabase.storage.from('avatars').upload(filePath, file);
       if (error) throw error;
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       setPostMediaUrl(data.publicUrl);
@@ -143,7 +144,18 @@ export default function Hub() {
     finally { setIsPosting(false); }
   };
 
-  // POST ACTIONS (Edit, Delete, Like, Repost, Reply)
+  const handleCreatePrayer = async () => {
+    if (!newPrayer.trim() || !supabase || !userId) return;
+    setIsPraying(true);
+    try {
+      await supabase.from('prayer_requests').insert([{ user_id: userId, content: newPrayer.trim() }]);
+      setNewPrayer('');
+      await fetchCommunityData(); 
+    } catch (error: any) { alert("Error submitting prayer: " + error.message); } 
+    finally { setIsPraying(false); }
+  };
+
+  // POST ACTIONS
   const handleDeletePost = async (id: string) => {
     if (!confirm("Delete this post?")) return;
     await supabase!.from('community_posts').delete().eq('id', id);
@@ -171,21 +183,16 @@ export default function Hub() {
     if (!replyContent.trim() || !userId) return;
     await supabase!.from('post_replies').insert([{ post_id: postId, user_id: userId, content: replyContent }]);
     setReplyContent(''); setReplyingToPostId(null);
-    setExpandedReplies(prev => ({...prev, [postId]: true}));
     fetchCommunityData();
   };
 
   const handleRepost = async (post: any) => {
     if (!confirm("Repost this to your timeline?")) return;
-    await supabase!.from('community_posts').insert([{ 
-      user_id: userId, 
-      content: '', 
-      original_post_id: post.id 
-    }]);
+    await supabase!.from('community_posts').insert([{ user_id: userId, content: '', original_post_id: post.id }]);
     fetchCommunityData();
   };
 
-  // OPEN MEMBER PROFILE (INSTAGRAM FEED STYLE)
+  // OPEN MEMBER PROFILE
   const openMemberProfile = (memberId: string) => {
     const member = posts.find(p => p.user_id === memberId)?.profile || prayers.find(p => p.user_id === memberId)?.profile;
     if (!member) return;
@@ -197,6 +204,67 @@ export default function Hub() {
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const toggleGearItem = async (index: number) => {
+    if (!blueprint || !supabase) return;
+    const updatedGear = [...blueprint.gear_list];
+    updatedGear[index].checked = !updatedGear[index].checked;
+    setBlueprint({ ...blueprint, gear_list: updatedGear });
+    try { await supabase.from('blueprints').update({ gear_list: updatedGear }).eq('id', blueprint.id); } 
+    catch (err) { console.error(err); }
+  };
+
+  const handleSignOut = async () => {
+    try { if (supabase) await supabase.auth.signOut(); } 
+    catch (error) { console.error(error); } 
+    finally { navigate('/'); }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setIsUploadingAvatar(true);
+      if (!event.target.files || event.target.files.length === 0 || !supabase || !userId) return;
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}-${Math.random()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
+      await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
+    } catch (error: any) { alert(`Error uploading image: ${error.message}`); } 
+    finally { setIsUploadingAvatar(false); }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || !userId) return;
+    setIsSavingProfile(true);
+    try {
+      const displayName = `${profile.first_name} ${profile.last_name}`.trim() || profile.username || 'Creator';
+      const { error } = await supabase.from('profiles').update({
+        first_name: profile.first_name, last_name: profile.last_name, display_name: displayName,
+        username: profile.username, instagram_handle: profile.instagram_handle, bio: profile.bio, bible_verse: profile.bible_verse
+      }).eq('id', userId);
+      if (error) throw error;
+      alert("Profile updated successfully!");
+    } catch (error: any) { alert(`Error saving profile: ${error.message}`); } 
+    finally { setIsSavingProfile(false); }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || !newPassword) return;
+    if (newPassword.length < 6) { alert("Password must be at least 6 characters long."); return; }
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      alert("Password updated successfully!");
+      setNewPassword('');
+    } catch (error: any) { alert(`Error updating password: ${error.message}`); } 
+    finally { setIsUpdatingPassword(false); }
   };
 
   return (
@@ -228,6 +296,12 @@ export default function Hub() {
             </button>
           )}
 
+          {profile.is_client && profile.has_retainer && (
+            <button onClick={() => setActiveTab('retainer')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'retainer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+              <Film size={18} /> Post-Production
+            </button>
+          )}
+
           <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <User size={18} /> Settings
           </button>
@@ -236,6 +310,9 @@ export default function Hub() {
         <div className="p-4 border-t border-white/5 space-y-2">
           <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
             <Home size={18} /> Back to Main Site
+          </button>
+          <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+            <LogOut size={18} /> Sign Out
           </button>
         </div>
       </aside>
@@ -466,11 +543,151 @@ export default function Hub() {
                 </div>
               </div>
             )}
-            
-            {/* OTHER TABS (Settings, Vault) omitted for brevity as they remain unchanged */}
+
+            {/* ASSET VAULT TAB */}
+            {activeTab === 'vault' && profile.is_client && (
+              <div className="animate-in fade-in max-w-6xl mx-auto space-y-12">
+                <div className="text-center">
+                  <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-3 inline-block">
+                    Digital Resources & Services
+                  </span>
+                  <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-2">
+                    Asset <span className="text-[#ff4d00]">Vault</span>
+                  </h1>
+                </div>
+
+                <div className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-6 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[110px] pointer-events-none" />
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
+                    <div className="md:col-span-5 flex justify-center items-center py-4">
+                      <img src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg" alt="Kit Cover" className="w-48 sm:w-56 rounded-r-md border border-white/20 shadow-2xl" />
+                    </div>
+                    <div className="md:col-span-7 space-y-4 text-left">
+                      <h2 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight leading-tight">The Content Creator Studio Kit</h2>
+                      <p className="text-white/70 text-sm leading-relaxed">A proven, no-guesswork at-home studio setup.</p>
+                      <a href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" target="_blank" rel="noopener noreferrer" className="inline-flex bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-xs items-center gap-2">
+                        Open Guide
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* BLUEPRINT TAB */}
+            {activeTab === 'blueprint' && profile.is_client && blueprint && (
+              <div className="animate-in fade-in max-w-6xl mx-auto">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 rounded-3xl shadow-xl">
+                    <h3 className="text-lg font-bold text-white mb-6">Action Items</h3>
+                    {blueprint.gear_list?.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 mb-3 cursor-pointer" onClick={() => toggleGearItem(index)}>
+                        <input type="checkbox" checked={item.checked} readOnly className="w-5 h-5 accent-[#ff4d00]" />
+                        <span className={`text-sm ${item.checked ? 'text-white/40 line-through' : 'text-white'}`}>{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* RETAINER TAB */}
+            {activeTab === 'retainer' && profile.is_client && profile.has_retainer && (
+              <div className="animate-in fade-in">
+                <RetainerDashboard userId={userId} supabase={supabase} />
+              </div>
+            )}
+
+            {/* PROFILE TAB */}
+            {activeTab === 'profile' && (
+              <div className="animate-in fade-in max-w-3xl mx-auto">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2 text-center">Settings</h1>
+                <div className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-10 shadow-xl relative mt-8">
+                  <form onSubmit={handleSaveProfile} className="space-y-6 relative z-10">
+                    <div className="flex gap-6 pb-8 border-b border-white/5">
+                      <div className="relative group shrink-0">
+                        {profile.avatar_url ? <img src={profile.avatar_url} className="w-24 h-24 rounded-full object-cover" /> : <div className="w-24 h-24 rounded-full bg-black flex items-center justify-center text-3xl font-black text-white/30">{profile.first_name?.[0] || 'C'}</div>}
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer">
+                          <Camera size={24} className="text-white" />
+                          <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
+                      <div className="pt-2">
+                        <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1">Profile Photo</h3>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">First Name</label>
+                        <input type="text" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Last Name</label>
+                        <input type="text" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      </div>
+                      
+                      {profile.is_client && (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Username</label>
+                            <input type="text" value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Instagram</label>
+                            <input type="text" value={profile.instagram_handle} onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                          </div>
+                        </>
+                      )}
+                      
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-[#ff4d00] uppercase tracking-widest mb-2">Favorite Bible Verse</label>
+                        <input type="text" value={profile.bible_verse} onChange={(e) => setProfile({...profile, bible_verse: e.target.value})} className="w-full bg-black border border-[#ff4d00]/20 rounded-xl px-4 py-3 text-sm text-white" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Short Bio</label>
+                        <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none" />
+                      </div>
+                    </div>
+                    
+                    <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2">
+                      <Save size={16} /> Save Profile
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#111]/95 backdrop-blur-md border-t border-white/5 flex justify-around items-center p-3 z-30 pb-safe">
+        {profile.is_client && (
+          <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+            <FolderDown size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
+          </button>
+        )}
+        {profile.is_millerite && (
+          <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'millerites' || activeTab === 'member_view' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+            <Users size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Family</span>
+          </button>
+        )}
+        {profile.is_client && blueprint && (
+          <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+            <LayoutDashboard size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
+          </button>
+        )}
+        {profile.is_client && profile.has_retainer && (
+          <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+            <Film size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
+          </button>
+        )}
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+          <User size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
+        </button>
+      </nav>
     </div>
   );
 }
