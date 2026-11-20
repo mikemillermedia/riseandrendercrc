@@ -12,17 +12,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
-// MOCK DATA FOR TIMELINE & PRAYERS (Replace with Supabase fetches later)
-const MOCK_POSTS = [
-  { id: 1, author: 'Mike Miller', avatar: '', time: '2 hours ago', content: 'Just dropped the new lighting blueprint in the Asset Vault! Let me know what you guys think of the new Amaran setups.', likes: 12 },
-  { id: 2, author: 'Sarah L.', avatar: 'S', time: '5 hours ago', content: 'Finally got my cables routed and the studio looks so clean. Hitting record on episode 1 tonight!', likes: 8 },
-];
-
-const MOCK_PRAYERS = [
-  { id: 1, author: 'Jasmine M.', time: '1 day ago', content: 'Praying for clarity as I rebrand the podcast this week. Feeling a bit overwhelmed with the direction.', praying: 5 },
-  { id: 2, author: 'Barron D.', time: '2 days ago', content: 'Praise report! We just hit 10k downloads on the latest series.', praying: 15 },
-];
-
 export default function Hub() {
   const navigate = useNavigate();
   
@@ -43,9 +32,9 @@ export default function Hub() {
     first_name: '',
     last_name: '',
     bio: '',
-    bible_verse: '', // NEW BIBLE VERSE FIELD
+    bible_verse: '',
     has_retainer: false,
-    is_community_member: true // Determines if they can see the timeline
+    is_community_member: true 
   });
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -53,9 +42,13 @@ export default function Hub() {
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  // TIMELINE STATE
+  // LIVE TIMELINE STATE
+  const [posts, setPosts] = useState<any[]>([]);
+  const [prayers, setPrayers] = useState<any[]>([]);
   const [newPost, setNewPost] = useState('');
   const [newPrayer, setNewPrayer] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+  const [isPraying, setIsPraying] = useState(false);
 
   // INITIALIZATION
   useEffect(() => {
@@ -81,9 +74,12 @@ export default function Hub() {
             bio: profileData.bio || '',
             bible_verse: profileData.bible_verse || '',
             avatar_url: profileData.avatar_url || '',
-            is_community_member: profileData.is_community_member ?? true // Defaulting to true for demo
+            is_community_member: profileData.is_community_member ?? true 
           });
         }
+
+        // Fetch Live Community Data
+        await fetchCommunityData();
 
       } catch (err) {
         console.error("Initialization error:", err);
@@ -93,6 +89,77 @@ export default function Hub() {
     };
     initApp();
   }, [navigate]);
+
+  // FETCH LIVE DATA
+  const fetchCommunityData = async () => {
+    if (!supabase) return;
+    try {
+      const { data: pData } = await supabase.from('community_posts').select('*').order('created_at', { ascending: false });
+      const { data: prData } = await supabase.from('prayer_requests').select('*').order('created_at', { ascending: false });
+      
+      if (pData || prData) {
+        // Get unique users to fetch their profile pictures & names
+        const userIds = new Set([
+          ...(pData || []).map((p: any) => p.user_id),
+          ...(prData || []).map((p: any) => p.user_id)
+        ]);
+
+        const { data: profData } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .in('id', Array.from(userIds));
+
+        const profileMap = (profData || []).reduce((acc: any, curr: any) => {
+          acc[curr.id] = curr;
+          return acc;
+        }, {});
+
+        // Attach profile data to posts and prayers
+        if (pData) setPosts(pData.map((p: any) => ({ ...p, profile: profileMap[p.user_id] })));
+        if (prData) setPrayers(prData.map((p: any) => ({ ...p, profile: profileMap[p.user_id] })));
+      }
+    } catch (err) {
+      console.error("Error fetching community data:", err);
+    }
+  };
+
+  // SUBMIT NEW POST
+  const handleCreatePost = async () => {
+    if (!newPost.trim() || !supabase || !userId) return;
+    setIsPosting(true);
+    try {
+      const { error } = await supabase.from('community_posts').insert([{ user_id: userId, content: newPost.trim() }]);
+      if (error) throw error;
+      setNewPost('');
+      await fetchCommunityData(); // Refresh feed
+    } catch (error: any) {
+      alert("Error posting: " + error.message);
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  // SUBMIT NEW PRAYER
+  const handleCreatePrayer = async () => {
+    if (!newPrayer.trim() || !supabase || !userId) return;
+    setIsPraying(true);
+    try {
+      const { error } = await supabase.from('prayer_requests').insert([{ user_id: userId, content: newPrayer.trim() }]);
+      if (error) throw error;
+      setNewPrayer('');
+      await fetchCommunityData(); // Refresh wall
+    } catch (error: any) {
+      alert("Error submitting prayer: " + error.message);
+    } finally {
+      setIsPraying(false);
+    }
+  };
+
+  // FORMAT DATE HELPER
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
 
   const toggleGearItem = async (index: number) => {
     if (!blueprint || !supabase) return;
@@ -113,19 +180,14 @@ export default function Hub() {
     try {
       setIsUploadingAvatar(true);
       if (!event.target.files || event.target.files.length === 0 || !supabase || !userId) return;
-      
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}-${Math.random()}.${fileExt}`;
-
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
       if (uploadError) throw uploadError;
-
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      
       setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
       await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
-
     } catch (error: any) {
       alert(`Error uploading image: ${error.message}`);
     } finally {
@@ -136,11 +198,9 @@ export default function Hub() {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || !userId) return;
-    
     setIsSavingProfile(true);
     try {
       const displayName = `${profile.first_name} ${profile.last_name}`.trim() || profile.username || 'Creator';
-      
       const { error } = await supabase.from('profiles').update({
         first_name: profile.first_name,
         last_name: profile.last_name,
@@ -150,7 +210,6 @@ export default function Hub() {
         bio: profile.bio,
         bible_verse: profile.bible_verse
       }).eq('id', userId);
-
       if (error) throw error;
       alert("Profile updated successfully!");
     } catch (error: any) {
@@ -163,17 +222,14 @@ export default function Hub() {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || !newPassword) return;
-    
     if (newPassword.length < 6) {
       alert("Password must be at least 6 characters long.");
       return;
     }
-
     setIsUpdatingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      
       alert("Password updated successfully!");
       setNewPassword('');
     } catch (error: any) {
@@ -203,12 +259,10 @@ export default function Hub() {
         </div>
         
         <nav className="flex-1 p-4 space-y-2 mt-2">
-          
           <button onClick={() => setActiveTab('vault')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <FolderDown size={18} /> Asset Vault
           </button>
 
-          {/* NEW COMMUNITY TAB */}
           {profile.is_community_member && (
             <button onClick={() => setActiveTab('community')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'community' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <Users size={18} /> Inner Circle
@@ -317,7 +371,7 @@ export default function Hub() {
               </div>
             )}
 
-            {/* NEW: INNER CIRCLE COMMUNITY TAB */}
+            {/* INNER CIRCLE COMMUNITY TAB */}
             {activeTab === 'community' && profile.is_community_member && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 border-b border-white/10 pb-6">
@@ -348,8 +402,8 @@ export default function Hub() {
                           className="w-full bg-transparent text-white text-sm focus:outline-none resize-none placeholder:text-white/30"
                         />
                         <div className="flex justify-end mt-2 pt-3 border-t border-white/5">
-                          <button className="bg-white/10 hover:bg-[#ff4d00] text-white hover:text-black transition-colors px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                            Post <Send size={12} />
+                          <button onClick={handleCreatePost} disabled={isPosting || !newPost.trim()} className="bg-white/10 hover:bg-[#ff4d00] text-white hover:text-black transition-colors px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 disabled:opacity-50">
+                            {isPosting ? 'Posting...' : 'Post'} <Send size={12} />
                           </button>
                         </div>
                       </div>
@@ -357,28 +411,34 @@ export default function Hub() {
 
                     {/* Feed Posts */}
                     <div className="space-y-4">
-                      {MOCK_POSTS.map(post => (
-                        <div key={post.id} className="bg-[#131313] border border-white/10 p-6 rounded-3xl shadow-xl">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-[#222] flex items-center justify-center text-sm font-bold text-white/50 shrink-0">
-                              {post.avatar || post.author[0]}
+                      {posts.length === 0 ? (
+                        <p className="text-white/30 text-sm text-center py-10">No posts yet. Be the first to share!</p>
+                      ) : (
+                        posts.map(post => (
+                          <div key={post.id} className="bg-[#131313] border border-white/10 p-6 rounded-3xl shadow-xl">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 rounded-full bg-[#222] flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
+                                {post.profile?.avatar_url ? <img src={post.profile.avatar_url} className="w-full h-full object-cover" /> : (post.profile?.first_name?.[0] || 'C')}
+                              </div>
+                              <div>
+                                <p className="text-white text-sm font-bold">
+                                  {post.profile?.first_name ? `${post.profile.first_name} ${post.profile.last_name}` : 'Creator'}
+                                </p>
+                                <p className="text-white/40 text-[10px] uppercase tracking-wider">{formatTime(post.created_at)}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-white text-sm font-bold">{post.author}</p>
-                              <p className="text-white/40 text-[10px] uppercase tracking-wider">{post.time}</p>
+                            <p className="text-white/80 text-sm leading-relaxed mb-4">{post.content}</p>
+                            <div className="flex items-center gap-6 border-t border-white/5 pt-4">
+                              <button className="flex items-center gap-1.5 text-white/40 hover:text-[#ff4d00] transition-colors text-xs font-bold">
+                                <Heart size={16} /> {post.likes_count}
+                              </button>
+                              <button className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold">
+                                <MessageSquare size={16} /> Reply
+                              </button>
                             </div>
                           </div>
-                          <p className="text-white/80 text-sm leading-relaxed mb-4">{post.content}</p>
-                          <div className="flex items-center gap-6 border-t border-white/5 pt-4">
-                            <button className="flex items-center gap-1.5 text-white/40 hover:text-[#ff4d00] transition-colors text-xs font-bold">
-                              <Heart size={16} /> {post.likes}
-                            </button>
-                            <button className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold">
-                              <MessageSquare size={16} /> Reply
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -397,26 +457,32 @@ export default function Hub() {
                           placeholder="Submit a prayer request..." 
                           value={newPrayer}
                           onChange={(e) => setNewPrayer(e.target.value)}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#ff4d00] transition-colors"
+                          className="w-full bg-black border border-white/10 rounded-xl pl-4 pr-10 py-3 text-xs text-white focus:outline-none focus:border-[#ff4d00] transition-colors"
                         />
-                        <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[#ff4d00] p-1 hover:scale-110 transition-transform">
+                        <button onClick={handleCreatePrayer} disabled={isPraying || !newPrayer.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#ff4d00] p-1 hover:scale-110 transition-transform disabled:opacity-50">
                           <Send size={14} />
                         </button>
                       </div>
 
-                      <div className="space-y-4">
-                        {MOCK_PRAYERS.map(prayer => (
-                          <div key={prayer.id} className="bg-black/50 border border-white/5 p-4 rounded-2xl">
-                            <div className="flex justify-between items-start mb-2">
-                              <p className="text-white text-xs font-bold">{prayer.author}</p>
-                              <p className="text-white/30 text-[9px] uppercase tracking-wider">{prayer.time}</p>
+                      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                        {prayers.length === 0 ? (
+                          <p className="text-white/30 text-xs text-center py-4">No requests yet.</p>
+                        ) : (
+                          prayers.map(prayer => (
+                            <div key={prayer.id} className="bg-black/50 border border-white/5 p-4 rounded-2xl">
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="text-white text-xs font-bold">
+                                  {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Creator'}
+                                </p>
+                                <p className="text-white/30 text-[9px] uppercase tracking-wider">{formatTime(prayer.created_at)}</p>
+                              </div>
+                              <p className="text-white/70 text-xs leading-relaxed mb-3">{prayer.content}</p>
+                              <button className="w-full bg-white/5 hover:bg-[#ff4d00]/10 border border-white/5 hover:border-[#ff4d00]/30 text-white/50 hover:text-[#ff4d00] transition-all py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                <Heart size={12} /> {prayer.praying_count} Praying
+                              </button>
                             </div>
-                            <p className="text-white/70 text-xs leading-relaxed mb-3">{prayer.content}</p>
-                            <button className="w-full bg-white/5 hover:bg-[#ff4d00]/10 border border-white/5 hover:border-[#ff4d00]/30 text-white/50 hover:text-[#ff4d00] transition-all py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                              <Heart size={12} /> {prayer.praying} Praying
-                            </button>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
@@ -453,7 +519,7 @@ export default function Hub() {
               </div>
             )}
 
-            {/* PROFILE TAB (UPDATED WITH BIBLE VERSE) */}
+            {/* PROFILE TAB */}
             {activeTab === 'profile' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
@@ -465,7 +531,6 @@ export default function Hub() {
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff4d00]/5 rounded-full blur-[100px] pointer-events-none" />
                   
                   <form onSubmit={handleSaveProfile} className="space-y-8 relative z-10">
-                    
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-8 border-b border-white/5">
                       <div className="relative group shrink-0">
                         {profile.avatar_url ? (
@@ -505,7 +570,7 @@ export default function Hub() {
                         <input type="text" value={profile.instagram_handle} onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="e.g. riseandrender" />
                       </div>
                       
-                      {/* NEW BIBLE VERSE FIELD */}
+                      {/* BIBLE VERSE FIELD */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-[#ff4d00] uppercase tracking-widest mb-2 flex items-center gap-2">
                           <BookHeart size={14} /> Favorite Bible Verse <span className="text-white/30 text-[9px]">(Optional)</span>
