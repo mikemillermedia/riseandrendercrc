@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -34,14 +34,18 @@ export default function Hub() {
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  // TIMELINE & PRAYER STATE
+  // TIMELINE, PRAYER & TASKS STATE
   const [posts, setPosts] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
+  const [familyTasks, setFamilyTasks] = useState<any[]>([]);
   const [prayerFilter, setPrayerFilter] = useState<'active' | 'answered'>('active');
   const [newPost, setNewPost] = useState('');
   const [newPrayer, setNewPrayer] = useState('');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskCategory, setNewTaskCategory] = useState('Gatherings & Potluck');
   const [isPosting, setIsPosting] = useState(false);
   const [isPraying, setIsPraying] = useState(false);
+  const [isAddingTask, setIsAddingTask] = useState(false);
   const [postMediaUrl, setPostMediaUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,6 +105,7 @@ export default function Hub() {
       const { data: likesData } = await supabase.from('post_likes').select('*');
       const { data: repliesData } = await supabase.from('post_replies').select('*');
       const { data: prayerIntercessionsData } = await supabase.from('prayer_intercessions').select('*');
+      const { data: tasksData } = await supabase.from('family_tasks').select('*').order('created_at', { ascending: false });
 
       if (pError) console.error("Posts Error:", pError.message);
       if (prError) console.error("Prayers Error:", prError.message);
@@ -110,6 +115,7 @@ export default function Hub() {
       const safeLikes = likesData || [];
       const safeReplies = repliesData || [];
       const safeIntercessions = prayerIntercessionsData || [];
+      const safeTasks = tasksData || [];
 
       const userIds = new Set<string>();
       safePosts.forEach((p: any) => userIds.add(p.user_id));
@@ -117,6 +123,10 @@ export default function Hub() {
       safeLikes.forEach((l: any) => userIds.add(l.user_id));
       safeReplies.forEach((r: any) => userIds.add(r.user_id));
       safeIntercessions.forEach((i: any) => userIds.add(i.user_id));
+      safeTasks.forEach((t: any) => {
+        if (t.user_id) userIds.add(t.user_id);
+        if (t.completed_by) userIds.add(t.completed_by);
+      });
 
       const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, bio, bible_verse').in('id', Array.from(userIds));
 
@@ -141,6 +151,12 @@ export default function Hub() {
         intercessions: safeIntercessions
           .filter((i: any) => i.prayer_id === p.id)
           .map((i: any) => ({ ...i, profile: profileMap[i.user_id] }))
+      })));
+
+      setFamilyTasks(safeTasks.map((t: any) => ({
+        ...t,
+        creatorProfile: profileMap[t.user_id],
+        completedByProfile: t.completed_by ? profileMap[t.completed_by] : null
       })));
 
     } catch (err) {
@@ -201,6 +217,52 @@ export default function Hub() {
     } finally { 
       setIsPraying(false); 
     }
+  };
+
+  // FAMILY CHECKLIST / TASK ACTIONS
+  const handleCreateTask = async () => {
+    if (!newTaskTitle.trim() || !supabase || !userId) return;
+    setIsAddingTask(true);
+    try {
+      const { error } = await supabase.from('family_tasks').insert([{
+        user_id: userId,
+        title: newTaskTitle.trim(),
+        category: newTaskCategory,
+        is_completed: false
+      }]);
+      if (error) throw error;
+      setNewTaskTitle('');
+      await fetchCommunityData();
+    } catch (err: any) {
+      alert("Error adding task: " + err.message);
+    } finally {
+      setIsAddingTask(false);
+    }
+  };
+
+  const toggleFamilyTask = async (task: any) => {
+    if (!userId || !supabase) return;
+    try {
+      const nextStatus = !task.is_completed;
+      const { error } = await supabase
+        .from('family_tasks')
+        .update({ 
+          is_completed: nextStatus, 
+          completed_by: nextStatus ? userId : null 
+        })
+        .eq('id', task.id);
+      if (error) throw error;
+      await fetchCommunityData();
+    } catch (err: any) {
+      console.error("Error toggling task:", err);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    if (!confirm("Remove this item from the family checklist?")) return;
+    const { error } = await supabase!.from('family_tasks').delete().eq('id', id);
+    if (error) alert("Error deleting item: " + error.message);
+    fetchCommunityData();
   };
 
   // PRAYER INTERACTION ACTIONS
@@ -355,6 +417,7 @@ export default function Hub() {
   const activePrayersCount = prayers.filter(p => !p.is_answered).length;
   const answeredPrayersCount = prayers.filter(p => p.is_answered).length;
   const filteredPrayers = prayers.filter(p => prayerFilter === 'answered' ? p.is_answered : !p.is_answered);
+  const completedTasksCount = familyTasks.filter(t => t.is_completed).length;
 
   return (
     <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
@@ -448,7 +511,7 @@ export default function Hub() {
                         Millerites
                       </h1>
                       <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-xl leading-relaxed">
-                        Private family updates, photos, videos, and prayer requests to keep our crew connected.
+                        Private family updates, photos, videos, event checklists, and prayer requests to keep our crew connected.
                       </p>
                     </div>
                   </div>
@@ -475,8 +538,8 @@ export default function Hub() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-white/60 pt-3 border-t border-white/10">
-                      <span>Active / Answered Prayers</span>
-                      <span className="font-bold text-amber-400">{activePrayersCount} / {answeredPrayersCount} ✨</span>
+                      <span>Prayers Answered</span>
+                      <span className="font-bold text-amber-400">{answeredPrayersCount} ✨</span>
                     </div>
                   </div>
                 </div>
@@ -709,8 +772,10 @@ export default function Hub() {
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: INTERACTIVE APPLE GLASS PRAYER BENTO BOX */}
+                  {/* RIGHT COLUMN: PRAYER WALL + FAMILY CHECKLIST BENTO BOXES */}
                   <div className="lg:col-span-4 space-y-6">
+                    
+                    {/* 1. INTERACTIVE PRAYER WALL BENTO */}
                     <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
                       <div className="absolute -top-10 -right-10 w-36 h-36 bg-amber-300/20 rounded-full blur-2xl pointer-events-none" />
                       
@@ -756,7 +821,7 @@ export default function Hub() {
                         </button>
                       </div>
 
-                      <div className="space-y-3.5 max-h-[560px] overflow-y-auto pr-1 custom-scrollbar">
+                      <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
                         {filteredPrayers.length === 0 ? (
                           <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
                             <p className="text-slate-400 text-xs font-medium">
@@ -817,7 +882,7 @@ export default function Hub() {
                                   {prayer.content}
                                 </p>
 
-                                {/* Interactive Footer: Praying Button + Overlapping Avatars + Author Answered Toggle */}
+                                {/* Interactive Footer */}
                                 <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/50">
                                   <div className="flex items-center gap-2">
                                     <button 
@@ -837,7 +902,6 @@ export default function Hub() {
                                       )}
                                     </button>
 
-                                    {/* Overlapping Avatars of Family Members Praying */}
                                     {intercessions.length > 0 && (
                                       <div className="flex -space-x-1.5 overflow-hidden py-0.5">
                                         {intercessions.slice(0, 4).map((intercession: any) => (
@@ -877,6 +941,126 @@ export default function Hub() {
                         )}
                       </div>
                     </div>
+
+                    {/* 2. FAMILY CHECKLIST & POTLUCK SIGN-UP BENTO BOX (INSPIRED BY MOCKUP) */}
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-xl bg-[#1C1C2E] flex items-center justify-center text-amber-400">
+                            <ListTodo size={15} />
+                          </span>
+                          Family Checklist
+                        </h3>
+                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-500/15 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                          {completedTasksCount}/{familyTasks.length} Claimed
+                        </span>
+                      </div>
+
+                      {/* Category Selector Pills */}
+                      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+                        {['Gatherings & Potluck', 'Trips & Holidays', 'Family To-Do'].map(cat => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setNewTaskCategory(cat)}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                              newTaskCategory === cat 
+                                ? 'bg-[#1C1C2E] text-white shadow-sm' 
+                                : 'bg-slate-100 text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Add New Checklist Item Input */}
+                      <div className="mb-5 relative">
+                        <input 
+                          type="text" 
+                          placeholder="Add item to bring or family task..." 
+                          value={newTaskTitle} 
+                          onChange={(e) => setNewTaskTitle(e.target.value)} 
+                          onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                        />
+                        <button 
+                          onClick={handleCreateTask} 
+                          disabled={isAddingTask || !newTaskTitle.trim()} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl transition-all disabled:opacity-40 shadow-sm"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+
+                      {/* Checklist Items List */}
+                      <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                        {familyTasks.length === 0 ? (
+                          <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                            <p className="text-slate-400 text-xs font-medium">
+                              No items yet. Add a dish for the next family dinner or a shared to-do!
+                            </p>
+                          </div>
+                        ) : (
+                          familyTasks.map(task => (
+                            <div 
+                              key={task.id} 
+                              onClick={() => toggleFamilyTask(task)}
+                              className={`group p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                task.is_completed 
+                                  ? 'bg-amber-50/60 border-amber-200/70' 
+                                  : 'bg-slate-50/90 hover:bg-white border-slate-200/60 shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <button 
+                                  type="button"
+                                  className="mt-0.5 shrink-0 text-amber-500 transition-transform active:scale-90"
+                                >
+                                  {task.is_completed ? (
+                                    <CheckSquare size={18} className="fill-amber-500 text-white" />
+                                  ) : (
+                                    <Square size={18} className="text-slate-300 group-hover:text-amber-500" />
+                                  )}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">
+                                    {task.category || 'Family Event'}
+                                  </span>
+                                  <p className={`text-xs font-bold leading-snug break-words ${task.is_completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                                    {task.title}
+                                  </p>
+                                  {task.is_completed && task.completedByProfile && (
+                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                      <div className="w-4 h-4 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700">
+                                        {task.completedByProfile.avatar_url ? (
+                                          <img src={task.completedByProfile.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                          task.completedByProfile.first_name?.[0] || 'M'
+                                        )}
+                                      </div>
+                                      <span className="text-[10px] font-bold text-amber-700">
+                                        Claimed by {task.completedByProfile.first_name}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <button 
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 rounded-lg transition-all shrink-0"
+                                title="Remove item"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
                   </div>
 
                 </div>
