@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -54,6 +54,9 @@ export default function Hub() {
   // MEMBER PROFILE VIEW STATE
   const [viewingMember, setViewingMember] = useState<any | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]);
+
+  // APPLE LIGHT THEME TOGGLE FOR MILLERITES
+  const isLightMode = activeTab === 'millerites' || activeTab === 'member_view';
 
   useEffect(() => {
     const initApp = async () => {
@@ -309,140 +312,231 @@ export default function Hub() {
   };
 
   return (
-    <div className="h-screen bg-[#050505] text-[#F5F5F0] font-sans flex flex-col md:flex-row overflow-hidden selection:bg-[#ff4d00] selection:text-black">
+    <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
       
       {/* DESKTOP SIDEBAR */}
-      <aside className="w-64 bg-[#111] border-r border-white/5 hidden md:flex flex-col z-20 shrink-0">
-        <div onClick={() => navigate('/')} className="p-6 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors">
-          <h2 className="text-xl font-black uppercase tracking-widest text-white">Sanctuary</h2>
+      <aside className={`w-64 border-r hidden md:flex flex-col z-20 shrink-0 transition-colors duration-500 ${isLightMode ? 'bg-white/75 backdrop-blur-2xl border-slate-200/80' : 'bg-[#111] border-white/5'}`}>
+        <div onClick={() => navigate('/')} className={`p-6 border-b cursor-pointer transition-colors ${isLightMode ? 'border-slate-200/70 hover:bg-slate-100/50' : 'border-white/5 hover:bg-white/5'}`}>
+          <h2 className={`text-xl font-black uppercase tracking-widest ${isLightMode ? 'text-slate-900' : 'text-white'}`}>Sanctuary</h2>
           <p className="text-xs text-[#ff4d00] font-bold uppercase tracking-widest mt-1">Control Room</p>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 mt-2">
           {profile.is_client && (
-            <button onClick={() => setActiveTab('vault')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('vault')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <FolderDown size={18} /> Asset Vault
             </button>
           )}
 
           {profile.is_millerite && (
-            <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'millerites' || activeTab === 'member_view' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'millerites' || activeTab === 'member_view' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
               <Users size={18} /> Millerites
             </button>
           )}
 
           {profile.is_client && blueprint && (
-            <button onClick={() => setActiveTab('blueprint')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('blueprint')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <LayoutDashboard size={18} /> My Blueprint
             </button>
           )}
 
           {profile.is_client && profile.has_retainer && (
-            <button onClick={() => setActiveTab('retainer')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'retainer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('retainer')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'retainer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <Film size={18} /> Post-Production
             </button>
           )}
 
-          <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+          <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <User size={18} /> Settings
           </button>
         </nav>
         
-        <div className="p-4 border-t border-white/5 space-y-2">
-          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+        <div className={`p-4 border-t space-y-2 ${isLightMode ? 'border-slate-200/70' : 'border-white/5'}`}>
+          <button onClick={() => navigate('/')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <Home size={18} /> Back to Main Site
           </button>
-          <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+          <button onClick={handleSignOut} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isLightMode ? 'text-slate-400 hover:text-red-600 hover:bg-red-50' : 'text-white/40 hover:text-red-400 hover:bg-red-400/10'}`}>
             <LogOut size={18} /> Sign Out
           </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto p-5 pb-24 md:p-12 md:pb-12 relative scroll-smooth">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff4d00]/5 rounded-full blur-[120px] pointer-events-none" />
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-28 md:p-10 md:pb-12 relative scroll-smooth">
+        {/* Ambient background glows */}
+        {isLightMode ? (
+          <>
+            <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] bg-amber-300/25 rounded-full blur-[130px] pointer-events-none" />
+            <div className="fixed bottom-[-10%] left-[15%] w-[450px] h-[450px] bg-blue-300/20 rounded-full blur-[130px] pointer-events-none" />
+          </>
+        ) : (
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff4d00]/5 rounded-full blur-[120px] pointer-events-none" />
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-white/50 animate-pulse font-bold tracking-widest uppercase text-sm">Loading secure connection...</p>
+            <p className={`${isLightMode ? 'text-slate-400' : 'text-white/50'} animate-pulse font-bold tracking-widest uppercase text-sm`}>Loading secure connection...</p>
           </div>
         ) : (
           <>
-            {/* MILLERITES FAMILY TIMELINE */}
+            {/* MILLERITES FAMILY TIMELINE - APPLE GLASS BENTO AESTHETIC */}
             {activeTab === 'millerites' && profile.is_millerite && (
-              <div className="animate-in fade-in max-w-5xl mx-auto">
-                <div className="mb-10 border-b border-white/10 pb-6">
-                  <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white mb-2">Millerites</h1>
-                  <p className="text-white/50 text-sm">Family updates, prayer requests, and keeping up with the Miller crew.</p>
+              <div className="animate-in fade-in duration-500 max-w-6xl mx-auto relative z-10 space-y-6">
+                
+                {/* TOP BENTO HEADER ROW */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                  {/* Welcome Bento Card */}
+                  <div className="md:col-span-8 bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
+                    <div className="absolute -right-12 -top-12 w-48 h-48 bg-gradient-to-br from-amber-200/40 to-orange-300/20 rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                      <span className="inline-flex items-center gap-1.5 bg-slate-900/5 border border-slate-900/10 text-slate-700 text-[10px] font-extrabold uppercase tracking-widest px-3.5 py-1.5 rounded-full">
+                        <Sparkles size={12} className="text-[#ff4d00]" /> Miller Family Hub
+                      </span>
+                      <span className="text-xs font-semibold text-slate-400">
+                        Hi, {profile.first_name || 'Family'} 👋
+                      </span>
+                    </div>
+
+                    <div>
+                      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-2">
+                        Millerites
+                      </h1>
+                      <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-xl leading-relaxed">
+                        Private family updates, photos, videos, and prayer requests to keep our crew connected.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dark Navy Accent Bento Card (Inspired by Mockup) */}
+                  <div className="md:col-span-4 bg-[#1C1C2E] text-white shadow-[0_12px_35px_rgba(28,28,46,0.18)] rounded-[32px] p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
+                    <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-400/15 rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full">
+                        Family Pulse
+                      </span>
+                      <Users size={18} className="text-white/40" />
+                    </div>
+
+                    <div className="my-4">
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">{posts.length}</span>
+                        <span className="text-xs text-white/60 font-medium">Timeline Updates</span>
+                      </div>
+                      <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div className="bg-gradient-to-r from-amber-400 to-[#ff4d00] h-full rounded-full w-3/4" />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-white/60 pt-3 border-t border-white/10">
+                      <span>Active Prayer Requests</span>
+                      <span className="font-bold text-amber-400">{prayers.length}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  <div className="lg:col-span-8 space-y-6">
-                    {/* Create Post Input */}
-                    <div className="bg-[#131313] border border-white/10 p-5 rounded-3xl shadow-xl flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-full bg-[#222] border border-white/10 shrink-0 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
-                        {profile.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : profile.first_name?.[0] || 'M'}
-                      </div>
-                      <div className="flex-1">
-                        <textarea 
-                          rows={2} placeholder="Share a family update, photos, or just checking in..." 
-                          value={newPost} onChange={(e) => setNewPost(e.target.value)}
-                          className="w-full bg-transparent text-white text-sm focus:outline-none resize-none placeholder:text-white/30"
-                        />
-                        {postMediaUrl && (
-                          <div className="relative mt-2 inline-block">
-                            {isVideo(postMediaUrl) ? (
-                              <video src={postMediaUrl} className="h-32 rounded-xl object-cover border border-white/10" autoPlay muted loop playsInline />
-                            ) : (
-                              <img src={postMediaUrl} className="h-32 rounded-xl object-cover border border-white/10" />
-                            )}
-                            <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X size={12}/></button>
+                {/* MAIN BENTO WORKSPACE GRID */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* LEFT COLUMN: COMPOSER & FEED */}
+                  <div className="lg:col-span-8 space-y-5">
+                    
+                    {/* Apple Glass Post Composer */}
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 sm:p-6 rounded-[28px] transition-all">
+                      <div className="flex gap-4 items-start">
+                        <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/80 shrink-0 flex items-center justify-center text-sm font-bold text-slate-700 overflow-hidden shadow-sm">
+                          {profile.avatar_url ? (
+                            <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                          ) : (
+                            profile.first_name?.[0] || 'M'
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <textarea 
+                            rows={2} 
+                            placeholder="Share a family update, photo, or video..." 
+                            value={newPost} 
+                            onChange={(e) => setNewPost(e.target.value)}
+                            className="w-full bg-transparent text-slate-800 text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400 pt-1"
+                          />
+                          {postMediaUrl && (
+                            <div className="relative mt-3 inline-block">
+                              {isVideo(postMediaUrl) ? (
+                                <video src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" autoPlay muted loop playsInline />
+                              ) : (
+                                <img src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" />
+                              )}
+                              <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-slate-900 text-white rounded-full p-1.5 shadow-md hover:bg-red-500 transition-colors">
+                                <X size={12}/>
+                              </button>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
+                            <button 
+                              onClick={() => fileInputRef.current?.click()} 
+                              className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                            >
+                              <ImageIcon size={16} className="text-[#ff4d00]" />
+                              <span>Photo / Video</span>
+                              <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
+                            </button>
+                            <button 
+                              onClick={handleCreatePost} 
+                              disabled={isPosting || (!newPost.trim() && !postMediaUrl)} 
+                              className="bg-[#1C1C2E] hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-2 shadow-md shadow-slate-900/10 transition-all disabled:opacity-40"
+                            >
+                              {isPosting ? 'Posting...' : 'Post'} <Send size={13} />
+                            </button>
                           </div>
-                        )}
-                        <div className="flex justify-between items-center mt-2 pt-3 border-t border-white/5">
-                          <button onClick={() => fileInputRef.current?.click()} className="text-white/40 hover:text-[#ff4d00] transition-colors p-2 rounded-full hover:bg-white/5">
-                            <ImageIcon size={18} />
-                            <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
-                          </button>
-                          <button onClick={handleCreatePost} disabled={isPosting || (!newPost.trim() && !postMediaUrl)} className="bg-[#ff4d00] text-black px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 disabled:opacity-50">
-                            {isPosting ? 'Posting...' : 'Post'} <Send size={12} />
-                          </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Timeline Feed */}
-                    <div className="space-y-6">
+                    {/* Timeline Feed Cards */}
+                    <div className="space-y-4">
                       {posts.length === 0 ? (
-                        <p className="text-white/30 text-sm text-center py-10">No updates yet. Be the first to share!</p>
+                        <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center shadow-[0_8px_30px_rgb(0,0,0,0.03)]">
+                          <p className="text-slate-400 text-sm font-medium">No family updates yet. Be the first to share!</p>
+                        </div>
                       ) : (
                         posts.map(post => {
                           const isOwnPost = post.user_id === userId;
                           const hasLiked = post.likes.some((l:any) => l.user_id === userId);
                           
                           return (
-                            <div key={post.id} className="bg-[#131313] border border-white/10 p-5 rounded-3xl shadow-xl">
+                            <div key={post.id} className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all">
                               {/* Header */}
                               <div className="flex items-start justify-between mb-4 relative">
-                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => openMemberProfile(post.user_id)}>
-                                  <div className="w-10 h-10 rounded-full bg-[#222] flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
-                                    {post.profile?.avatar_url ? <img src={post.profile.avatar_url} className="w-full h-full object-cover" /> : (post.profile?.first_name?.[0] || 'M')}
+                                <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => openMemberProfile(post.user_id)}>
+                                  <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/70 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 overflow-hidden shadow-sm">
+                                    {post.profile?.avatar_url ? (
+                                      <img src={post.profile.avatar_url} className="w-full h-full object-cover" />
+                                    ) : (
+                                      post.profile?.first_name?.[0] || 'M'
+                                    )}
                                   </div>
                                   <div>
-                                    <p className="text-white text-sm font-bold hover:underline">{post.profile?.first_name} {post.profile?.last_name}</p>
-                                    <p className="text-white/40 text-[10px] uppercase tracking-wider">{formatTime(post.created_at)}</p>
+                                    <p className="text-slate-900 text-sm font-bold group-hover:text-[#ff4d00] transition-colors">
+                                      {post.profile?.first_name ? `${post.profile.first_name} ${post.profile.last_name}` : 'Family Member'}
+                                    </p>
+                                    <p className="text-slate-400 text-[11px] font-medium">{formatTime(post.created_at)}</p>
                                   </div>
                                 </div>
                                 
                                 {isOwnPost && (
                                   <div className="relative">
-                                    <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-white/30 hover:text-white p-1">
+                                    <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
                                       <MoreVertical size={16} />
                                     </button>
                                     {menuOpenId === post.id && (
-                                      <div className="absolute right-0 mt-1 w-32 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl py-1 z-10">
-                                        <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-2"><Edit2 size={12}/> Edit</button>
-                                        <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-400/10 flex items-center gap-2"><Trash2 size={12}/> Delete</button>
+                                      <div className="absolute right-0 mt-1 w-36 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-xl py-1.5 z-20">
+                                        <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                                          <Edit2 size={13}/> Edit Post
+                                        </button>
+                                        <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                          <Trash2 size={13}/> Delete
+                                        </button>
                                       </div>
                                     )}
                                   </div>
@@ -452,59 +546,113 @@ export default function Hub() {
                               {/* Content */}
                               {editingPostId === post.id ? (
                                 <div className="mb-4">
-                                  <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-sm text-white focus:outline-none" />
-                                  <div className="flex gap-2 justify-end mt-2">
-                                    <button onClick={() => setEditingPostId(null)} className="text-xs text-white/50 px-3 py-1">Cancel</button>
-                                    <button onClick={() => submitEdit(post.id)} className="bg-[#ff4d00] text-black text-xs font-bold px-4 py-1.5 rounded-lg">Save</button>
+                                  <textarea 
+                                    value={editContent} 
+                                    onChange={(e) => setEditContent(e.target.value)} 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400" 
+                                  />
+                                  <div className="flex gap-2 justify-end mt-2.5">
+                                    <button onClick={() => setEditingPostId(null)} className="text-xs font-semibold text-slate-500 px-3 py-1.5 rounded-xl hover:bg-slate-100">
+                                      Cancel
+                                    </button>
+                                    <button onClick={() => submitEdit(post.id)} className="bg-[#1C1C2E] text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm">
+                                      Save
+                                    </button>
                                   </div>
                                 </div>
                               ) : (
                                 <>
-                                  {post.content && <p className="text-white/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap">{post.content}</p>}
+                                  {post.content && (
+                                    <p className="text-slate-700 text-[15px] leading-relaxed mb-4 whitespace-pre-wrap">
+                                      {post.content}
+                                    </p>
+                                  )}
                                   {post.media_url && (
-                                    isVideo(post.media_url) ? (
-                                      <video src={post.media_url} controls playsInline className="w-full rounded-xl mb-4 border border-white/10" />
-                                    ) : (
-                                      <img src={post.media_url} className="w-full rounded-xl mb-4 border border-white/10" />
-                                    )
+                                    <div className="rounded-2xl overflow-hidden mb-4 border border-slate-100 bg-slate-50">
+                                      {isVideo(post.media_url) ? (
+                                        <video src={post.media_url} controls playsInline className="w-full max-h-[480px] object-contain" />
+                                      ) : (
+                                        <img src={post.media_url} className="w-full max-h-[520px] object-cover" />
+                                      )}
+                                    </div>
                                   )}
                                 </>
                               )}
 
                               {/* Actions */}
-                              <div className="flex items-center gap-6 border-t border-white/5 pt-3">
-                                <button onClick={() => toggleLike(post.id, hasLiked)} className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? 'text-[#ff4d00]' : 'text-white/40 hover:text-white'}`}>
-                                  <Heart size={16} className={hasLiked ? "fill-[#ff4d00]" : ""} /> {post.likes.length > 0 && post.likes.length}
+                              <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
+                                <button 
+                                  onClick={() => toggleLike(post.id, hasLiked)} 
+                                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${hasLiked ? 'bg-red-50 text-red-500' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
+                                >
+                                  <Heart size={15} className={hasLiked ? "fill-red-500 text-red-500" : ""} /> 
+                                  <span>{post.likes.length > 0 ? post.likes.length : 'Like'}</span>
                                 </button>
-                                <button onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold">
-                                  <MessageSquare size={16} /> {post.replies.length > 0 && post.replies.length}
+
+                                <button 
+                                  onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
+                                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                >
+                                  <MessageSquare size={15} /> 
+                                  <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
                                 </button>
-                                <button onClick={() => handleRepost(post)} className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold ml-auto">
-                                  <Repeat size={16} />
+
+                                <button 
+                                  onClick={() => handleRepost(post)} 
+                                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold ml-auto"
+                                  title="Repost"
+                                >
+                                  <Repeat size={15} />
                                 </button>
                               </div>
 
                               {/* Replies Section */}
                               {(replyingToPostId === post.id || post.replies.length > 0) && (
-                                <div className="mt-4 pt-4 border-t border-white/5 pl-4 space-y-3">
+                                <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                                   {post.replies.map((reply:any) => (
-                                    <div key={reply.id} className="flex gap-3">
-                                      <div className="w-6 h-6 rounded-full bg-[#222] shrink-0 overflow-hidden mt-1 cursor-pointer" onClick={() => openMemberProfile(reply.user_id)}>
-                                        {reply.profiles?.avatar_url ? <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-white font-bold">{reply.profiles?.first_name?.[0] || 'M'}</div>}
+                                    <div key={reply.id} className="flex gap-3 items-start">
+                                      <div 
+                                        className="w-7 h-7 rounded-xl bg-slate-100 border border-slate-200/70 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
+                                        onClick={() => openMemberProfile(reply.user_id)}
+                                      >
+                                        {reply.profiles?.avatar_url ? (
+                                          <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-600 font-bold">
+                                            {reply.profiles?.first_name?.[0] || 'M'}
+                                          </div>
+                                        )}
                                       </div>
-                                      <div className="bg-black/40 rounded-xl px-3 py-2 flex-1">
-                                        <div className="flex items-center justify-between mb-1">
-                                          <span className="text-xs font-bold text-white hover:underline cursor-pointer" onClick={() => openMemberProfile(reply.user_id)}>{reply.profiles?.first_name}</span>
-                                          <span className="text-[9px] text-white/30">{formatTime(reply.created_at)}</span>
+                                      <div className="bg-slate-100/80 border border-slate-200/50 rounded-2xl px-4 py-2.5 flex-1">
+                                        <div className="flex items-center justify-between mb-0.5">
+                                          <span 
+                                            className="text-xs font-bold text-slate-900 hover:text-[#ff4d00] cursor-pointer" 
+                                            onClick={() => openMemberProfile(reply.user_id)}
+                                          >
+                                            {reply.profiles?.first_name || 'Family'}
+                                          </span>
+                                          <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
                                         </div>
-                                        <p className="text-xs text-white/70">{reply.content}</p>
+                                        <p className="text-xs text-slate-700 leading-relaxed">{reply.content}</p>
                                       </div>
                                     </div>
                                   ))}
                                   {replyingToPostId === post.id && (
-                                    <div className="flex gap-2 mt-2">
-                                      <input autoFocus type="text" placeholder="Write a reply..." value={replyContent} onChange={(e) => setReplyContent(e.target.value)} className="flex-1 bg-black border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-[#ff4d00]" />
-                                      <button onClick={() => submitReply(post.id)} className="bg-white/10 hover:bg-[#ff4d00] text-white hover:text-black p-2 rounded-full transition-colors"><Send size={14}/></button>
+                                    <div className="flex gap-2 pt-1">
+                                      <input 
+                                        autoFocus 
+                                        type="text" 
+                                        placeholder="Write a reply..." 
+                                        value={replyContent} 
+                                        onChange={(e) => setReplyContent(e.target.value)} 
+                                        className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                                      />
+                                      <button 
+                                        onClick={() => submitReply(post.id)} 
+                                        className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
+                                      >
+                                        <Send size={13}/>
+                                      </button>
                                     </div>
                                   )}
                                 </div>
@@ -516,70 +664,121 @@ export default function Hub() {
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: PRAYER WALL */}
+                  {/* RIGHT COLUMN: APPLE GLASS PRAYER BENTO BOX */}
                   <div className="lg:col-span-4 space-y-6">
-                    <div className="bg-[#131313] border border-[#ff4d00]/20 p-6 rounded-3xl shadow-xl relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-[50px] pointer-events-none" />
-                      <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4 flex items-center gap-2"><BookHeart size={16} className="text-[#ff4d00]" /> Prayer Wall</h3>
-                      <div className="mb-6 relative">
-                        <input type="text" placeholder="Submit a prayer request..." value={newPrayer} onChange={(e) => setNewPrayer(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl pl-4 pr-10 py-3 text-xs text-white focus:outline-none focus:border-[#ff4d00] transition-colors" />
-                        <button onClick={handleCreatePrayer} disabled={isPraying || !newPrayer.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#ff4d00] p-1 hover:scale-110 transition-transform disabled:opacity-50"><Send size={14} /></button>
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                      <div className="absolute -top-10 -right-10 w-36 h-36 bg-amber-300/20 rounded-full blur-2xl pointer-events-none" />
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
+                            <BookHeart size={15} />
+                          </span>
+                          Prayer Wall
+                        </h3>
+                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                          {prayers.length}
+                        </span>
                       </div>
-                      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                        {prayers.map(prayer => (
-                          <div key={prayer.id} className="bg-black/50 border border-white/5 p-4 rounded-2xl">
-                            <div className="flex justify-between items-start mb-2">
-                              <p className="text-white text-xs font-bold cursor-pointer hover:underline" onClick={() => openMemberProfile(prayer.user_id)}>
-                                {prayer.profile?.first_name} {prayer.profile?.last_name}
-                              </p>
+                      
+                      <div className="mb-5 relative">
+                        <input 
+                          type="text" 
+                          placeholder="Share a prayer request..." 
+                          value={newPrayer} 
+                          onChange={(e) => setNewPrayer(e.target.value)} 
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                        />
+                        <button 
+                          onClick={handleCreatePrayer} 
+                          disabled={isPraying || !newPrayer.trim()} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#1C1C2E] text-white p-2 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-40"
+                        >
+                          <Send size={12} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
+                        {prayers.length === 0 ? (
+                          <p className="text-slate-400 text-xs text-center py-6">No prayer requests yet.</p>
+                        ) : (
+                          prayers.map(prayer => (
+                            <div key={prayer.id} className="bg-slate-50/90 hover:bg-white border border-slate-200/60 p-4 rounded-2xl transition-all shadow-sm">
+                              <div className="flex justify-between items-center mb-1.5">
+                                <p 
+                                  className="text-slate-900 text-xs font-bold cursor-pointer hover:text-[#ff4d00] transition-colors" 
+                                  onClick={() => openMemberProfile(prayer.user_id)}
+                                >
+                                  {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Family Member'}
+                                </p>
+                                <span className="text-[10px] font-medium text-slate-400">{formatTime(prayer.created_at)}</span>
+                              </div>
+                              <p className="text-slate-600 text-xs leading-relaxed">{prayer.content}</p>
                             </div>
-                            <p className="text-white/70 text-xs leading-relaxed mb-3">{prayer.content}</p>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
+
                 </div>
               </div>
             )}
 
-            {/* INSTAGRAM-STYLE MEMBER PROFILE VIEW */}
+            {/* INSTAGRAM-STYLE MEMBER PROFILE VIEW (APPLE GLASS LIGHT MODE) */}
             {activeTab === 'member_view' && viewingMember && (
-              <div className="animate-in fade-in max-w-4xl mx-auto">
-                <button onClick={() => setActiveTab('millerites')} className="text-xs text-white/50 hover:text-white uppercase font-bold tracking-widest mb-8 flex items-center gap-2">
-                  ← Back to Feed
+              <div className="animate-in fade-in max-w-4xl mx-auto relative z-10">
+                <button 
+                  onClick={() => setActiveTab('millerites')} 
+                  className="text-xs text-slate-500 hover:text-slate-900 uppercase font-bold tracking-widest mb-6 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm"
+                >
+                  ← Back to Millerites
                 </button>
                 
-                {/* Profile Header */}
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border border-white/10 overflow-hidden shrink-0">
-                    {viewingMember.avatar_url ? <img src={viewingMember.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#111] flex items-center justify-center text-4xl font-bold text-white/50">{viewingMember.first_name?.[0]}</div>}
+                {/* Profile Bento Header */}
+                <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
+                  <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl border border-slate-200 overflow-hidden shrink-0 shadow-md bg-slate-100">
+                    {viewingMember.avatar_url ? (
+                      <img src={viewingMember.avatar_url} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-slate-400">
+                        {viewingMember.first_name?.[0]}
+                      </div>
+                    )}
                   </div>
                   <div className="text-center md:text-left flex-1">
-                    <h1 className="text-3xl font-black uppercase text-white mb-2">{viewingMember.first_name} {viewingMember.last_name}</h1>
-                    <div className="flex items-center justify-center md:justify-start gap-6 text-sm font-bold text-white/70 mb-4">
-                      <span><strong className="text-white">{memberPosts.length}</strong> posts</span>
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">
+                      {viewingMember.first_name} {viewingMember.last_name}
+                    </h1>
+                    <div className="flex items-center justify-center md:justify-start gap-6 text-xs font-bold text-slate-500 mb-4">
+                      <span className="bg-slate-100 px-3 py-1 rounded-full">
+                        <strong className="text-slate-900">{memberPosts.length}</strong> updates shared
+                      </span>
                     </div>
-                    {viewingMember.bio && <p className="text-white/80 text-sm whitespace-pre-wrap mb-4 max-w-lg">{viewingMember.bio}</p>}
+                    {viewingMember.bio && (
+                      <p className="text-slate-600 text-sm whitespace-pre-wrap mb-4 max-w-lg leading-relaxed">
+                        {viewingMember.bio}
+                      </p>
+                    )}
                     {viewingMember.bible_verse && (
-                      <div className="inline-flex items-center gap-2 bg-[#ff4d00]/10 border border-[#ff4d00]/20 px-3 py-1.5 rounded-lg text-xs text-[#ff4d00] font-bold">
-                        <BookHeart size={14} /> {viewingMember.bible_verse}
+                      <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-xl text-xs text-amber-800 font-bold">
+                        <BookHeart size={14} className="text-[#ff4d00]" /> {viewingMember.bible_verse}
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Instagram Style Grid */}
-                <div className="border-t border-white/10 pt-8">
+                <div>
                   <div className="flex justify-center mb-6">
-                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white border-t-2 border-white pt-2 -mt-[33px]">
-                      <Grid size={14} /> Posts
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-800 bg-white/80 backdrop-blur-md border border-slate-200/80 px-5 py-2 rounded-full shadow-sm">
+                      <Grid size={14} className="text-[#ff4d00]" /> Family Updates
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-1 md:gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                     {memberPosts.map(post => (
-                      <div key={post.id} className="aspect-square bg-[#111] border border-white/5 relative group cursor-pointer overflow-hidden rounded-md">
+                      <div key={post.id} className="aspect-square bg-white/85 backdrop-blur-xl border border-white shadow-[0_8px_25px_rgb(0,0,0,0.04)] relative group cursor-pointer overflow-hidden rounded-[24px]">
                         {post.media_url ? (
                           isVideo(post.media_url) ? (
                             <video src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted playsInline />
@@ -587,23 +786,29 @@ export default function Hub() {
                             <img src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           )
                         ) : (
-                          <div className="w-full h-full p-4 flex flex-col justify-center items-center text-center bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
-                            <p className="text-white/70 text-xs md:text-sm line-clamp-4 leading-relaxed font-medium">"{post.content}"</p>
+                          <div className="w-full h-full p-5 flex flex-col justify-center items-center text-center bg-gradient-to-br from-white to-slate-50">
+                            <p className="text-slate-700 text-xs md:text-sm line-clamp-4 leading-relaxed font-medium">
+                              "{post.content}"
+                            </p>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                          <span className="text-white font-bold flex items-center gap-1.5"><Heart size={18} className="fill-white"/> {post.likes.length}</span>
-                          <span className="text-white font-bold flex items-center gap-1.5"><MessageSquare size={18} className="fill-white"/> {post.replies.length}</span>
+                        <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-5">
+                          <span className="text-white text-sm font-bold flex items-center gap-1.5"><Heart size={17} className="fill-white"/> {post.likes.length}</span>
+                          <span className="text-white text-sm font-bold flex items-center gap-1.5"><MessageSquare size={17} className="fill-white"/> {post.replies.length}</span>
                         </div>
                       </div>
                     ))}
                   </div>
-                  {memberPosts.length === 0 && <p className="text-center text-white/30 text-sm py-12">No posts yet.</p>}
+                  {memberPosts.length === 0 && (
+                    <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center">
+                      <p className="text-slate-400 text-sm font-medium">No posts yet.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* ASSET VAULT TAB */}
+            {/* ASSET VAULT TAB (DARK MODE) */}
             {activeTab === 'vault' && profile.is_client && (
               <div className="animate-in fade-in max-w-6xl mx-auto space-y-12">
                 <div className="text-center">
@@ -749,28 +954,28 @@ export default function Hub() {
       </main>
 
       {/* MOBILE BOTTOM NAVIGATION */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#111]/95 backdrop-blur-md border-t border-white/5 flex justify-around items-center p-3 z-30 pb-safe">
+      <nav className={`md:hidden fixed bottom-0 left-0 w-full backdrop-blur-2xl border-t flex justify-around items-center p-3 z-30 pb-safe transition-colors duration-500 ${isLightMode ? 'bg-white/85 border-slate-200/80' : 'bg-[#111]/95 border-white/5'}`}>
         {profile.is_client && (
-          <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+          <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
             <FolderDown size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
           </button>
         )}
         {profile.is_millerite && (
-          <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'millerites' || activeTab === 'member_view' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+          <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'millerites' || activeTab === 'member_view' ? (isLightMode ? 'text-[#1C1C2E]' : 'text-[#ff4d00]') : (isLightMode ? 'text-slate-400' : 'text-white/40')}`}>
             <Users size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Family</span>
           </button>
         )}
         {profile.is_client && blueprint && (
-          <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+          <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
             <LayoutDashboard size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
           </button>
         )}
         {profile.is_client && profile.has_retainer && (
-          <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+          <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
             <Film size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
           </button>
         )}
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
           <User size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
         </button>
       </nav>
