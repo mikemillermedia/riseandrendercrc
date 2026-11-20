@@ -89,58 +89,51 @@ export default function Hub() {
     initApp();
   }, [navigate]);
 
+  // BULLETPROOF FETCH - NO SUPABASE JOINS
   const fetchCommunityData = async () => {
     if (!supabase) return;
     try {
-      const { data: pData, error: pError } = await supabase
-        .from('community_posts')
-        .select(`*, post_likes(user_id), post_replies(*)`)
-        .order('created_at', { ascending: false });
-        
-      const { data: prData, error: prError } = await supabase
-        .from('prayer_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: pData, error: pError } = await supabase.from('community_posts').select('*').order('created_at', { ascending: false });
+      const { data: prData, error: prError } = await supabase.from('prayer_requests').select('*').order('created_at', { ascending: false });
+      const { data: likesData } = await supabase.from('post_likes').select('*');
+      const { data: repliesData } = await supabase.from('post_replies').select('*');
 
-      if (pError) console.error("Error fetching posts:", pError.message);
-      if (prError) console.error("Error fetching prayers:", prError.message);
+      if (pError) console.error("Posts Error:", pError.message);
+      if (prError) console.error("Prayers Error:", prError.message);
       
-      if (pData || prData) {
-        const userIds = new Set<string>();
+      const safePosts = pData || [];
+      const safePrayers = prData || [];
+      const safeLikes = likesData || [];
+      const safeReplies = repliesData || [];
 
-        (pData || []).forEach((p: any) => {
-          userIds.add(p.user_id);
-          (p.post_replies || []).forEach((r: any) => userIds.add(r.user_id));
-        });
-        (prData || []).forEach((p: any) => userIds.add(p.user_id));
+      const userIds = new Set<string>();
+      safePosts.forEach((p: any) => userIds.add(p.user_id));
+      safePrayers.forEach((p: any) => userIds.add(p.user_id));
+      safeLikes.forEach((l: any) => userIds.add(l.user_id));
+      safeReplies.forEach((r: any) => userIds.add(r.user_id));
 
-        const { data: profData } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar_url, bio, bible_verse')
-          .in('id', Array.from(userIds));
+      const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, bio, bible_verse').in('id', Array.from(userIds));
 
-        const profileMap = (profData || []).reduce((acc: any, curr: any) => {
-          acc[curr.id] = curr;
-          return acc;
-        }, {});
+      const profileMap = (profData || []).reduce((acc: any, curr: any) => {
+        acc[curr.id] = curr;
+        return acc;
+      }, {});
 
-        if (pData) {
-          setPosts(pData.map((p: any) => ({
-            ...p,
-            profile: profileMap[p.user_id],
-            likes: p.post_likes || [],
-            replies: (p.post_replies || [])
-              .map((r: any) => ({ ...r, profiles: profileMap[r.user_id] }))
-              .sort((a:any, b:any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-          })));
-        }
-        if (prData) {
-          setPrayers(prData.map((p: any) => ({ 
-            ...p, 
-            profile: profileMap[p.user_id] 
-          })));
-        }
-      }
+      setPosts(safePosts.map((p: any) => ({
+        ...p,
+        profile: profileMap[p.user_id],
+        likes: safeLikes.filter((l: any) => l.post_id === p.id),
+        replies: safeReplies
+          .filter((r: any) => r.post_id === p.id)
+          .map((r: any) => ({ ...r, profiles: profileMap[r.user_id] }))
+          .sort((a:any, b:any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      })));
+
+      setPrayers(safePrayers.map((p: any) => ({ 
+        ...p, 
+        profile: profileMap[p.user_id] 
+      })));
+
     } catch (err) {
       console.error("Error fetching community data:", err);
     }
@@ -636,7 +629,6 @@ export default function Hub() {
                     ))}
                   </div>
                   
-                  {/* RESTORED VIDEO CONSULTATION BLOCK */}
                   <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl min-h-[250px]">
                     <Video size={40} className="text-[#ff4d00] mb-4" />
                     <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
@@ -715,7 +707,6 @@ export default function Hub() {
                     </button>
                   </form>
 
-                  {/* RESTORED ACCOUNT SECURITY BLOCK */}
                   <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
                     <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
                       <Lock size={16} className="text-[#ff4d00]" /> Account Security
