@@ -89,7 +89,6 @@ export default function Hub() {
     initApp();
   }, [navigate]);
 
-  // BULLETPROOF FETCH - NO SUPABASE JOINS
   const fetchCommunityData = async () => {
     if (!supabase) return;
     try {
@@ -137,6 +136,12 @@ export default function Hub() {
     } catch (err) {
       console.error("Error fetching community data:", err);
     }
+  };
+
+  // HELPER TO DETERMINE IF MEDIA IS VIDEO
+  const isVideo = (url: string) => {
+    if (!url) return false;
+    return url.match(/\.(mp4|webm|ogg|mov)$/i);
   };
 
   // POSTING & MEDIA
@@ -386,7 +391,11 @@ export default function Hub() {
                         />
                         {postMediaUrl && (
                           <div className="relative mt-2 inline-block">
-                            <img src={postMediaUrl} className="h-32 rounded-xl object-cover border border-white/10" />
+                            {isVideo(postMediaUrl) ? (
+                              <video src={postMediaUrl} className="h-32 rounded-xl object-cover border border-white/10" autoPlay muted loop playsInline />
+                            ) : (
+                              <img src={postMediaUrl} className="h-32 rounded-xl object-cover border border-white/10" />
+                            )}
                             <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X size={12}/></button>
                           </div>
                         )}
@@ -452,7 +461,13 @@ export default function Hub() {
                               ) : (
                                 <>
                                   {post.content && <p className="text-white/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap">{post.content}</p>}
-                                  {post.media_url && <img src={post.media_url} className="w-full rounded-xl mb-4 border border-white/10" />}
+                                  {post.media_url && (
+                                    isVideo(post.media_url) ? (
+                                      <video src={post.media_url} controls playsInline className="w-full rounded-xl mb-4 border border-white/10" />
+                                    ) : (
+                                      <img src={post.media_url} className="w-full rounded-xl mb-4 border border-white/10" />
+                                    )
+                                  )}
                                 </>
                               )}
 
@@ -566,7 +581,11 @@ export default function Hub() {
                     {memberPosts.map(post => (
                       <div key={post.id} className="aspect-square bg-[#111] border border-white/5 relative group cursor-pointer overflow-hidden rounded-md">
                         {post.media_url ? (
-                          <img src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          isVideo(post.media_url) ? (
+                            <video src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted playsInline />
+                          ) : (
+                            <img src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          )
                         ) : (
                           <div className="w-full h-full p-4 flex flex-col justify-center items-center text-center bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
                             <p className="text-white/70 text-xs md:text-sm line-clamp-4 leading-relaxed font-medium">"{post.content}"</p>
