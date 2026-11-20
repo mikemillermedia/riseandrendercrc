@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
-  User, Film, Sparkles, BookOpen, Camera, Save
+  User, Film, Sparkles, BookOpen, Camera, Save, Users, MessageSquare, Heart, Send, BookHeart
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -12,10 +12,20 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
+// MOCK DATA FOR TIMELINE & PRAYERS (Replace with Supabase fetches later)
+const MOCK_POSTS = [
+  { id: 1, author: 'Mike Miller', avatar: '', time: '2 hours ago', content: 'Just dropped the new lighting blueprint in the Asset Vault! Let me know what you guys think of the new Amaran setups.', likes: 12 },
+  { id: 2, author: 'Sarah L.', avatar: 'S', time: '5 hours ago', content: 'Finally got my cables routed and the studio looks so clean. Hitting record on episode 1 tonight!', likes: 8 },
+];
+
+const MOCK_PRAYERS = [
+  { id: 1, author: 'Jasmine M.', time: '1 day ago', content: 'Praying for clarity as I rebrand the podcast this week. Feeling a bit overwhelmed with the direction.', praying: 5 },
+  { id: 2, author: 'Barron D.', time: '2 days ago', content: 'Praise report! We just hit 10k downloads on the latest series.', praying: 15 },
+];
+
 export default function Hub() {
   const navigate = useNavigate();
   
-  // Default tab for everyone is 'vault'
   const [activeTab, setActiveTab] = useState('vault'); 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,16 +43,19 @@ export default function Hub() {
     first_name: '',
     last_name: '',
     bio: '',
-    has_retainer: false
+    bible_verse: '', // NEW BIBLE VERSE FIELD
+    has_retainer: false,
+    is_community_member: true // Determines if they can see the timeline
   });
 
-  // Profile Saving State
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-
-  // Password Update State
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // TIMELINE STATE
+  const [newPost, setNewPost] = useState('');
+  const [newPrayer, setNewPrayer] = useState('');
 
   // INITIALIZATION
   useEffect(() => {
@@ -66,7 +79,9 @@ export default function Hub() {
             username: profileData.username || '',
             instagram_handle: profileData.instagram_handle || '',
             bio: profileData.bio || '',
-            avatar_url: profileData.avatar_url || ''
+            bible_verse: profileData.bible_verse || '',
+            avatar_url: profileData.avatar_url || '',
+            is_community_member: profileData.is_community_member ?? true // Defaulting to true for demo
           });
         }
 
@@ -94,7 +109,6 @@ export default function Hub() {
     finally { navigate('/'); }
   };
 
-  // AVATAR UPLOAD HANDLER
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setIsUploadingAvatar(true);
@@ -119,7 +133,6 @@ export default function Hub() {
     }
   };
 
-  // PROFILE SAVE HANDLER
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || !userId) return;
@@ -134,7 +147,8 @@ export default function Hub() {
         display_name: displayName,
         username: profile.username,
         instagram_handle: profile.instagram_handle,
-        bio: profile.bio
+        bio: profile.bio,
+        bible_verse: profile.bible_verse
       }).eq('id', userId);
 
       if (error) throw error;
@@ -146,7 +160,6 @@ export default function Hub() {
     }
   };
 
-  // PASSWORD UPDATE HANDLER
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || !newPassword) return;
@@ -162,7 +175,7 @@ export default function Hub() {
       if (error) throw error;
       
       alert("Password updated successfully!");
-      setNewPassword(''); // Clear the input field
+      setNewPassword('');
     } catch (error: any) {
       alert(`Error updating password: ${error.message}`);
     } finally {
@@ -171,7 +184,7 @@ export default function Hub() {
   };
 
   return (
-    <div className="h-screen bg-[#050505] text-[#F5F5F0] font-sans flex flex-col md:flex-row overflow-hidden">
+    <div className="h-screen bg-[#050505] text-[#F5F5F0] font-sans flex flex-col md:flex-row overflow-hidden selection:bg-[#ff4d00] selection:text-black">
       
       {/* MOBILE TOP HEADER */}
       <div className="md:hidden flex items-center justify-between p-5 border-b border-white/5 bg-[#111] z-30 shrink-0">
@@ -191,26 +204,29 @@ export default function Hub() {
         
         <nav className="flex-1 p-4 space-y-2 mt-2">
           
-          {/* ALWAYS VISIBLE: Asset Vault */}
           <button onClick={() => setActiveTab('vault')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'vault' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <FolderDown size={18} /> Asset Vault
           </button>
 
-          {/* UNLOCKED ONLY IF BLUEPRINT EXISTS IN DB */}
+          {/* NEW COMMUNITY TAB */}
+          {profile.is_community_member && (
+            <button onClick={() => setActiveTab('community')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'community' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+              <Users size={18} /> Inner Circle
+            </button>
+          )}
+
           {blueprint && (
             <button onClick={() => setActiveTab('blueprint')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'blueprint' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <LayoutDashboard size={18} /> My Blueprint
             </button>
           )}
 
-          {/* UNLOCKED ONLY IF RETAINER CLIENT */}
           {profile.has_retainer && (
             <button onClick={() => setActiveTab('retainer')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'retainer' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
               <Film size={18} /> Post-Production
             </button>
           )}
 
-          {/* ALWAYS VISIBLE: Profile */}
           <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
             <User size={18} /> My Profile
           </button>
@@ -236,11 +252,9 @@ export default function Hub() {
           </div>
         ) : (
           <>
-            {/* ASSET VAULT & SERVICES TAB */}
+            {/* ASSET VAULT TAB */}
             {activeTab === 'vault' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto space-y-12">
-                
-                {/* PAGE HEADER */}
                 <div className="text-center">
                   <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-3 inline-block">
                     Digital Resources & Services
@@ -253,65 +267,20 @@ export default function Hub() {
                   </p>
                 </div>
 
-                {/* 1. FEATURED DIGITAL RESOURCE: CREATOR STUDIO KIT */}
                 <div className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-6 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[110px] pointer-events-none" />
-                  
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
-                    
-                    {/* 3D SOFTWARE BOX MOCKUP */}
                     <div className="md:col-span-5 flex justify-center items-center py-4">
                       <div className="relative group cursor-pointer" style={{ perspective: '1200px' }}>
                         <div className="absolute -inset-2 bg-gradient-to-r from-[#ff4d00] to-orange-600 rounded-xl blur-2xl opacity-30 group-hover:opacity-60 transition-opacity duration-500" />
-
-                        <div 
-                          className="relative w-48 sm:w-56 h-72 sm:h-80 transition-transform duration-500 ease-out"
-                          style={{ 
-                            transformStyle: 'preserve-3d', 
-                            transform: 'rotateY(-20deg) rotateX(10deg)' 
-                          }}
-                        >
-                          <div 
-                            className="absolute inset-0 bg-[#111] rounded-r-md overflow-hidden border border-white/20 shadow-2xl z-10"
-                            style={{ transform: 'translateZ(12px)' }}
-                          >
-                            <img 
-                              src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg"
-                              alt="The Content Creator Studio Kit Cover" 
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-40 group-hover:opacity-70 transition-opacity pointer-events-none" />
+                        <div className="relative w-48 sm:w-56 h-72 sm:h-80 transition-transform duration-500 ease-out" style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-20deg) rotateX(10deg)' }}>
+                          <div className="absolute inset-0 bg-[#111] rounded-r-md overflow-hidden border border-white/20 shadow-2xl z-10" style={{ transform: 'translateZ(12px)' }}>
+                            <img src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg" alt="Kit Cover" className="w-full h-full object-cover" />
                           </div>
-
-                          <div 
-                            className="absolute top-0 left-0 w-6 h-full bg-[#0a0a0a] border-l border-y border-white/20 flex flex-col justify-between py-6 px-1 text-center shadow-inner z-0"
-                            style={{ 
-                              transformOrigin: 'left', 
-                              transform: 'rotateY(-90deg) translateX(-24px)' 
-                            }}
-                          >
-                            <span className="text-[8px] font-black tracking-widest text-[#ff4d00] uppercase" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>RISE + RENDER</span>
-                            <span className="text-[8px] font-bold tracking-wider text-white/80 uppercase truncate" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>STUDIO KIT</span>
-                            <div className="w-2 h-2 rounded-full bg-[#ff4d00] mx-auto" />
-                          </div>
-
-                          <div 
-                            className="absolute top-0 left-0 w-full h-6 bg-[#222] border-t border-x border-white/20 z-0"
-                            style={{ 
-                              transformOrigin: 'top', 
-                              transform: 'rotateX(90deg) translateY(-24px)' 
-                            }}
-                          />
-
-                          <div 
-                            className="absolute -bottom-6 left-2 right-2 h-6 bg-black/80 blur-md rounded-full transition-all" 
-                            style={{ transform: 'rotateX(60deg) scale(0.95)' }}
-                          />
                         </div>
                       </div>
                     </div>
 
-                    {/* DETAILS & ACTION BUTTON */}
                     <div className="md:col-span-7 space-y-4 text-left">
                       <div className="flex items-center gap-2 text-[#ff4d00] text-xs font-bold uppercase tracking-widest">
                         <Sparkles size={16} /> Official Digital Guide
@@ -320,97 +289,176 @@ export default function Hub() {
                         The Content Creator Studio Kit
                       </h2>
                       <p className="text-white/70 text-xs sm:text-sm leading-relaxed">
-                        A proven, no-guesswork at-home studio setup for small business owners and entrepreneurs who want their podcast to look and sound professional without overcomplicating the process.
+                        A proven, no-guesswork at-home studio setup for small business owners and entrepreneurs who want their podcast to look and sound professional.
                       </p>
-
-                      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                        <a 
-                          href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf"
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,77,0,0.35)] transition-all"
-                        >
+                      <div className="pt-2">
+                        <a href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" target="_blank" rel="noopener noreferrer" className="inline-flex bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-xs items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,77,0,0.35)] transition-all">
                           <BookOpen size={16} /> Open Guide
                         </a>
                       </div>
                     </div>
-
                   </div>
                 </div>
 
-                {/* 2. HIDDEN / COMING SOON SECTION */}
                 <div className="relative w-full pb-8">
-                  
-                  {/* Overlay Lock Message */}
                   <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
                     <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-[#ff4d00]/40 text-[#ff4d00] font-black uppercase tracking-widest px-6 md:px-10 py-5 rounded-2xl shadow-[0_0_50px_rgba(255,77,0,0.3)] flex items-center gap-3 text-sm md:text-base">
                       <Lock size={20} className="text-[#ff4d00]" /> MORE FREEBIES COMING SOON
                     </div>
                   </div>
-                  
-                  {/* Blurred Placeholder Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-30 filter blur-[6px] select-none pointer-events-none">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="bg-[#131313] border border-white/5 rounded-3xl overflow-hidden flex flex-col h-[380px]">
                         <div className="h-48 bg-[#1a1a1a]"></div>
-                        <div className="p-6 md:p-8 flex-grow flex flex-col gap-4">
-                          <div className="h-4 bg-white/20 rounded w-1/3"></div>
-                          <div className="h-8 bg-white/20 rounded w-3/4"></div>
-                          <div className="h-16 bg-white/10 rounded w-full mt-2"></div>
-                          <div className="h-12 bg-[#333333] rounded w-full mt-auto"></div>
-                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
               </div>
             )}
 
-            {/* BLUEPRINT TAB (UNLOCKED ONLY WHEN DB RECORD EXISTS) */}
-            {activeTab === 'blueprint' && blueprint && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative max-w-6xl mx-auto md:mx-0">
-                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
-                <p className="text-white/50 text-sm md:text-base mb-6 md:mb-8">Your personalized gear list, setup instructions, and direct support access.</p>
-                
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 md:p-8 rounded-3xl shadow-xl">
-                      <h3 className="text-lg font-bold text-white mb-6">Action Items / Gear to Order</h3>
-                      {blueprint.gear_list && blueprint.gear_list.length > 0 ? (
-                        <div className="space-y-3">
-                          {blueprint.gear_list.map((item: any, index: number) => (
-                            <div key={index} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors cursor-pointer" onClick={() => toggleGearItem(index)}>
-                              <input type="checkbox" checked={item.checked} readOnly className="w-5 h-5 accent-[#ff4d00] pointer-events-none shrink-0" />
-                              <span className={`text-sm ${item.checked ? 'text-white/40 line-through' : 'text-white'}`}>{item.name}</span>
-                            </div>
-                          ))}
+            {/* NEW: INNER CIRCLE COMMUNITY TAB */}
+            {activeTab === 'community' && profile.is_community_member && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 border-b border-white/10 pb-6">
+                  <div>
+                    <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-3 inline-flex items-center gap-1.5">
+                      <Lock size={12} /> Invite-Only Group
+                    </span>
+                    <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white mb-2">The Inner Circle</h1>
+                    <p className="text-white/50 text-xs md:text-sm">Connect with other purpose-driven creators. Share setups, updates, and prayer requests.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  
+                  {/* MAIN TIMELINE FEED */}
+                  <div className="lg:col-span-8 space-y-6">
+                    {/* Create Post Input */}
+                    <div className="bg-[#131313] border border-white/10 p-5 rounded-3xl shadow-xl flex gap-4 items-start">
+                      <div className="w-10 h-10 rounded-full bg-[#222] border border-white/10 shrink-0 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
+                        {profile.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : profile.first_name?.[0] || 'C'}
+                      </div>
+                      <div className="flex-1">
+                        <textarea 
+                          rows={2} 
+                          placeholder="Share a studio update, win, or question..." 
+                          value={newPost}
+                          onChange={(e) => setNewPost(e.target.value)}
+                          className="w-full bg-transparent text-white text-sm focus:outline-none resize-none placeholder:text-white/30"
+                        />
+                        <div className="flex justify-end mt-2 pt-3 border-t border-white/5">
+                          <button className="bg-white/10 hover:bg-[#ff4d00] text-white hover:text-black transition-colors px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                            Post <Send size={12} />
+                          </button>
                         </div>
-                      ) : (
-                        <p className="text-white/40 text-sm italic p-4 bg-white/5 rounded-xl border border-white/5">Mike is currently building your gear list...</p>
-                      )}
+                      </div>
                     </div>
-                    <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 md:p-8 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl h-full min-h-[250px]">
-                      <Video size={40} className="text-[#ff4d00] mb-4" />
-                      <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
-                      <p className="text-xs text-white/50 mb-6">Watch our 1-hour session replay where we mapped out this room.</p>
-                      {blueprint.video_url ? (
-                        <a href={blueprint.video_url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-orange-500 text-black text-sm font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-colors w-full">Watch Replay</a>
-                      ) : (
-                        <button disabled className="bg-white/5 text-white/30 text-sm font-bold py-3 px-6 rounded-xl cursor-not-allowed border border-white/10 w-full">Video Processing...</button>
-                      )}
+
+                    {/* Feed Posts */}
+                    <div className="space-y-4">
+                      {MOCK_POSTS.map(post => (
+                        <div key={post.id} className="bg-[#131313] border border-white/10 p-6 rounded-3xl shadow-xl">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-[#222] flex items-center justify-center text-sm font-bold text-white/50 shrink-0">
+                              {post.avatar || post.author[0]}
+                            </div>
+                            <div>
+                              <p className="text-white text-sm font-bold">{post.author}</p>
+                              <p className="text-white/40 text-[10px] uppercase tracking-wider">{post.time}</p>
+                            </div>
+                          </div>
+                          <p className="text-white/80 text-sm leading-relaxed mb-4">{post.content}</p>
+                          <div className="flex items-center gap-6 border-t border-white/5 pt-4">
+                            <button className="flex items-center gap-1.5 text-white/40 hover:text-[#ff4d00] transition-colors text-xs font-bold">
+                              <Heart size={16} /> {post.likes}
+                            </button>
+                            <button className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold">
+                              <MessageSquare size={16} /> Reply
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: PRAYER WALL */}
+                  <div className="lg:col-span-4 space-y-6">
+                    <div className="bg-[#131313] border border-[#ff4d00]/20 p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff4d00]/10 rounded-full blur-[50px] pointer-events-none" />
+                      
+                      <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4 flex items-center gap-2">
+                        <BookHeart size={16} className="text-[#ff4d00]" /> Prayer Wall
+                      </h3>
+                      
+                      <div className="mb-6 relative">
+                        <input 
+                          type="text" 
+                          placeholder="Submit a prayer request..." 
+                          value={newPrayer}
+                          onChange={(e) => setNewPrayer(e.target.value)}
+                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#ff4d00] transition-colors"
+                        />
+                        <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[#ff4d00] p-1 hover:scale-110 transition-transform">
+                          <Send size={14} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {MOCK_PRAYERS.map(prayer => (
+                          <div key={prayer.id} className="bg-black/50 border border-white/5 p-4 rounded-2xl">
+                            <div className="flex justify-between items-start mb-2">
+                              <p className="text-white text-xs font-bold">{prayer.author}</p>
+                              <p className="text-white/30 text-[9px] uppercase tracking-wider">{prayer.time}</p>
+                            </div>
+                            <p className="text-white/70 text-xs leading-relaxed mb-3">{prayer.content}</p>
+                            <button className="w-full bg-white/5 hover:bg-[#ff4d00]/10 border border-white/5 hover:border-[#ff4d00]/30 text-white/50 hover:text-[#ff4d00] transition-all py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                              <Heart size={12} /> {prayer.praying} Praying
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* BLUEPRINT TAB */}
+            {activeTab === 'blueprint' && blueprint && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
+                <p className="text-white/50 text-sm mb-8">Your personalized gear list and instructions.</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 rounded-3xl shadow-xl">
+                    <h3 className="text-lg font-bold text-white mb-6">Action Items</h3>
+                    {blueprint.gear_list?.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 mb-3 cursor-pointer" onClick={() => toggleGearItem(index)}>
+                        <input type="checkbox" checked={item.checked} readOnly className="w-5 h-5 accent-[#ff4d00]" />
+                        <span className={`text-sm ${item.checked ? 'text-white/40 line-through' : 'text-white'}`}>{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl min-h-[250px]">
+                    <Video size={40} className="text-[#ff4d00] mb-4" />
+                    <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
+                    {blueprint.video_url ? (
+                      <a href={blueprint.video_url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-orange-500 text-black text-sm font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-colors w-full">Watch Replay</a>
+                    ) : (
+                      <button disabled className="bg-white/5 text-white/30 text-sm font-bold py-3 px-6 rounded-xl border border-white/10 w-full">Processing...</button>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* PROFILE TAB (ALWAYS ACCESSIBLE) */}
+            {/* PROFILE TAB (UPDATED WITH BIBLE VERSE) */}
             {activeTab === 'profile' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
                 <div className="text-center mb-8 md:mb-10">
                   <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Profile</h1>
-                  <p className="text-white/50 text-xs md:text-sm">Manage your Sanctuary account details and identity.</p>
+                  <p className="text-white/50 text-xs md:text-sm">Manage your Sanctuary account and Inner Circle identity.</p>
                 </div>
                 
                 <div className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden">
@@ -418,7 +466,6 @@ export default function Hub() {
                   
                   <form onSubmit={handleSaveProfile} className="space-y-8 relative z-10">
                     
-                    {/* AVATAR UPLOAD SECTION */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-8 border-b border-white/5">
                       <div className="relative group shrink-0">
                         {profile.avatar_url ? (
@@ -430,13 +477,7 @@ export default function Hub() {
                         )}
                         <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity backdrop-blur-sm">
                           <Camera size={24} className="text-white" />
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleAvatarUpload} 
-                            className="hidden" 
-                            disabled={isUploadingAvatar} 
-                          />
+                          <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={isUploadingAvatar} />
                         </label>
                       </div>
                       <div className="text-center sm:text-left pt-2">
@@ -446,94 +487,62 @@ export default function Hub() {
                       </div>
                     </div>
 
-                    {/* TEXT FIELDS SECTION */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">First Name</label>
-                        <input 
-                          type="text" 
-                          value={profile.first_name} 
-                          onChange={(e) => setProfile({...profile, first_name: e.target.value})}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                          placeholder="Your first name"
-                        />
+                        <input type="text" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="Your first name" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Last Name</label>
-                        <input 
-                          type="text" 
-                          value={profile.last_name} 
-                          onChange={(e) => setProfile({...profile, last_name: e.target.value})}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                          placeholder="Your last name"
-                        />
+                        <input type="text" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="Your last name" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Username</label>
-                        <input 
-                          type="text" 
-                          value={profile.username} 
-                          onChange={(e) => setProfile({...profile, username: e.target.value})}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                          placeholder="@creator"
-                        />
+                        <input type="text" value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="@creator" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Instagram Handle</label>
+                        <input type="text" value={profile.instagram_handle} onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="e.g. riseandrender" />
+                      </div>
+                      
+                      {/* NEW BIBLE VERSE FIELD */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold text-[#ff4d00] uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <BookHeart size={14} /> Favorite Bible Verse <span className="text-white/30 text-[9px]">(Optional)</span>
+                        </label>
                         <input 
                           type="text" 
-                          value={profile.instagram_handle} 
-                          onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                          placeholder="e.g. riseandrender"
+                          value={profile.bible_verse} 
+                          onChange={(e) => setProfile({...profile, bible_verse: e.target.value})} 
+                          className="w-full bg-black border border-[#ff4d00]/20 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
+                          placeholder="e.g. Proverbs 16:3" 
                         />
                       </div>
+
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Short Bio</label>
-                        <textarea 
-                          rows={3}
-                          value={profile.bio} 
-                          onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors resize-none" 
-                          placeholder="Tell us about your brand or podcast..."
-                        />
+                        <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors resize-none" placeholder="Tell the community about your mission..." />
                       </div>
                     </div>
 
                     <div className="pt-4 border-t border-white/5 flex justify-end">
-                      <button 
-                        type="submit" 
-                        disabled={isSavingProfile}
-                        className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,77,0,0.2)] transition-all disabled:opacity-50 w-full sm:w-auto"
-                      >
+                      <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,77,0,0.2)] transition-all disabled:opacity-50 w-full sm:w-auto">
                         <Save size={16} /> {isSavingProfile ? 'Saving...' : 'Save Profile'}
                       </button>
                     </div>
 
                   </form>
 
-                  {/* SECURITY / CHANGE PASSWORD SECTION */}
                   <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
                     <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
                       <Lock size={16} className="text-[#ff4d00]" /> Account Security
                     </h3>
                     <p className="text-white/40 text-xs mb-6">Update your password to keep your Sanctuary assets secure.</p>
-                    
                     <form onSubmit={handleUpdatePassword} className="flex flex-col sm:flex-row gap-4">
                       <div className="flex-1">
-                        <input 
-                          type="password" 
-                          value={newPassword} 
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" 
-                          placeholder="Enter new password"
-                        />
+                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="Enter new password" />
                       </div>
-                      <button 
-                        type="submit" 
-                        disabled={isUpdatingPassword || !newPassword}
-                        className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center transition-all disabled:opacity-50 shrink-0"
-                      >
+                      <button type="submit" disabled={isUpdatingPassword || !newPassword} className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center transition-all disabled:opacity-50 shrink-0">
                         {isUpdatingPassword ? 'Updating...' : 'Update Password'}
                       </button>
                     </form>
@@ -543,7 +552,7 @@ export default function Hub() {
               </div>
             )}
 
-            {/* RETAINER DASHBOARD TAB (UNLOCKED ONLY WHEN HAS_RETAINER IS TRUE) */}
+            {/* RETAINER DASHBOARD TAB */}
             {activeTab === 'retainer' && profile.has_retainer && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <RetainerDashboard userId={userId} supabase={supabase} />
@@ -556,13 +565,18 @@ export default function Hub() {
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#111]/95 backdrop-blur-md border-t border-white/5 flex justify-around items-center p-3 z-30 pb-safe">
         
-        {/* ALWAYS VISIBLE: Asset Vault */}
         <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
           <FolderDown size={20} />
           <span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
         </button>
 
-        {/* UNLOCKED ONLY IF BLUEPRINT EXISTS IN DB */}
+        {profile.is_community_member && (
+          <button onClick={() => setActiveTab('community')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'community' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
+            <Users size={20} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Community</span>
+          </button>
+        )}
+
         {blueprint && (
           <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
             <LayoutDashboard size={20} />
@@ -570,7 +584,6 @@ export default function Hub() {
           </button>
         )}
 
-        {/* UNLOCKED ONLY IF RETAINER CLIENT */}
         {profile.has_retainer && (
           <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
             <Film size={20} />
@@ -578,7 +591,6 @@ export default function Hub() {
           </button>
         )}
 
-        {/* ALWAYS VISIBLE: Profile */}
         <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : 'text-white/40'}`}>
           <User size={20} />
           <span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
