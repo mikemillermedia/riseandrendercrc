@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -89,7 +89,6 @@ export default function Hub() {
     initApp();
   }, [navigate]);
 
-  // FETCH LIVE DATA (FIXED TO PREVENT BLANK SCREEN)
   const fetchCommunityData = async () => {
     if (!supabase) return;
     try {
@@ -169,34 +168,44 @@ export default function Hub() {
     if ((!newPost.trim() && !postMediaUrl) || !supabase || !userId) return;
     setIsPosting(true);
     try {
-      await supabase.from('community_posts').insert([{ user_id: userId, content: newPost.trim(), media_url: postMediaUrl }]);
+      const { error } = await supabase.from('community_posts').insert([{ user_id: userId, content: newPost.trim(), media_url: postMediaUrl }]);
+      if (error) throw error;
       setNewPost(''); setPostMediaUrl('');
       await fetchCommunityData(); 
-    } catch (err: any) { alert("Error: " + err.message); } 
-    finally { setIsPosting(false); }
+    } catch (err: any) { 
+      alert("Error Posting: " + err.message); 
+    } finally { 
+      setIsPosting(false); 
+    }
   };
 
   const handleCreatePrayer = async () => {
     if (!newPrayer.trim() || !supabase || !userId) return;
     setIsPraying(true);
     try {
-      await supabase.from('prayer_requests').insert([{ user_id: userId, content: newPrayer.trim() }]);
+      const { error } = await supabase.from('prayer_requests').insert([{ user_id: userId, content: newPrayer.trim() }]);
+      if (error) throw error;
       setNewPrayer('');
       await fetchCommunityData(); 
-    } catch (error: any) { alert("Error submitting prayer: " + error.message); } 
-    finally { setIsPraying(false); }
+    } catch (error: any) { 
+      alert("Error submitting prayer: " + error.message); 
+    } finally { 
+      setIsPraying(false); 
+    }
   };
 
   // POST ACTIONS
   const handleDeletePost = async (id: string) => {
     if (!confirm("Delete this post?")) return;
-    await supabase!.from('community_posts').delete().eq('id', id);
+    const { error } = await supabase!.from('community_posts').delete().eq('id', id);
+    if (error) alert("Error deleting: " + error.message);
     setMenuOpenId(null);
     fetchCommunityData();
   };
 
   const submitEdit = async (id: string) => {
-    await supabase!.from('community_posts').update({ content: editContent }).eq('id', id);
+    const { error } = await supabase!.from('community_posts').update({ content: editContent }).eq('id', id);
+    if (error) alert("Error editing: " + error.message);
     setEditingPostId(null); setMenuOpenId(null);
     fetchCommunityData();
   };
@@ -213,14 +222,16 @@ export default function Hub() {
 
   const submitReply = async (postId: string) => {
     if (!replyContent.trim() || !userId) return;
-    await supabase!.from('post_replies').insert([{ post_id: postId, user_id: userId, content: replyContent }]);
+    const { error } = await supabase!.from('post_replies').insert([{ post_id: postId, user_id: userId, content: replyContent }]);
+    if (error) alert("Error replying: " + error.message);
     setReplyContent(''); setReplyingToPostId(null);
     fetchCommunityData();
   };
 
   const handleRepost = async (post: any) => {
     if (!confirm("Repost this to your timeline?")) return;
-    await supabase!.from('community_posts').insert([{ user_id: userId, content: '', original_post_id: post.id }]);
+    const { error } = await supabase!.from('community_posts').insert([{ user_id: userId, content: '', original_post_id: post.id }]);
+    if (error) alert("Error reposting: " + error.message);
     fetchCommunityData();
   };
 
@@ -400,96 +411,100 @@ export default function Hub() {
 
                     {/* Timeline Feed */}
                     <div className="space-y-6">
-                      {posts.map(post => {
-                        const isOwnPost = post.user_id === userId;
-                        const hasLiked = post.likes.some((l:any) => l.user_id === userId);
-                        
-                        return (
-                          <div key={post.id} className="bg-[#131313] border border-white/10 p-5 rounded-3xl shadow-xl">
-                            {/* Header */}
-                            <div className="flex items-start justify-between mb-4 relative">
-                              <div className="flex items-center gap-3 cursor-pointer" onClick={() => openMemberProfile(post.user_id)}>
-                                <div className="w-10 h-10 rounded-full bg-[#222] flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
-                                  {post.profile?.avatar_url ? <img src={post.profile.avatar_url} className="w-full h-full object-cover" /> : (post.profile?.first_name?.[0] || 'M')}
+                      {posts.length === 0 ? (
+                        <p className="text-white/30 text-sm text-center py-10">No updates yet. Be the first to share!</p>
+                      ) : (
+                        posts.map(post => {
+                          const isOwnPost = post.user_id === userId;
+                          const hasLiked = post.likes.some((l:any) => l.user_id === userId);
+                          
+                          return (
+                            <div key={post.id} className="bg-[#131313] border border-white/10 p-5 rounded-3xl shadow-xl">
+                              {/* Header */}
+                              <div className="flex items-start justify-between mb-4 relative">
+                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => openMemberProfile(post.user_id)}>
+                                  <div className="w-10 h-10 rounded-full bg-[#222] flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
+                                    {post.profile?.avatar_url ? <img src={post.profile.avatar_url} className="w-full h-full object-cover" /> : (post.profile?.first_name?.[0] || 'M')}
+                                  </div>
+                                  <div>
+                                    <p className="text-white text-sm font-bold hover:underline">{post.profile?.first_name} {post.profile?.last_name}</p>
+                                    <p className="text-white/40 text-[10px] uppercase tracking-wider">{formatTime(post.created_at)}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-white text-sm font-bold hover:underline">{post.profile?.first_name} {post.profile?.last_name}</p>
-                                  <p className="text-white/40 text-[10px] uppercase tracking-wider">{formatTime(post.created_at)}</p>
-                                </div>
+                                
+                                {isOwnPost && (
+                                  <div className="relative">
+                                    <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-white/30 hover:text-white p-1">
+                                      <MoreVertical size={16} />
+                                    </button>
+                                    {menuOpenId === post.id && (
+                                      <div className="absolute right-0 mt-1 w-32 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl py-1 z-10">
+                                        <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-2"><Edit2 size={12}/> Edit</button>
+                                        <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-400/10 flex items-center gap-2"><Trash2 size={12}/> Delete</button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              
-                              {isOwnPost && (
-                                <div className="relative">
-                                  <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-white/30 hover:text-white p-1">
-                                    <MoreVertical size={16} />
-                                  </button>
-                                  {menuOpenId === post.id && (
-                                    <div className="absolute right-0 mt-1 w-32 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl py-1 z-10">
-                                      <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-2"><Edit2 size={12}/> Edit</button>
-                                      <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-400/10 flex items-center gap-2"><Trash2 size={12}/> Delete</button>
+
+                              {/* Content */}
+                              {editingPostId === post.id ? (
+                                <div className="mb-4">
+                                  <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-sm text-white focus:outline-none" />
+                                  <div className="flex gap-2 justify-end mt-2">
+                                    <button onClick={() => setEditingPostId(null)} className="text-xs text-white/50 px-3 py-1">Cancel</button>
+                                    <button onClick={() => submitEdit(post.id)} className="bg-[#ff4d00] text-black text-xs font-bold px-4 py-1.5 rounded-lg">Save</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {post.content && <p className="text-white/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap">{post.content}</p>}
+                                  {post.media_url && <img src={post.media_url} className="w-full rounded-xl mb-4 border border-white/10" />}
+                                </>
+                              )}
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-6 border-t border-white/5 pt-3">
+                                <button onClick={() => toggleLike(post.id, hasLiked)} className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? 'text-[#ff4d00]' : 'text-white/40 hover:text-white'}`}>
+                                  <Heart size={16} className={hasLiked ? "fill-[#ff4d00]" : ""} /> {post.likes.length > 0 && post.likes.length}
+                                </button>
+                                <button onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold">
+                                  <MessageSquare size={16} /> {post.replies.length > 0 && post.replies.length}
+                                </button>
+                                <button onClick={() => handleRepost(post)} className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold ml-auto">
+                                  <Repeat size={16} />
+                                </button>
+                              </div>
+
+                              {/* Replies Section */}
+                              {(replyingToPostId === post.id || post.replies.length > 0) && (
+                                <div className="mt-4 pt-4 border-t border-white/5 pl-4 space-y-3">
+                                  {post.replies.map((reply:any) => (
+                                    <div key={reply.id} className="flex gap-3">
+                                      <div className="w-6 h-6 rounded-full bg-[#222] shrink-0 overflow-hidden mt-1 cursor-pointer" onClick={() => openMemberProfile(reply.user_id)}>
+                                        {reply.profiles?.avatar_url ? <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-white font-bold">{reply.profiles?.first_name?.[0] || 'M'}</div>}
+                                      </div>
+                                      <div className="bg-black/40 rounded-xl px-3 py-2 flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-xs font-bold text-white hover:underline cursor-pointer" onClick={() => openMemberProfile(reply.user_id)}>{reply.profiles?.first_name}</span>
+                                          <span className="text-[9px] text-white/30">{formatTime(reply.created_at)}</span>
+                                        </div>
+                                        <p className="text-xs text-white/70">{reply.content}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {replyingToPostId === post.id && (
+                                    <div className="flex gap-2 mt-2">
+                                      <input autoFocus type="text" placeholder="Write a reply..." value={replyContent} onChange={(e) => setReplyContent(e.target.value)} className="flex-1 bg-black border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-[#ff4d00]" />
+                                      <button onClick={() => submitReply(post.id)} className="bg-white/10 hover:bg-[#ff4d00] text-white hover:text-black p-2 rounded-full transition-colors"><Send size={14}/></button>
                                     </div>
                                   )}
                                 </div>
                               )}
                             </div>
-
-                            {/* Content */}
-                            {editingPostId === post.id ? (
-                              <div className="mb-4">
-                                <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-sm text-white focus:outline-none" />
-                                <div className="flex gap-2 justify-end mt-2">
-                                  <button onClick={() => setEditingPostId(null)} className="text-xs text-white/50 px-3 py-1">Cancel</button>
-                                  <button onClick={() => submitEdit(post.id)} className="bg-[#ff4d00] text-black text-xs font-bold px-4 py-1.5 rounded-lg">Save</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {post.content && <p className="text-white/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap">{post.content}</p>}
-                                {post.media_url && <img src={post.media_url} className="w-full rounded-xl mb-4 border border-white/10" />}
-                              </>
-                            )}
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-6 border-t border-white/5 pt-3">
-                              <button onClick={() => toggleLike(post.id, hasLiked)} className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? 'text-[#ff4d00]' : 'text-white/40 hover:text-white'}`}>
-                                <Heart size={16} className={hasLiked ? "fill-[#ff4d00]" : ""} /> {post.likes.length > 0 && post.likes.length}
-                              </button>
-                              <button onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold">
-                                <MessageSquare size={16} /> {post.replies.length > 0 && post.replies.length}
-                              </button>
-                              <button onClick={() => handleRepost(post)} className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold ml-auto">
-                                <Repeat size={16} />
-                              </button>
-                            </div>
-
-                            {/* Replies Section */}
-                            {(replyingToPostId === post.id || post.replies.length > 0) && (
-                              <div className="mt-4 pt-4 border-t border-white/5 pl-4 space-y-3">
-                                {post.replies.map((reply:any) => (
-                                  <div key={reply.id} className="flex gap-3">
-                                    <div className="w-6 h-6 rounded-full bg-[#222] shrink-0 overflow-hidden mt-1 cursor-pointer" onClick={() => openMemberProfile(reply.user_id)}>
-                                      {reply.profiles?.avatar_url ? <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-white font-bold">{reply.profiles?.first_name?.[0] || 'M'}</div>}
-                                    </div>
-                                    <div className="bg-black/40 rounded-xl px-3 py-2 flex-1">
-                                      <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-white hover:underline cursor-pointer" onClick={() => openMemberProfile(reply.user_id)}>{reply.profiles?.first_name}</span>
-                                        <span className="text-[9px] text-white/30">{formatTime(reply.created_at)}</span>
-                                      </div>
-                                      <p className="text-xs text-white/70">{reply.content}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                                {replyingToPostId === post.id && (
-                                  <div className="flex gap-2 mt-2">
-                                    <input autoFocus type="text" placeholder="Write a reply..." value={replyContent} onChange={(e) => setReplyContent(e.target.value)} className="flex-1 bg-black border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-[#ff4d00]" />
-                                    <button onClick={() => submitReply(post.id)} className="bg-white/10 hover:bg-[#ff4d00] text-white hover:text-black p-2 rounded-full transition-colors"><Send size={14}/></button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
 
@@ -598,7 +613,7 @@ export default function Hub() {
                       <h2 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight leading-tight">The Content Creator Studio Kit</h2>
                       <p className="text-white/70 text-sm leading-relaxed">A proven, no-guesswork at-home studio setup.</p>
                       <a href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" target="_blank" rel="noopener noreferrer" className="inline-flex bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-xs items-center gap-2">
-                        Open Guide
+                        <BookOpen size={16} /> Open Guide
                       </a>
                     </div>
                   </div>
@@ -620,6 +635,18 @@ export default function Hub() {
                       </div>
                     ))}
                   </div>
+                  
+                  {/* RESTORED VIDEO CONSULTATION BLOCK */}
+                  <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl min-h-[250px]">
+                    <Video size={40} className="text-[#ff4d00] mb-4" />
+                    <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
+                    {blueprint.video_url ? (
+                      <a href={blueprint.video_url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-orange-500 text-black text-sm font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-colors w-full">Watch Replay</a>
+                    ) : (
+                      <button disabled className="bg-white/5 text-white/30 text-sm font-bold py-3 px-6 rounded-xl border border-white/10 w-full">Processing...</button>
+                    )}
+                  </div>
+
                 </div>
               </div>
             )}
@@ -687,6 +714,23 @@ export default function Hub() {
                       <Save size={16} /> Save Profile
                     </button>
                   </form>
+
+                  {/* RESTORED ACCOUNT SECURITY BLOCK */}
+                  <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
+                    <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
+                      <Lock size={16} className="text-[#ff4d00]" /> Account Security
+                    </h3>
+                    <p className="text-white/40 text-xs mb-6">Update your password to keep your Sanctuary assets secure.</p>
+                    <form onSubmit={handleUpdatePassword} className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="Enter new password" />
+                      </div>
+                      <button type="submit" disabled={isUpdatingPassword || !newPassword} className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center transition-all disabled:opacity-50 shrink-0">
+                        {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </form>
+                  </div>
+                  
                 </div>
               </div>
             )}
