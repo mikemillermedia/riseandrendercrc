@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -34,9 +34,10 @@ export default function Hub() {
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  // TIMELINE STATE
+  // TIMELINE & PRAYER STATE
   const [posts, setPosts] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
+  const [prayerFilter, setPrayerFilter] = useState<'active' | 'answered'>('active');
   const [newPost, setNewPost] = useState('');
   const [newPrayer, setNewPrayer] = useState('');
   const [isPosting, setIsPosting] = useState(false);
@@ -99,6 +100,7 @@ export default function Hub() {
       const { data: prData, error: prError } = await supabase.from('prayer_requests').select('*').order('created_at', { ascending: false });
       const { data: likesData } = await supabase.from('post_likes').select('*');
       const { data: repliesData } = await supabase.from('post_replies').select('*');
+      const { data: prayerIntercessionsData } = await supabase.from('prayer_intercessions').select('*');
 
       if (pError) console.error("Posts Error:", pError.message);
       if (prError) console.error("Prayers Error:", prError.message);
@@ -107,12 +109,14 @@ export default function Hub() {
       const safePrayers = prData || [];
       const safeLikes = likesData || [];
       const safeReplies = repliesData || [];
+      const safeIntercessions = prayerIntercessionsData || [];
 
       const userIds = new Set<string>();
       safePosts.forEach((p: any) => userIds.add(p.user_id));
       safePrayers.forEach((p: any) => userIds.add(p.user_id));
       safeLikes.forEach((l: any) => userIds.add(l.user_id));
       safeReplies.forEach((r: any) => userIds.add(r.user_id));
+      safeIntercessions.forEach((i: any) => userIds.add(i.user_id));
 
       const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, bio, bible_verse').in('id', Array.from(userIds));
 
@@ -133,7 +137,10 @@ export default function Hub() {
 
       setPrayers(safePrayers.map((p: any) => ({ 
         ...p, 
-        profile: profileMap[p.user_id] 
+        profile: profileMap[p.user_id],
+        intercessions: safeIntercessions
+          .filter((i: any) => i.prayer_id === p.id)
+          .map((i: any) => ({ ...i, profile: profileMap[i.user_id] }))
       })));
 
     } catch (err) {
@@ -184,15 +191,49 @@ export default function Hub() {
     if (!newPrayer.trim() || !supabase || !userId) return;
     setIsPraying(true);
     try {
-      const { error } = await supabase.from('prayer_requests').insert([{ user_id: userId, content: newPrayer.trim() }]);
+      const { error } = await supabase.from('prayer_requests').insert([{ user_id: userId, content: newPrayer.trim(), is_answered: false }]);
       if (error) throw error;
       setNewPrayer('');
+      setPrayerFilter('active');
       await fetchCommunityData(); 
     } catch (error: any) { 
       alert("Error submitting prayer: " + error.message); 
     } finally { 
       setIsPraying(false); 
     }
+  };
+
+  // PRAYER INTERACTION ACTIONS
+  const togglePrayingForRequest = async (prayerId: string, hasPrayed: boolean) => {
+    if (!userId || !supabase) return;
+    try {
+      if (hasPrayed) {
+        await supabase.from('prayer_intercessions').delete().eq('prayer_id', prayerId).eq('user_id', userId);
+      } else {
+        await supabase.from('prayer_intercessions').insert([{ prayer_id: prayerId, user_id: userId }]);
+      }
+      await fetchCommunityData();
+    } catch (err: any) {
+      console.error("Error toggling prayer:", err);
+    }
+  };
+
+  const togglePrayerAnswered = async (prayerId: string, currentStatus: boolean) => {
+    if (!userId || !supabase) return;
+    try {
+      const { error } = await supabase.from('prayer_requests').update({ is_answered: !currentStatus }).eq('id', prayerId);
+      if (error) throw error;
+      await fetchCommunityData();
+    } catch (err: any) {
+      alert("Error updating prayer status: " + err.message);
+    }
+  };
+
+  const handleDeletePrayer = async (id: string) => {
+    if (!confirm("Delete this prayer request?")) return;
+    const { error } = await supabase!.from('prayer_requests').delete().eq('id', id);
+    if (error) alert("Error deleting prayer: " + error.message);
+    fetchCommunityData();
   };
 
   // POST ACTIONS
@@ -311,6 +352,10 @@ export default function Hub() {
     finally { setIsUpdatingPassword(false); }
   };
 
+  const activePrayersCount = prayers.filter(p => !p.is_answered).length;
+  const answeredPrayersCount = prayers.filter(p => p.is_answered).length;
+  const filteredPrayers = prayers.filter(p => prayerFilter === 'answered' ? p.is_answered : !p.is_answered);
+
   return (
     <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
       
@@ -408,7 +453,7 @@ export default function Hub() {
                     </div>
                   </div>
 
-                  {/* Dark Navy Accent Bento Card (Inspired by Mockup) */}
+                  {/* Dark Navy Accent Bento Card */}
                   <div className="md:col-span-4 bg-[#1C1C2E] text-white shadow-[0_12px_35px_rgba(28,28,46,0.18)] rounded-[32px] p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
                     <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-400/15 rounded-full blur-2xl pointer-events-none" />
                     
@@ -430,8 +475,8 @@ export default function Hub() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-white/60 pt-3 border-t border-white/10">
-                      <span>Active Prayer Requests</span>
-                      <span className="font-bold text-amber-400">{prayers.length}</span>
+                      <span>Active / Answered Prayers</span>
+                      <span className="font-bold text-amber-400">{activePrayersCount} / {answeredPrayersCount} ✨</span>
                     </div>
                   </div>
                 </div>
@@ -664,7 +709,7 @@ export default function Hub() {
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: APPLE GLASS PRAYER BENTO BOX */}
+                  {/* RIGHT COLUMN: INTERACTIVE APPLE GLASS PRAYER BENTO BOX */}
                   <div className="lg:col-span-4 space-y-6">
                     <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
                       <div className="absolute -top-10 -right-10 w-36 h-36 bg-amber-300/20 rounded-full blur-2xl pointer-events-none" />
@@ -676,9 +721,22 @@ export default function Hub() {
                           </span>
                           Prayer Wall
                         </h3>
-                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                          {prayers.length}
-                        </span>
+
+                        {/* Active vs Answered Filter Pills */}
+                        <div className="flex bg-slate-100 p-0.5 rounded-full border border-slate-200/60">
+                          <button 
+                            onClick={() => setPrayerFilter('active')} 
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            Active ({activePrayersCount})
+                          </button>
+                          <button 
+                            onClick={() => setPrayerFilter('answered')} 
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'answered' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            Answered ({answeredPrayersCount})
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="mb-5 relative">
@@ -698,24 +756,124 @@ export default function Hub() {
                         </button>
                       </div>
 
-                      <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
-                        {prayers.length === 0 ? (
-                          <p className="text-slate-400 text-xs text-center py-6">No prayer requests yet.</p>
+                      <div className="space-y-3.5 max-h-[560px] overflow-y-auto pr-1 custom-scrollbar">
+                        {filteredPrayers.length === 0 ? (
+                          <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                            <p className="text-slate-400 text-xs font-medium">
+                              {prayerFilter === 'answered' ? 'No answered prayers marked yet. Keep praying!' : 'No active prayer requests right now.'}
+                            </p>
+                          </div>
                         ) : (
-                          prayers.map(prayer => (
-                            <div key={prayer.id} className="bg-slate-50/90 hover:bg-white border border-slate-200/60 p-4 rounded-2xl transition-all shadow-sm">
-                              <div className="flex justify-between items-center mb-1.5">
-                                <p 
-                                  className="text-slate-900 text-xs font-bold cursor-pointer hover:text-[#ff4d00] transition-colors" 
-                                  onClick={() => openMemberProfile(prayer.user_id)}
-                                >
-                                  {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Family Member'}
+                          filteredPrayers.map(prayer => {
+                            const isOwnPrayer = prayer.user_id === userId;
+                            const intercessions = prayer.intercessions || [];
+                            const hasPrayed = intercessions.some((i: any) => i.user_id === userId);
+
+                            return (
+                              <div 
+                                key={prayer.id} 
+                                className={`p-4 rounded-2xl transition-all shadow-sm border ${
+                                  prayer.is_answered 
+                                    ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/50 border-amber-200/80' 
+                                    : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start gap-2 mb-2">
+                                  <div className="flex items-center gap-2 cursor-pointer group" onClick={() => openMemberProfile(prayer.user_id)}>
+                                    <div className="w-6 h-6 rounded-lg bg-slate-200 border border-slate-300/60 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                      {prayer.profile?.avatar_url ? (
+                                        <img src={prayer.profile.avatar_url} className="w-full h-full object-cover" />
+                                      ) : (
+                                        prayer.profile?.first_name?.[0] || 'M'
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-900 text-xs font-bold group-hover:text-[#ff4d00] transition-colors leading-none">
+                                        {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Family Member'}
+                                      </p>
+                                      <span className="text-[10px] font-medium text-slate-400">{formatTime(prayer.created_at)}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
+                                    {prayer.is_answered && (
+                                      <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                                        <CheckCircle2 size={10} className="text-amber-600" /> Answered
+                                      </span>
+                                    )}
+                                    {isOwnPrayer && (
+                                      <button 
+                                        onClick={() => handleDeletePrayer(prayer.id)} 
+                                        className="text-slate-300 hover:text-red-500 p-1 rounded-lg transition-colors"
+                                        title="Delete prayer"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <p className="text-slate-700 text-xs leading-relaxed mb-3.5 whitespace-pre-wrap">
+                                  {prayer.content}
                                 </p>
-                                <span className="text-[10px] font-medium text-slate-400">{formatTime(prayer.created_at)}</span>
+
+                                {/* Interactive Footer: Praying Button + Overlapping Avatars + Author Answered Toggle */}
+                                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/50">
+                                  <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={() => togglePrayingForRequest(prayer.id, hasPrayed)}
+                                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all ${
+                                        hasPrayed 
+                                          ? 'bg-[#1C1C2E] text-white shadow-sm' 
+                                          : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                                      }`}
+                                    >
+                                      <span>🙏</span>
+                                      <span>{hasPrayed ? 'Praying' : 'Pray'}</span>
+                                      {intercessions.length > 0 && (
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${hasPrayed ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                                          {intercessions.length}
+                                        </span>
+                                      )}
+                                    </button>
+
+                                    {/* Overlapping Avatars of Family Members Praying */}
+                                    {intercessions.length > 0 && (
+                                      <div className="flex -space-x-1.5 overflow-hidden py-0.5">
+                                        {intercessions.slice(0, 4).map((intercession: any) => (
+                                          <div 
+                                            key={intercession.id} 
+                                            title={`${intercession.profile?.first_name || 'Family'} is praying`}
+                                            className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
+                                          >
+                                            {intercession.profile?.avatar_url ? (
+                                              <img src={intercession.profile.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                              intercession.profile?.first_name?.[0] || 'M'
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {isOwnPrayer && (
+                                    <button 
+                                      onClick={() => togglePrayerAnswered(prayer.id, !!prayer.is_answered)}
+                                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+                                        prayer.is_answered 
+                                          ? 'text-slate-500 hover:bg-slate-200/60' 
+                                          : 'text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                                      }`}
+                                    >
+                                      <CheckCircle2 size={11} />
+                                      {prayer.is_answered ? 'Move to Active' : 'Mark Answered'}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                              <p className="text-slate-600 text-xs leading-relaxed">{prayer.content}</p>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -890,6 +1048,7 @@ export default function Hub() {
                       </div>
                       <div className="pt-2">
                         <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1">Profile Photo</h3>
+                        {isUploadingAvatar && <span className="text-[#ff4d00] text-[10px] font-bold uppercase tracking-widest animate-pulse">Uploading...</span>}
                       </div>
                     </div>
                     
@@ -927,7 +1086,7 @@ export default function Hub() {
                     </div>
                     
                     <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2">
-                      <Save size={16} /> Save Profile
+                      <Save size={16} /> {isSavingProfile ? 'Saving...' : 'Save Profile'}
                     </button>
                   </form>
 
