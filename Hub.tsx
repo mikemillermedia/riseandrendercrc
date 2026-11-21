@@ -20,11 +20,11 @@ const VIBE_EMOJIS = [
   '🏈', '🏀', '⚽', '⚾', '🎮', '🎬', '🎧', '📚', '⛪', '✝️', '🎉', '😴', '❤️', '🔥', '✨', '💯'
 ];
 
-const MILESTONE_CATEGORIES = [
+const MILESTONE_TYPES = [
   { label: 'Birthday', emoji: '🎂', annual: true },
   { label: 'Anniversary', emoji: '💍', annual: true },
-  { label: 'Trip / Vacation', emoji: '✈️', annual: false },
-  { label: 'Family Gathering', emoji: '🏡', annual: false }
+  { label: 'Trip / Holiday', emoji: '✈️', annual: false },
+  { label: 'Family Dinner', emoji: '🍽️', annual: false }
 ];
 
 export default function Hub() {
@@ -56,24 +56,23 @@ export default function Hub() {
   const [statusTextInput, setStatusTextInput] = useState('');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
 
-  // TIMELINE, PRAYER, TASKS & MILESTONES STATE
+  // FAMILY MILESTONES & COUNTDOWN STATE
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [isAddingMilestoneFormOpen, setIsAddingMilestoneFormOpen] = useState(false);
+  const [milestoneTitle, setMilestoneTitle] = useState('');
+  const [milestoneDate, setMilestoneDate] = useState('');
+  const [milestoneCategory, setMilestoneCategory] = useState('Birthday');
+  const [isSavingMilestone, setIsSavingMilestone] = useState(false);
+
+  // TIMELINE, PRAYER & TASKS STATE
   const [posts, setPosts] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
   const [familyTasks, setFamilyTasks] = useState<any[]>([]);
-  const [familyMilestones, setFamilyMilestones] = useState<any[]>([]);
   const [prayerFilter, setPrayerFilter] = useState<'active' | 'answered'>('active');
   const [newPost, setNewPost] = useState('');
   const [newPrayer, setNewPrayer] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('Gatherings & Potluck');
-  
-  // MILESTONE FORM STATE
-  const [isAddingMilestone, setIsAddingMilestone] = useState(false);
-  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
-  const [newMilestoneDate, setNewMilestoneDate] = useState('');
-  const [newMilestoneCategory, setNewMilestoneCategory] = useState('Birthday');
-  const [isSavingMilestone, setIsSavingMilestone] = useState(false);
-
   const [isPosting, setIsPosting] = useState(false);
   const [isPraying, setIsPraying] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -94,10 +93,47 @@ export default function Hub() {
   // APPLE LIGHT THEME TOGGLE FOR MILLERITES
   const isLightMode = activeTab === 'millerites' || activeTab === 'member_view';
 
+  // Helper to convert legacy yellow default wave to medium-brown wave
   const normalizeEmoji = (emoji?: string) => {
     if (!emoji || emoji === '👋') return '👋🏾';
     if (emoji === '🙏') return '🙏🏾';
     return emoji;
+  };
+
+  // Helper to calculate days until a milestone (handles annual repeating birthdays/anniversaries)
+  const getMilestoneCountdown = (dateString: string, isAnnual: boolean) => {
+    if (!dateString) return { daysUntil: 999, label: '', formattedDate: '' };
+    const [year, month, day] = dateString.split('-').map(Number);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let targetDate = new Date(year, month - 1, day);
+    targetDate.setHours(0, 0, 0, 0);
+
+    if (isAnnual) {
+      targetDate = new Date(today.getFullYear(), month - 1, day);
+      targetDate.setHours(0, 0, 0, 0);
+      if (targetDate < today) {
+        targetDate = new Date(today.getFullYear() + 1, month - 1, day);
+      }
+    }
+
+    const diffTime = targetDate.getTime() - today.getTime();
+    const daysUntil = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    let label = '';
+    if (daysUntil === 0) label = '🎉 Today!';
+    else if (daysUntil === 1) label = 'Tomorrow!';
+    else if (daysUntil > 1) label = `In ${daysUntil} days`;
+    else label = `${Math.abs(daysUntil)}d ago`;
+
+    const formattedDate = targetDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      ...(isAnnual ? {} : { year: 'numeric' })
+    });
+
+    return { daysUntil, label, formattedDate };
   };
 
   useEffect(() => {
@@ -170,7 +206,6 @@ export default function Hub() {
       }));
 
       setFamilyMembers(safeMillerites);
-      setFamilyMilestones(safeMilestones);
 
       const userIds = new Set<string>();
       safePosts.forEach((p: any) => userIds.add(p.user_id));
@@ -181,6 +216,9 @@ export default function Hub() {
       safeTasks.forEach((t: any) => {
         if (t.user_id) userIds.add(t.user_id);
         if (t.completed_by) userIds.add(t.completed_by);
+      });
+      safeMilestones.forEach((ms: any) => {
+        if (ms.user_id) userIds.add(ms.user_id);
       });
       safeMillerites.forEach((m: any) => userIds.add(m.id));
 
@@ -221,76 +259,24 @@ export default function Hub() {
         completedByProfile: t.completed_by ? profileMap[t.completed_by] : null
       })));
 
+      // Compute countdowns & sort upcoming milestones first
+      const enrichedMilestones = safeMilestones
+        .map((ms: any) => {
+          const countdown = getMilestoneCountdown(ms.event_date, ms.is_annual ?? true);
+          return {
+            ...ms,
+            creatorProfile: profileMap[ms.user_id],
+            ...countdown
+          };
+        })
+        .filter((ms: any) => ms.daysUntil >= 0)
+        .sort((a: any, b: any) => a.daysUntil - b.daysUntil);
+
+      setMilestones(enrichedMilestones);
+
     } catch (err) {
       console.error("Error fetching community data:", err);
     }
-  };
-
-  // MILESTONE COUNTDOWN CALCULATOR
-  const getMilestoneDetails = (milestone: any) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const parts = (milestone.event_date || '').split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-
-    let targetDate = new Date(year, month, day);
-    targetDate.setHours(0, 0, 0, 0);
-
-    if (milestone.is_annual) {
-      targetDate = new Date(today.getFullYear(), month, day);
-      targetDate.setHours(0, 0, 0, 0);
-      if (targetDate < today) {
-        targetDate = new Date(today.getFullYear() + 1, month, day);
-        targetDate.setHours(0, 0, 0, 0);
-      }
-    }
-
-    const diffTime = targetDate.getTime() - today.getTime();
-    const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    const formattedDate = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const catObj = MILESTONE_CATEGORIES.find(c => c.label === milestone.category) || MILESTONE_CATEGORIES[0];
-
-    return {
-      ...milestone,
-      daysLeft,
-      formattedDate,
-      emoji: catObj.emoji
-    };
-  };
-
-  const handleCreateMilestone = async () => {
-    if (!newMilestoneTitle.trim() || !newMilestoneDate || !supabase || !userId) return;
-    setIsSavingMilestone(true);
-    try {
-      const catObj = MILESTONE_CATEGORIES.find(c => c.label === newMilestoneCategory);
-      const isAnnual = catObj ? catObj.annual : true;
-      const { error } = await supabase.from('family_milestones').insert([{
-        user_id: userId,
-        title: newMilestoneTitle.trim(),
-        event_date: newMilestoneDate,
-        category: newMilestoneCategory,
-        is_annual: isAnnual
-      }]);
-      if (error) throw error;
-      setNewMilestoneTitle('');
-      setNewMilestoneDate('');
-      setIsAddingMilestone(false);
-      await fetchCommunityData();
-    } catch (err: any) {
-      alert("Error adding milestone: " + err.message);
-    } finally {
-      setIsSavingMilestone(false);
-    }
-  };
-
-  const handleDeleteMilestone = async (id: string) => {
-    if (!confirm("Remove this milestone countdown?")) return;
-    const { error } = await supabase!.from('family_milestones').delete().eq('id', id);
-    if (error) alert("Error deleting milestone: " + error.message);
-    fetchCommunityData();
   };
 
   // SAVE FAMILY VIBE / STATUS
@@ -316,6 +302,39 @@ export default function Hub() {
     } finally {
       setIsSavingStatus(false);
     }
+  };
+
+  // FAMILY MILESTONE ACTIONS
+  const handleCreateMilestone = async () => {
+    if (!milestoneTitle.trim() || !milestoneDate || !supabase || !userId) return;
+    setIsSavingMilestone(true);
+    try {
+      const selectedType = MILESTONE_TYPES.find(t => t.label === milestoneCategory) || MILESTONE_TYPES[0];
+      const { error } = await supabase.from('family_milestones').insert([{
+        user_id: userId,
+        title: milestoneTitle.trim(),
+        event_date: milestoneDate,
+        category: selectedType.label,
+        emoji: selectedType.emoji,
+        is_annual: selectedType.annual
+      }]);
+      if (error) throw error;
+      setMilestoneTitle('');
+      setMilestoneDate('');
+      setIsAddingMilestoneFormOpen(false);
+      await fetchCommunityData();
+    } catch (err: any) {
+      alert("Error adding milestone: " + err.message);
+    } finally {
+      setIsSavingMilestone(false);
+    }
+  };
+
+  const handleDeleteMilestone = async (id: string) => {
+    if (!confirm("Remove this family milestone?")) return;
+    const { error } = await supabase!.from('family_milestones').delete().eq('id', id);
+    if (error) alert("Error deleting milestone: " + error.message);
+    fetchCommunityData();
   };
 
   // HELPER TO DETERMINE IF MEDIA IS VIDEO
@@ -576,11 +595,7 @@ export default function Hub() {
   const filteredPrayers = prayers.filter(p => prayerFilter === 'answered' ? p.is_answered : !p.is_answered);
   const completedTasksCount = familyTasks.filter(t => t.is_completed).length;
   const otherFamilyMembers = familyMembers.filter(m => m.id !== userId);
-  
-  const upcomingMilestones = familyMilestones
-    .map(getMilestoneDetails)
-    .filter(m => m.daysLeft >= 0)
-    .sort((a, b) => a.daysLeft - b.daysLeft);
+  const nextMilestone = milestones.length > 0 ? milestones[0] : null;
 
   return (
     <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
@@ -701,8 +716,17 @@ export default function Hub() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-white/60 pt-3 border-t border-white/10">
-                      <span>Prayers Answered</span>
-                      <span className="font-bold text-amber-400">{answeredPrayersCount} ✨</span>
+                      {nextMilestone ? (
+                        <>
+                          <span className="truncate max-w-[170px]">{nextMilestone.emoji} {nextMilestone.title}</span>
+                          <span className="font-bold text-amber-400 shrink-0">{nextMilestone.label}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Prayers Answered</span>
+                          <span className="font-bold text-amber-400">{answeredPrayersCount} ✨</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -790,6 +814,7 @@ export default function Hub() {
                       onClick={() => setIsEditingStatus(!isEditingStatus)}
                       className="flex flex-col items-center shrink-0 cursor-pointer group relative w-24"
                     >
+                      {/* Floating Note Bubble */}
                       <div className="mb-2 px-2.5 py-1 rounded-2xl bg-[#1C1C2E] text-white text-[10px] font-bold shadow-md max-w-[100px] truncate text-center">
                         <span>{profile.status_emoji || '👋🏾'}</span>{' '}
                         <span>{profile.status_text || 'Set status'}</span>
@@ -820,6 +845,7 @@ export default function Hub() {
                         onClick={() => openMemberProfile(member.id)}
                         className="flex flex-col items-center shrink-0 cursor-pointer group relative w-24"
                       >
+                        {/* Floating Note Bubble */}
                         <div className="mb-2 px-2.5 py-1 rounded-2xl bg-slate-100 border border-slate-200/80 text-slate-700 text-[10px] font-bold shadow-sm max-w-[105px] truncate text-center group-hover:bg-white transition-colors">
                           <span>{member.status_emoji || '👋🏾'}</span>{' '}
                           <span>{member.status_text || 'Checking in'}</span>
@@ -1015,4 +1041,743 @@ export default function Hub() {
                               {(replyingToPostId === post.id || post.replies.length > 0) && (
                                 <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                                   {post.replies.map((reply:any) => (
-                                    <div key={
+                                    <div key={reply.id} className="flex gap-3 items-start">
+                                      <div 
+                                        className="w-7 h-7 rounded-xl bg-slate-100 border border-slate-200/70 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
+                                        onClick={() => openMemberProfile(reply.user_id)}
+                                      >
+                                        {reply.profiles?.avatar_url ? (
+                                          <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-600 font-bold">
+                                            {reply.profiles?.first_name?.[0] || 'M'}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="bg-slate-100/80 border border-slate-200/50 rounded-2xl px-4 py-2.5 flex-1">
+                                        <div className="flex items-center justify-between mb-0.5">
+                                          <span 
+                                            className="text-xs font-bold text-slate-900 hover:text-[#ff4d00] cursor-pointer" 
+                                            onClick={() => openMemberProfile(reply.user_id)}
+                                          >
+                                            {reply.profiles?.first_name || 'Family'}
+                                          </span>
+                                          <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-700 leading-relaxed">{reply.content}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {replyingToPostId === post.id && (
+                                    <div className="flex gap-2 pt-1">
+                                      <input 
+                                        autoFocus 
+                                        type="text" 
+                                        placeholder="Write a reply..." 
+                                        value={replyContent} 
+                                        onChange={(e) => setReplyContent(e.target.value)} 
+                                        className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                                      />
+                                      <button 
+                                        onClick={() => submitReply(post.id)} 
+                                        className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
+                                      >
+                                        <Send size={13}/>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: MILESTONES + PRAYER WALL + FAMILY CHECKLIST BENTO BOXES */}
+                  <div className="lg:col-span-4 space-y-6">
+
+                    {/* FEATURE #4: UPCOMING FAMILY MILESTONES & COUNTDOWN BENTO BOX */}
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
+                            <CalendarHeart size={15} />
+                          </span>
+                          Upcoming Milestones
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingMilestoneFormOpen(!isAddingMilestoneFormOpen)}
+                          className="text-[10px] font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-full transition-colors flex items-center gap-1"
+                        >
+                          <Plus size={11} /> {isAddingMilestoneFormOpen ? 'Close' : 'Add'}
+                        </button>
+                      </div>
+
+                      {/* Collapsible Add Milestone Form */}
+                      {isAddingMilestoneFormOpen && (
+                        <div className="mb-4 p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-2.5 animate-in fade-in">
+                          <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {MILESTONE_TYPES.map(type => (
+                              <button
+                                key={type.label}
+                                type="button"
+                                onClick={() => setMilestoneCategory(type.label)}
+                                className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1 transition-all ${
+                                  milestoneCategory === type.label
+                                    ? 'bg-[#1C1C2E] text-white shadow-sm'
+                                    : 'bg-white border border-slate-200/70 text-slate-600'
+                                }`}
+                              >
+                                <span>{type.emoji}</span>
+                                <span>{type.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Event title (e.g. Sarah's Birthday, Lake Trip)"
+                            value={milestoneTitle}
+                            onChange={(e) => setMilestoneTitle(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="date"
+                              value={milestoneDate}
+                              onChange={(e) => setMilestoneDate(e.target.value)}
+                              className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-slate-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleCreateMilestone}
+                              disabled={isSavingMilestone || !milestoneTitle.trim() || !milestoneDate}
+                              className="bg-[#1C1C2E] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-40 shrink-0"
+                            >
+                              {isSavingMilestone ? '...' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Milestones Countdown List */}
+                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                        {milestones.length === 0 ? (
+                          <div className="text-center py-6 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                            <p className="text-slate-400 text-xs font-medium">
+                              No birthdays, anniversaries, or trips logged yet. Tap "+ Add" so the family never misses a date!
+                            </p>
+                          </div>
+                        ) : (
+                          milestones.map((ms, idx) => (
+                            <div
+                              key={ms.id}
+                              className={`group p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                                ms.daysUntil === 0
+                                  ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-amber-400/50 shadow-sm'
+                                  : idx === 0
+                                  ? 'bg-white border-slate-200/80 shadow-sm'
+                                  : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/60 flex items-center justify-center text-lg shrink-0">
+                                  {ms.emoji || '🎂'}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-900 truncate">
+                                    {ms.title}
+                                  </p>
+                                  <p className="text-[10px] font-semibold text-slate-400">
+                                    {ms.formattedDate} • {ms.category}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span
+                                  className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                                    ms.daysUntil === 0
+                                      ? 'bg-[#ff4d00] text-white shadow-sm'
+                                      : ms.daysUntil <= 7
+                                      ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {ms.label}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMilestone(ms.id)}
+                                  className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 rounded-lg transition-all"
+                                  title="Delete milestone"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* 1. INTERACTIVE PRAYER WALL BENTO */}
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                      <div className="absolute -top-10 -right-10 w-36 h-36 bg-amber-300/20 rounded-full blur-2xl pointer-events-none" />
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
+                            <BookHeart size={15} />
+                          </span>
+                          Prayer Wall
+                        </h3>
+
+                        {/* Active vs Answered Filter Pills */}
+                        <div className="flex bg-slate-100 p-0.5 rounded-full border border-slate-200/60">
+                          <button 
+                            onClick={() => setPrayerFilter('active')} 
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            Active ({activePrayersCount})
+                          </button>
+                          <button 
+                            onClick={() => setPrayerFilter('answered')} 
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'answered' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            Answered ({answeredPrayersCount})
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-5 relative">
+                        <input 
+                          type="text" 
+                          placeholder="Share a prayer request..." 
+                          value={newPrayer} 
+                          onChange={(e) => setNewPrayer(e.target.value)} 
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                        />
+                        <button 
+                          onClick={handleCreatePrayer} 
+                          disabled={isPraying || !newPrayer.trim()} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#1C1C2E] text-white p-2 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-40"
+                        >
+                          <Send size={12} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                        {filteredPrayers.length === 0 ? (
+                          <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                            <p className="text-slate-400 text-xs font-medium">
+                              {prayerFilter === 'answered' ? 'No answered prayers marked yet. Keep praying!' : 'No active prayer requests right now.'}
+                            </p>
+                          </div>
+                        ) : (
+                          filteredPrayers.map(prayer => {
+                            const isOwnPrayer = prayer.user_id === userId;
+                            const intercessions = prayer.intercessions || [];
+                            const hasPrayed = intercessions.some((i: any) => i.user_id === userId);
+
+                            return (
+                              <div 
+                                key={prayer.id} 
+                                className={`p-4 rounded-2xl transition-all shadow-sm border ${
+                                  prayer.is_answered 
+                                    ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/50 border-amber-200/80' 
+                                    : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start gap-2 mb-2">
+                                  <div className="flex items-center gap-2 cursor-pointer group" onClick={() => openMemberProfile(prayer.user_id)}>
+                                    <div className="w-6 h-6 rounded-lg bg-slate-200 border border-slate-300/60 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                      {prayer.profile?.avatar_url ? (
+                                        <img src={prayer.profile.avatar_url} className="w-full h-full object-cover" />
+                                      ) : (
+                                        prayer.profile?.first_name?.[0] || 'M'
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-900 text-xs font-bold group-hover:text-[#ff4d00] transition-colors leading-none">
+                                        {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Family Member'}
+                                      </p>
+                                      <span className="text-[10px] font-medium text-slate-400">{formatTime(prayer.created_at)}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
+                                    {prayer.is_answered && (
+                                      <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                                        <CheckCircle2 size={10} className="text-amber-600" /> Answered
+                                      </span>
+                                    )}
+                                    {isOwnPrayer && (
+                                      <button 
+                                        onClick={() => handleDeletePrayer(prayer.id)} 
+                                        className="text-slate-300 hover:text-red-500 p-1 rounded-lg transition-colors"
+                                        title="Delete prayer"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <p className="text-slate-700 text-xs leading-relaxed mb-3.5 whitespace-pre-wrap">
+                                  {prayer.content}
+                                </p>
+
+                                {/* Interactive Footer */}
+                                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/50">
+                                  <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={() => togglePrayingForRequest(prayer.id, hasPrayed)}
+                                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all ${
+                                        hasPrayed 
+                                          ? 'bg-[#1C1C2E] text-white shadow-sm' 
+                                          : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                                      }`}
+                                    >
+                                      <span>🙏🏾</span>
+                                      <span>{hasPrayed ? 'Praying' : 'Pray'}</span>
+                                      {intercessions.length > 0 && (
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${hasPrayed ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                                          {intercessions.length}
+                                        </span>
+                                      )}
+                                    </button>
+
+                                    {intercessions.length > 0 && (
+                                      <div className="flex -space-x-1.5 overflow-hidden py-0.5">
+                                        {intercessions.slice(0, 4).map((intercession: any) => (
+                                          <div 
+                                            key={intercession.id} 
+                                            title={`${intercession.profile?.first_name || 'Family'} is praying`}
+                                            className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
+                                          >
+                                            {intercession.profile?.avatar_url ? (
+                                              <img src={intercession.profile.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                              intercession.profile?.first_name?.[0] || 'M'
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {isOwnPrayer && (
+                                    <button 
+                                      onClick={() => togglePrayerAnswered(prayer.id, !!prayer.is_answered)}
+                                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+                                        prayer.is_answered 
+                                          ? 'text-slate-500 hover:bg-slate-200/60' 
+                                          : 'text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                                      }`}
+                                    >
+                                      <CheckCircle2 size={11} />
+                                      {prayer.is_answered ? 'Move to Active' : 'Mark Answered'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 2. FAMILY CHECKLIST & POTLUCK SIGN-UP BENTO BOX */}
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-xl bg-[#1C1C2E] flex items-center justify-center text-amber-400">
+                            <ListTodo size={15} />
+                          </span>
+                          Family Checklist
+                        </h3>
+                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-500/15 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                          {completedTasksCount}/{familyTasks.length} Claimed
+                        </span>
+                      </div>
+
+                      {/* Category Selector Pills */}
+                      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+                        {['Gatherings & Potluck', 'Trips & Holidays', 'Family To-Do'].map(cat => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setNewTaskCategory(cat)}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                              newTaskCategory === cat 
+                                ? 'bg-[#1C1C2E] text-white shadow-sm' 
+                                : 'bg-slate-100 text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Add New Checklist Item Input */}
+                      <div className="mb-5 relative">
+                        <input 
+                          type="text" 
+                          placeholder="Add item to bring or family task..." 
+                          value={newTaskTitle} 
+                          onChange={(e) => setNewTaskTitle(e.target.value)} 
+                          onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                        />
+                        <button 
+                          onClick={handleCreateTask} 
+                          disabled={isAddingTask || !newTaskTitle.trim()} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl transition-all disabled:opacity-40 shadow-sm"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+
+                      {/* Checklist Items List */}
+                      <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                        {familyTasks.length === 0 ? (
+                          <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                            <p className="text-slate-400 text-xs font-medium">
+                              No items yet. Add a dish for the next family dinner or a shared to-do!
+                            </p>
+                          </div>
+                        ) : (
+                          familyTasks.map(task => (
+                            <div 
+                              key={task.id} 
+                              onClick={() => toggleFamilyTask(task)}
+                              className={`group p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                task.is_completed 
+                                  ? 'bg-amber-50/60 border-amber-200/70' 
+                                  : 'bg-slate-50/90 hover:bg-white border-slate-200/60 shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <button 
+                                  type="button"
+                                  className="mt-0.5 shrink-0 text-amber-500 transition-transform active:scale-90"
+                                >
+                                  {task.is_completed ? (
+                                    <CheckSquare size={18} className="fill-amber-500 text-white" />
+                                  ) : (
+                                    <Square size={18} className="text-slate-300 group-hover:text-amber-500" />
+                                  )}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">
+                                    {task.category || 'Family Event'}
+                                  </span>
+                                  <p className={`text-xs font-bold leading-snug break-words ${task.is_completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                                    {task.title}
+                                  </p>
+                                  {task.is_completed && task.completedByProfile && (
+                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                      <div className="w-4 h-4 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700">
+                                        {task.completedByProfile.avatar_url ? (
+                                          <img src={task.completedByProfile.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                          task.completedByProfile.first_name?.[0] || 'M'
+                                        )}
+                                      </div>
+                                      <span className="text-[10px] font-bold text-amber-700">
+                                        Claimed by {task.completedByProfile.first_name}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <button 
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 rounded-lg transition-all shrink-0"
+                                title="Remove item"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* INSTAGRAM-STYLE MEMBER PROFILE VIEW (APPLE GLASS LIGHT MODE) */}
+            {activeTab === 'member_view' && viewingMember && (
+              <div className="animate-in fade-in max-w-4xl mx-auto relative z-10">
+                <button 
+                  onClick={() => setActiveTab('millerites')} 
+                  className="text-xs text-slate-500 hover:text-slate-900 uppercase font-bold tracking-widest mb-6 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm"
+                >
+                  ← Back to Millerites
+                </button>
+                
+                {/* Profile Bento Header */}
+                <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
+                  <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl border border-slate-200 overflow-hidden shrink-0 shadow-md bg-slate-100">
+                    {viewingMember.avatar_url ? (
+                      <img src={viewingMember.avatar_url} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-slate-400">
+                        {viewingMember.first_name?.[0]}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center md:text-left flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                      <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+                        {viewingMember.first_name} {viewingMember.last_name}
+                      </h1>
+                      {(viewingMember.status_text || viewingMember.status_emoji) && (
+                        <span className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200/80 px-3 py-1 rounded-full text-xs font-bold text-slate-700 self-center sm:self-auto">
+                          <span>{viewingMember.status_emoji || '👋🏾'}</span>
+                          <span>{viewingMember.status_text || 'Checking in'}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-center md:justify-start gap-6 text-xs font-bold text-slate-500 mb-4">
+                      <span className="bg-slate-100 px-3 py-1 rounded-full">
+                        <strong className="text-slate-900">{memberPosts.length}</strong> updates shared
+                      </span>
+                    </div>
+                    {viewingMember.bio && (
+                      <p className="text-slate-600 text-sm whitespace-pre-wrap mb-4 max-w-lg leading-relaxed">
+                        {viewingMember.bio}
+                      </p>
+                    )}
+                    {viewingMember.bible_verse && (
+                      <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-xl text-xs text-amber-800 font-bold">
+                        <BookHeart size={14} className="text-[#ff4d00]" /> {viewingMember.bible_verse}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Instagram Style Grid */}
+                <div>
+                  <div className="flex justify-center mb-6">
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-800 bg-white/80 backdrop-blur-md border border-slate-200/80 px-5 py-2 rounded-full shadow-sm">
+                      <Grid size={14} className="text-[#ff4d00]" /> Family Updates
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+                    {memberPosts.map(post => (
+                      <div key={post.id} className="aspect-square bg-white/85 backdrop-blur-xl border border-white shadow-[0_8px_25px_rgb(0,0,0,0.04)] relative group cursor-pointer overflow-hidden rounded-[24px]">
+                        {post.media_url ? (
+                          isVideo(post.media_url) ? (
+                            <video src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted playsInline />
+                          ) : (
+                            <img src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          )
+                        ) : (
+                          <div className="w-full h-full p-5 flex flex-col justify-center items-center text-center bg-gradient-to-br from-white to-slate-50">
+                            <p className="text-slate-700 text-xs md:text-sm line-clamp-4 leading-relaxed font-medium">
+                              "{post.content}"
+                            </p>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-5">
+                          <span className="text-white text-sm font-bold flex items-center gap-1.5"><Heart size={17} className="fill-white"/> {post.likes.length}</span>
+                          <span className="text-white text-sm font-bold flex items-center gap-1.5"><MessageSquare size={17} className="fill-white"/> {post.replies.length}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {memberPosts.length === 0 && (
+                    <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center">
+                      <p className="text-slate-400 text-sm font-medium">No posts yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ASSET VAULT TAB (DARK MODE) */}
+            {activeTab === 'vault' && profile.is_client && (
+              <div className="animate-in fade-in max-w-6xl mx-auto space-y-12">
+                <div className="text-center">
+                  <span className="bg-[#ff4d00]/10 border border-[#ff4d00]/30 text-[#ff4d00] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-3 inline-block">
+                    Digital Resources & Services
+                  </span>
+                  <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-2">
+                    Asset <span className="text-[#ff4d00]">Vault</span>
+                  </h1>
+                </div>
+
+                <div className="bg-[#131313] border border-[#ff4d00]/30 rounded-3xl p-6 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(255,77,0,0.12)]">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff4d00]/10 rounded-full blur-[110px] pointer-events-none" />
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
+                    <div className="md:col-span-5 flex justify-center items-center py-4">
+                      <img src="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/Rise%20%26%20Render%20Content%20Kit%20Image.jpg" alt="Kit Cover" className="w-48 sm:w-56 rounded-r-md border border-white/20 shadow-2xl" />
+                    </div>
+                    <div className="md:col-span-7 space-y-4 text-left">
+                      <h2 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight leading-tight">The Content Creator Studio Kit</h2>
+                      <p className="text-white/70 text-sm leading-relaxed">A proven, no-guesswork at-home studio setup.</p>
+                      <a href="https://pub-251ee1b2d0ef473aa21849e9f5d1bfae.r2.dev/The%20Content%20Creator%20Studio%20Kit%20(1).pdf" target="_blank" rel="noopener noreferrer" className="inline-flex bg-[#ff4d00] hover:bg-orange-500 text-black font-black uppercase tracking-widest px-8 py-4 rounded-xl text-xs items-center gap-2">
+                        <BookOpen size={16} /> Open Guide
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* BLUEPRINT TAB */}
+            {activeTab === 'blueprint' && profile.is_client && blueprint && (
+              <div className="animate-in fade-in max-w-6xl mx-auto">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2">My Studio Blueprint</h1>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 bg-[#131313] border border-white/5 p-6 rounded-3xl shadow-xl">
+                    <h3 className="text-lg font-bold text-white mb-6">Action Items</h3>
+                    {blueprint.gear_list?.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 mb-3 cursor-pointer" onClick={() => toggleGearItem(index)}>
+                        <input type="checkbox" checked={item.checked} readOnly className="w-5 h-5 accent-[#ff4d00]" />
+                        <span className={`text-sm ${item.checked ? 'text-white/40 line-through' : 'text-white'}`}>{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-white/5 p-6 rounded-3xl flex flex-col justify-center items-center text-center shadow-xl min-h-[250px]">
+                    <Video size={40} className="text-[#ff4d00] mb-4" />
+                    <h3 className="text-lg font-bold text-white mb-2">Consultation Recording</h3>
+                    {blueprint.video_url ? (
+                      <a href={blueprint.video_url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4d00] hover:bg-orange-500 text-black text-sm font-black uppercase tracking-widest py-3 px-6 rounded-xl transition-colors w-full">Watch Replay</a>
+                    ) : (
+                      <button disabled className="bg-white/5 text-white/30 text-sm font-bold py-3 px-6 rounded-xl border border-white/10 w-full">Processing...</button>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* RETAINER TAB */}
+            {activeTab === 'retainer' && profile.is_client && profile.has_retainer && (
+              <div className="animate-in fade-in">
+                <RetainerDashboard userId={userId} supabase={supabase} />
+              </div>
+            )}
+
+            {/* PROFILE TAB */}
+            {activeTab === 'profile' && (
+              <div className="animate-in fade-in max-w-3xl mx-auto">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2 text-center">Settings</h1>
+                <div className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-10 shadow-xl relative mt-8">
+                  <form onSubmit={handleSaveProfile} className="space-y-6 relative z-10">
+                    <div className="flex gap-6 pb-8 border-b border-white/5">
+                      <div className="relative group shrink-0">
+                        {profile.avatar_url ? <img src={profile.avatar_url} className="w-24 h-24 rounded-full object-cover" /> : <div className="w-24 h-24 rounded-full bg-black flex items-center justify-center text-3xl font-black text-white/30">{profile.first_name?.[0] || 'C'}</div>}
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer">
+                          <Camera size={24} className="text-white" />
+                          <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
+                      <div className="pt-2">
+                        <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1">Profile Photo</h3>
+                        {isUploadingAvatar && <span className="text-[#ff4d00] text-[10px] font-bold uppercase tracking-widest animate-pulse">Uploading...</span>}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">First Name</label>
+                        <input type="text" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Last Name</label>
+                        <input type="text" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                      </div>
+                      
+                      {profile.is_client && (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Username</label>
+                            <input type="text" value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Instagram</label>
+                            <input type="text" value={profile.instagram_handle} onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                          </div>
+                        </>
+                      )}
+                      
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-[#ff4d00] uppercase tracking-widest mb-2">Favorite Bible Verse</label>
+                        <input type="text" value={profile.bible_verse} onChange={(e) => setProfile({...profile, bible_verse: e.target.value})} className="w-full bg-black border border-[#ff4d00]/20 rounded-xl px-4 py-3 text-sm text-white" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Short Bio</label>
+                        <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none" />
+                      </div>
+                    </div>
+                    
+                    <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2">
+                      <Save size={16} /> {isSavingProfile ? 'Saving...' : 'Save Profile'}
+                    </button>
+                  </form>
+
+                  <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
+                    <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
+                      <Lock size={16} className="text-[#ff4d00]" /> Account Security
+                    </h3>
+                    <p className="text-white/40 text-xs mb-6">Update your password to keep your Sanctuary assets secure.</p>
+                    <form onSubmit={handleUpdatePassword} className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="Enter new password" />
+                      </div>
+                      <button type="submit" disabled={isUpdatingPassword || !newPassword} className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center transition-all disabled:opacity-50 shrink-0">
+                        {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </form>
+                  </div>
+                  
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <nav className={`md:hidden fixed bottom-0 left-0 w-full backdrop-blur-2xl border-t flex justify-around items-center p-3 z-30 pb-safe transition-colors duration-500 ${isLightMode ? 'bg-white/85 border-slate-200/80' : 'bg-[#111]/95 border-white/5'}`}>
+        {profile.is_client && (
+          <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
+            <FolderDown size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
+          </button>
+        )}
+        {profile.is_millerite && (
+          <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'millerites' || activeTab === 'member_view' ? (isLightMode ? 'text-[#1C1C2E]' : 'text-[#ff4d00]') : (isLightMode ? 'text-slate-400' : 'text-white/40')}`}>
+            <Users size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Family</span>
+          </button>
+        )}
+        {profile.is_client && blueprint && (
+          <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
+            <LayoutDashboard size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
+          </button>
+        )}
+        {profile.is_client && profile.has_retainer && (
+          <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
+            <Film size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
+          </button>
+        )}
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
+          <User size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
+        </button>
+      </nav>
+    </div>
+  );
+}
