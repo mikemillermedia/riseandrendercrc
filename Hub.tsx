@@ -13,7 +13,12 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
-const VIBE_EMOJIS = ['👋', '☕', '🙏', '🏃‍♂️', '💼', '✈️', '🏈', '🍽️', '🎉', '😴', '❤️', '🔥'];
+const VIBE_EMOJIS = [
+  '👋🏾', '🙏🏾', '🙌🏾', '💪🏾', '🫶🏾', '✌🏾', '🤞🏾', '👊🏾', '🤙🏾', '👏🏾', '🫱🏾‍🫲🏽', '🤳🏾',
+  '🏃🏾‍♂️', '🏋🏾‍♂️', '🧘🏾‍♀️', '🕺🏾', '💃🏾', '👨🏾‍💻', '👩🏾‍💻', '👨🏾‍🍳', '🤱🏾', '🛌🏾', '🚶🏾‍♂️', '🚴🏾‍♂️',
+  '☕', '🍽️', '🍔', '🌮', '🍕', '🥗', '🍿', '🎂', '✈️', '🚗', '🏡', '🏖️',
+  '🏈', '🏀', '⚽', '⚾', '🎮', '🎬', '🎧', '📚', '⛪', '✝️', '🎉', '😴', '❤️', '🔥', '✨', '💯'
+];
 
 export default function Hub() {
   const navigate = useNavigate();
@@ -29,7 +34,7 @@ export default function Hub() {
     id: '', display_name: '', username: '', instagram_handle: '',
     avatar_url: '', first_name: '', last_name: '', bio: '',
     bible_verse: '', has_retainer: false, is_millerite: false, is_client: true,
-    status_emoji: '👋', status_text: ''
+    status_emoji: '👋🏾', status_text: ''
   });
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -40,7 +45,7 @@ export default function Hub() {
   // FAMILY VIBE CHECK / STATUS STATE
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [isEditingStatus, setIsEditingStatus] = useState(false);
-  const [statusEmojiInput, setStatusEmojiInput] = useState('👋');
+  const [statusEmojiInput, setStatusEmojiInput] = useState('👋🏾');
   const [statusTextInput, setStatusTextInput] = useState('');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
 
@@ -73,6 +78,13 @@ export default function Hub() {
   // APPLE LIGHT THEME TOGGLE FOR MILLERITES
   const isLightMode = activeTab === 'millerites' || activeTab === 'member_view';
 
+  // Helper to convert legacy yellow default wave to medium-brown wave
+  const normalizeEmoji = (emoji?: string) => {
+    if (!emoji || emoji === '👋') return '👋🏾';
+    if (emoji === '🙏') return '🙏🏾';
+    return emoji;
+  };
+
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -87,6 +99,7 @@ export default function Hub() {
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profileData) {
           const isFamilyOnly = profileData.is_millerite && profileData.is_client === false;
+          const cleanEmoji = normalizeEmoji(profileData.status_emoji);
           setProfile({
             ...profileData,
             first_name: profileData.first_name || '', last_name: profileData.last_name || '',
@@ -94,10 +107,10 @@ export default function Hub() {
             bio: profileData.bio || '', bible_verse: profileData.bible_verse || '',
             avatar_url: profileData.avatar_url || '', is_millerite: profileData.is_millerite ?? false,
             is_client: profileData.is_client ?? true,
-            status_emoji: profileData.status_emoji || '👋',
+            status_emoji: cleanEmoji,
             status_text: profileData.status_text || ''
           });
-          setStatusEmojiInput(profileData.status_emoji || '👋');
+          setStatusEmojiInput(cleanEmoji);
           setStatusTextInput(profileData.status_text || '');
           if (isFamilyOnly) setActiveTab('millerites');
         }
@@ -134,7 +147,10 @@ export default function Hub() {
       const safeReplies = repliesData || [];
       const safeIntercessions = prayerIntercessionsData || [];
       const safeTasks = tasksData || [];
-      const safeMillerites = milleritesData || [];
+      const safeMillerites = (milleritesData || []).map((m: any) => ({
+        ...m,
+        status_emoji: normalizeEmoji(m.status_emoji)
+      }));
 
       setFamilyMembers(safeMillerites);
 
@@ -156,7 +172,10 @@ export default function Hub() {
         .in('id', Array.from(userIds));
 
       const profileMap = (profData || []).reduce((acc: any, curr: any) => {
-        acc[curr.id] = curr;
+        acc[curr.id] = {
+          ...curr,
+          status_emoji: normalizeEmoji(curr.status_emoji)
+        };
         return acc;
       }, {});
 
@@ -556,7 +575,7 @@ export default function Hub() {
                         <Sparkles size={12} className="text-[#ff4d00]" /> Miller Family Hub
                       </span>
                       <span className="text-xs font-semibold text-slate-400">
-                        Hi, {profile.first_name || 'Family'} 👋
+                        Hi, {profile.first_name || 'Family'} 👋🏾
                       </span>
                     </div>
 
@@ -619,21 +638,29 @@ export default function Hub() {
                       onClick={() => setIsEditingStatus(!isEditingStatus)}
                       className="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
                     >
-                      <span>{profile.status_emoji || '👋'}</span>
+                      <span>{profile.status_emoji || '👋🏾'}</span>
                       <span>{isEditingStatus ? 'Close' : 'Update My Vibe'}</span>
                     </button>
                   </div>
 
-                  {/* Collapsible Status Editor */}
+                  {/* Collapsible Status Editor with Expanded Brown-Complexion Emoji Grid */}
                   {isEditingStatus && (
                     <div className="mb-5 p-4 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-3 animate-in fade-in">
-                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                          Choose Your Vibe Emoji ({VIBE_EMOJIS.length} Options)
+                        </span>
+                        <span className="text-xs font-bold text-slate-700">
+                          Selected: <span className="text-base">{statusEmojiInput}</span>
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-8 sm:grid-cols-13 gap-1.5 max-h-36 overflow-y-auto p-1 bg-white/70 rounded-xl border border-slate-200/60 custom-scrollbar">
                         {VIBE_EMOJIS.map(emoji => (
                           <button
                             key={emoji}
                             type="button"
                             onClick={() => setStatusEmojiInput(emoji)}
-                            className={`w-9 h-9 rounded-xl text-base flex items-center justify-center shrink-0 transition-all ${
+                            className={`h-9 rounded-xl text-lg flex items-center justify-center transition-all ${
                               statusEmojiInput === emoji
                                 ? 'bg-[#1C1C2E] text-white shadow-md scale-105'
                                 : 'bg-white border border-slate-200/70 hover:bg-slate-100'
@@ -675,7 +702,7 @@ export default function Hub() {
                     >
                       {/* Floating Note Bubble */}
                       <div className="mb-2 px-2.5 py-1 rounded-2xl bg-[#1C1C2E] text-white text-[10px] font-bold shadow-md max-w-[100px] truncate text-center">
-                        <span>{profile.status_emoji || '👋'}</span>{' '}
+                        <span>{profile.status_emoji || '👋🏾'}</span>{' '}
                         <span>{profile.status_text || 'Set status'}</span>
                       </div>
                       <div className="relative">
@@ -706,7 +733,7 @@ export default function Hub() {
                       >
                         {/* Floating Note Bubble */}
                         <div className="mb-2 px-2.5 py-1 rounded-2xl bg-slate-100 border border-slate-200/80 text-slate-700 text-[10px] font-bold shadow-sm max-w-[105px] truncate text-center group-hover:bg-white transition-colors">
-                          <span>{member.status_emoji || '👋'}</span>{' '}
+                          <span>{member.status_emoji || '👋🏾'}</span>{' '}
                           <span>{member.status_text || 'Checking in'}</span>
                         </div>
                         <div className="w-16 h-16 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-slate-200/80 group-hover:ring-amber-400 overflow-hidden shadow-sm group-hover:scale-105 transition-all">
@@ -1075,7 +1102,7 @@ export default function Hub() {
                                           : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
                                       }`}
                                     >
-                                      <span>🙏</span>
+                                      <span>🙏🏾</span>
                                       <span>{hasPrayed ? 'Praying' : 'Pray'}</span>
                                       {intercessions.length > 0 && (
                                         <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${hasPrayed ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
@@ -1277,7 +1304,7 @@ export default function Hub() {
                       </h1>
                       {(viewingMember.status_text || viewingMember.status_emoji) && (
                         <span className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200/80 px-3 py-1 rounded-full text-xs font-bold text-slate-700 self-center sm:self-auto">
-                          <span>{viewingMember.status_emoji || '👋'}</span>
+                          <span>{viewingMember.status_emoji || '👋🏾'}</span>
                           <span>{viewingMember.status_text || 'Checking in'}</span>
                         </span>
                       )}
