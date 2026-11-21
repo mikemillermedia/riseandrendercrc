@@ -92,8 +92,8 @@ export default function Hub() {
   const [viewingMember, setViewingMember] = useState<any | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]);
 
-  // APPLE LIGHT THEME TOGGLE FOR MILLERITES
-  const isLightMode = activeTab === 'millerites' || activeTab === 'member_view';
+  // APPLE LIGHT THEME TOGGLE FOR MILLERITES & PROFILE
+  const isLightMode = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile';
 
   // Helper to convert legacy yellow default wave to medium-brown wave
   const normalizeEmoji = (emoji?: string) => {
@@ -646,7 +646,7 @@ export default function Hub() {
             </button>
           )}
 
-          <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'profile' ? 'bg-[#ff4d00]/10 text-[#ff4d00]' : isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+          <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'profile' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
             <User size={18} /> Settings
           </button>
         </nav>
@@ -1704,80 +1704,151 @@ export default function Hub() {
               </div>
             )}
 
-            {/* PROFILE TAB */}
+            {/* PROFILE TAB (APPLE GLASS BENTO LIGHT MODE) */}
             {activeTab === 'profile' && (
-              <div className="animate-in fade-in max-w-3xl mx-auto">
-                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2 text-center">Settings</h1>
-                <div className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-10 shadow-xl relative mt-8">
-                  <form onSubmit={handleSaveProfile} className="space-y-6 relative z-10">
-                    <div className="flex gap-6 pb-8 border-b border-white/5">
-                      <div className="relative group shrink-0">
-                        {profile.avatar_url ? <img src={profile.avatar_url} className="w-24 h-24 rounded-full object-cover" /> : <div className="w-24 h-24 rounded-full bg-black flex items-center justify-center text-3xl font-black text-white/30">{profile.first_name?.[0] || 'C'}</div>}
-                        <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer">
-                          <Camera size={24} className="text-white" />
-                          <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                        </label>
+              <div className="animate-in fade-in duration-500 max-w-4xl mx-auto relative z-10 space-y-6">
+                
+                {/* Top Bento Header */}
+                <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+                  <div className="relative group shrink-0">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} className="w-24 h-24 rounded-3xl object-cover border border-slate-200 shadow-md" />
+                    ) : (
+                      <div className="w-24 h-24 rounded-3xl bg-slate-100 border border-slate-200 flex items-center justify-center text-3xl font-black text-slate-400">
+                        {profile.first_name?.[0] || 'M'}
                       </div>
-                      <div className="pt-2">
-                        <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1">Profile Photo</h3>
-                        {isUploadingAvatar && <span className="text-[#ff4d00] text-[10px] font-bold uppercase tracking-widest animate-pulse">Uploading...</span>}
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-6">
+                    )}
+                    <label className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] rounded-3xl opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                      <Camera size={22} className="text-white" />
+                      <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                    </label>
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <span className="inline-flex items-center gap-1.5 bg-slate-900/5 border border-slate-900/10 text-slate-700 text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2">
+                      <Sparkles size={11} className="text-[#ff4d00]" /> Account Settings
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+                      {profile.first_name || 'Your'} {profile.last_name || 'Profile'}
+                    </h1>
+                    <p className="text-slate-500 text-xs font-medium mt-1">
+                      Tap your photo to update your profile picture.
+                    </p>
+                    {isUploadingAvatar && (
+                      <span className="text-[#ff4d00] text-[10px] font-extrabold uppercase tracking-widest animate-pulse block mt-1">
+                        Uploading photo...
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Personal Info Bento Card */}
+                <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                  <form onSubmit={handleSaveProfile} className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">First Name</label>
-                        <input type="text" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                        <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">First Name</label>
+                        <input
+                          type="text"
+                          value={profile.first_name}
+                          onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
+                        />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Last Name</label>
-                        <input type="text" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                        <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Last Name</label>
+                        <input
+                          type="text"
+                          value={profile.last_name}
+                          onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
+                        />
                       </div>
-                      
+
                       {profile.is_client && (
                         <>
                           <div>
-                            <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Username</label>
-                            <input type="text" value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                            <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Username</label>
+                            <input
+                              type="text"
+                              value={profile.username}
+                              onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                              className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
+                            />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Instagram</label>
-                            <input type="text" value={profile.instagram_handle} onChange={(e) => setProfile({...profile, instagram_handle: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white" />
+                            <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Instagram</label>
+                            <input
+                              type="text"
+                              value={profile.instagram_handle}
+                              onChange={(e) => setProfile({ ...profile, instagram_handle: e.target.value })}
+                              className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
+                            />
                           </div>
                         </>
                       )}
-                      
-                      <div className="col-span-2">
-                        <label className="block text-[10px] font-bold text-[#ff4d00] uppercase tracking-widest mb-2">Favorite Bible Verse</label>
-                        <input type="text" value={profile.bible_verse} onChange={(e) => setProfile({...profile, bible_verse: e.target.value})} className="w-full bg-black border border-[#ff4d00]/20 rounded-xl px-4 py-3 text-sm text-white" />
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-extrabold text-[#ff4d00] uppercase tracking-widest mb-1.5 ml-1">Favorite Bible Verse</label>
+                        <input
+                          type="text"
+                          value={profile.bible_verse}
+                          onChange={(e) => setProfile({ ...profile, bible_verse: e.target.value })}
+                          placeholder="e.g. Joshua 24:15"
+                          className="w-full bg-amber-50/60 border border-amber-200/80 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-amber-400 transition-all"
+                        />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Short Bio</label>
-                        <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none" />
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Short Bio</label>
+                        <textarea
+                          rows={3}
+                          value={profile.bio}
+                          onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                          placeholder="Tell the family a little about yourself..."
+                          className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all resize-none"
+                        />
                       </div>
                     </div>
-                    
-                    <button type="submit" disabled={isSavingProfile} className="bg-[#ff4d00] text-black font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center gap-2">
-                      <Save size={16} /> {isSavingProfile ? 'Saving...' : 'Save Profile'}
+
+                    <button
+                      type="submit"
+                      disabled={isSavingProfile}
+                      className="bg-[#1C1C2E] hover:bg-slate-800 text-white font-bold px-7 py-3.5 rounded-2xl text-xs tracking-wide flex items-center justify-center gap-2 shadow-md shadow-slate-900/10 transition-all disabled:opacity-50"
+                    >
+                      <Save size={15} /> {isSavingProfile ? 'Saving...' : 'Save Profile'}
                     </button>
                   </form>
-
-                  <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
-                    <h3 className="text-white font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
-                      <Lock size={16} className="text-[#ff4d00]" /> Account Security
-                    </h3>
-                    <p className="text-white/40 text-xs mb-6">Update your password to keep your Sanctuary assets secure.</p>
-                    <form onSubmit={handleUpdatePassword} className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex-1">
-                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#ff4d00] transition-colors" placeholder="Enter new password" />
-                      </div>
-                      <button type="submit" disabled={isUpdatingPassword || !newPassword} className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest px-8 py-3.5 rounded-xl text-xs flex items-center justify-center transition-all disabled:opacity-50 shrink-0">
-                        {isUpdatingPassword ? 'Updating...' : 'Update Password'}
-                      </button>
-                    </form>
-                  </div>
-                  
                 </div>
+
+                {/* Account Security Bento Card */}
+                <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                  <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs mb-1 flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
+                      <Lock size={14} />
+                    </span>
+                    Account Security
+                  </h3>
+                  <p className="text-slate-500 text-xs font-medium mb-5 ml-9">
+                    Update your password anytime to keep your account secure.
+                  </p>
+                  <form onSubmit={handleUpdatePassword} className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
+                      placeholder="Enter new password"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isUpdatingPassword || !newPassword}
+                      className="bg-[#1C1C2E] hover:bg-slate-800 text-white font-bold px-7 py-3 rounded-2xl text-xs tracking-wide flex items-center justify-center transition-all disabled:opacity-40 shrink-0 shadow-sm"
+                    >
+                      {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+                    </button>
+                  </form>
+                </div>
+
               </div>
             )}
           </>
@@ -1806,7 +1877,7 @@ export default function Hub() {
             <Film size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
           </button>
         )}
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? (isLightMode ? 'text-[#1C1C2E]' : 'text-[#ff4d00]') : (isLightMode ? 'text-slate-400' : 'text-white/40')}`}>
           <User size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
         </button>
       </nav>
