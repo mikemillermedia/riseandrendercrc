@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square, Smile
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -12,6 +12,8 @@ import RetainerDashboard from './RetainerDashboard';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+const VIBE_EMOJIS = ['👋', '☕', '🙏', '🏃‍♂️', '💼', '✈️', '🏈', '🍽️', '🎉', '😴', '❤️', '🔥'];
 
 export default function Hub() {
   const navigate = useNavigate();
@@ -26,13 +28,21 @@ export default function Hub() {
   const [profile, setProfile] = useState({
     id: '', display_name: '', username: '', instagram_handle: '',
     avatar_url: '', first_name: '', last_name: '', bio: '',
-    bible_verse: '', has_retainer: false, is_millerite: false, is_client: true 
+    bible_verse: '', has_retainer: false, is_millerite: false, is_client: true,
+    status_emoji: '👋', status_text: ''
   });
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // FAMILY VIBE CHECK / STATUS STATE
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [statusEmojiInput, setStatusEmojiInput] = useState('👋');
+  const [statusTextInput, setStatusTextInput] = useState('');
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
 
   // TIMELINE, PRAYER & TASKS STATE
   const [posts, setPosts] = useState<any[]>([]);
@@ -83,8 +93,12 @@ export default function Hub() {
             username: profileData.username || '', instagram_handle: profileData.instagram_handle || '',
             bio: profileData.bio || '', bible_verse: profileData.bible_verse || '',
             avatar_url: profileData.avatar_url || '', is_millerite: profileData.is_millerite ?? false,
-            is_client: profileData.is_client ?? true 
+            is_client: profileData.is_client ?? true,
+            status_emoji: profileData.status_emoji || '👋',
+            status_text: profileData.status_text || ''
           });
+          setStatusEmojiInput(profileData.status_emoji || '👋');
+          setStatusTextInput(profileData.status_text || '');
           if (isFamilyOnly) setActiveTab('millerites');
         }
         await fetchCommunityData();
@@ -106,6 +120,10 @@ export default function Hub() {
       const { data: repliesData } = await supabase.from('post_replies').select('*');
       const { data: prayerIntercessionsData } = await supabase.from('prayer_intercessions').select('*');
       const { data: tasksData } = await supabase.from('family_tasks').select('*').order('created_at', { ascending: false });
+      const { data: milleritesData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url, bio, bible_verse, is_millerite, status_emoji, status_text, status_updated_at')
+        .eq('is_millerite', true);
 
       if (pError) console.error("Posts Error:", pError.message);
       if (prError) console.error("Prayers Error:", prError.message);
@@ -116,6 +134,9 @@ export default function Hub() {
       const safeReplies = repliesData || [];
       const safeIntercessions = prayerIntercessionsData || [];
       const safeTasks = tasksData || [];
+      const safeMillerites = milleritesData || [];
+
+      setFamilyMembers(safeMillerites);
 
       const userIds = new Set<string>();
       safePosts.forEach((p: any) => userIds.add(p.user_id));
@@ -127,8 +148,12 @@ export default function Hub() {
         if (t.user_id) userIds.add(t.user_id);
         if (t.completed_by) userIds.add(t.completed_by);
       });
+      safeMillerites.forEach((m: any) => userIds.add(m.id));
 
-      const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, bio, bible_verse').in('id', Array.from(userIds));
+      const { data: profData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url, bio, bible_verse, status_emoji, status_text')
+        .in('id', Array.from(userIds));
 
       const profileMap = (profData || []).reduce((acc: any, curr: any) => {
         acc[curr.id] = curr;
@@ -161,6 +186,31 @@ export default function Hub() {
 
     } catch (err) {
       console.error("Error fetching community data:", err);
+    }
+  };
+
+  // SAVE FAMILY VIBE / STATUS
+  const handleSaveStatus = async () => {
+    if (!supabase || !userId) return;
+    setIsSavingStatus(true);
+    try {
+      const updatedAt = new Date().toISOString();
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          status_emoji: statusEmojiInput,
+          status_text: statusTextInput.trim(),
+          status_updated_at: updatedAt
+        })
+        .eq('id', userId);
+      if (error) throw error;
+      setProfile(prev => ({ ...prev, status_emoji: statusEmojiInput, status_text: statusTextInput.trim() }));
+      setIsEditingStatus(false);
+      await fetchCommunityData();
+    } catch (err: any) {
+      alert("Error updating vibe: " + err.message);
+    } finally {
+      setIsSavingStatus(false);
     }
   };
 
@@ -341,7 +391,10 @@ export default function Hub() {
 
   // OPEN MEMBER PROFILE
   const openMemberProfile = (memberId: string) => {
-    const member = posts.find(p => p.user_id === memberId)?.profile || prayers.find(p => p.user_id === memberId)?.profile;
+    const member =
+      familyMembers.find(m => m.id === memberId) ||
+      posts.find(p => p.user_id === memberId)?.profile ||
+      prayers.find(p => p.user_id === memberId)?.profile;
     if (!member) return;
     setViewingMember(member);
     setMemberPosts(posts.filter(p => p.user_id === memberId));
@@ -418,6 +471,7 @@ export default function Hub() {
   const answeredPrayersCount = prayers.filter(p => p.is_answered).length;
   const filteredPrayers = prayers.filter(p => prayerFilter === 'answered' ? p.is_answered : !p.is_answered);
   const completedTasksCount = familyTasks.filter(t => t.is_completed).length;
+  const otherFamilyMembers = familyMembers.filter(m => m.id !== userId);
 
   return (
     <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
@@ -541,6 +595,134 @@ export default function Hub() {
                       <span>Prayers Answered</span>
                       <span className="font-bold text-amber-400">{answeredPrayersCount} ✨</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* FEATURE #3: FAMILY "VIBE CHECK" & STATUS BAR BENTO */}
+                <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-5 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
+                        <Smile size={15} />
+                      </span>
+                      <div>
+                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
+                          Family Vibe Check
+                        </h3>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                          Tap your photo to share what you're up to today
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingStatus(!isEditingStatus)}
+                      className="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                    >
+                      <span>{profile.status_emoji || '👋'}</span>
+                      <span>{isEditingStatus ? 'Close' : 'Update My Vibe'}</span>
+                    </button>
+                  </div>
+
+                  {/* Collapsible Status Editor */}
+                  {isEditingStatus && (
+                    <div className="mb-5 p-4 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-3 animate-in fade-in">
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                        {VIBE_EMOJIS.map(emoji => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => setStatusEmojiInput(emoji)}
+                            className={`w-9 h-9 rounded-xl text-base flex items-center justify-center shrink-0 transition-all ${
+                              statusEmojiInput === emoji
+                                ? 'bg-[#1C1C2E] text-white shadow-md scale-105'
+                                : 'bg-white border border-slate-200/70 hover:bg-slate-100'
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={40}
+                          placeholder="What are you up to? (e.g. At the kids' game, Coffee run...)"
+                          value={statusTextInput}
+                          onChange={(e) => setStatusTextInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveStatus()}
+                          className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveStatus}
+                          disabled={isSavingStatus}
+                          className="bg-[#1C1C2E] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-50 shrink-0"
+                        >
+                          {isSavingStatus ? 'Saving...' : 'Save Vibe'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Horizontal Scrollable Family Avatar Row */}
+                  <div className="flex items-end gap-5 overflow-x-auto pt-4 pb-2 px-1 custom-scrollbar">
+                    
+                    {/* Current User Avatar Card */}
+                    <div 
+                      onClick={() => setIsEditingStatus(!isEditingStatus)}
+                      className="flex flex-col items-center shrink-0 cursor-pointer group relative w-24"
+                    >
+                      {/* Floating Note Bubble */}
+                      <div className="mb-2 px-2.5 py-1 rounded-2xl bg-[#1C1C2E] text-white text-[10px] font-bold shadow-md max-w-[100px] truncate text-center">
+                        <span>{profile.status_emoji || '👋'}</span>{' '}
+                        <span>{profile.status_text || 'Set status'}</span>
+                      </div>
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-[#ff4d00] overflow-hidden shadow-md group-hover:scale-105 transition-transform">
+                          {profile.avatar_url ? (
+                            <img src={profile.avatar_url} className="w-full h-full object-cover rounded-[14px]" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-lg font-black text-slate-700">
+                              {profile.first_name?.[0] || 'M'}
+                            </div>
+                          )}
+                        </div>
+                        <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#ff4d00] text-white flex items-center justify-center text-xs shadow">
+                          +
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900 mt-2 truncate w-full text-center">
+                        You
+                      </span>
+                    </div>
+
+                    {/* Other Millerites Family Members */}
+                    {otherFamilyMembers.map(member => (
+                      <div
+                        key={member.id}
+                        onClick={() => openMemberProfile(member.id)}
+                        className="flex flex-col items-center shrink-0 cursor-pointer group relative w-24"
+                      >
+                        {/* Floating Note Bubble */}
+                        <div className="mb-2 px-2.5 py-1 rounded-2xl bg-slate-100 border border-slate-200/80 text-slate-700 text-[10px] font-bold shadow-sm max-w-[105px] truncate text-center group-hover:bg-white transition-colors">
+                          <span>{member.status_emoji || '👋'}</span>{' '}
+                          <span>{member.status_text || 'Checking in'}</span>
+                        </div>
+                        <div className="w-16 h-16 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-slate-200/80 group-hover:ring-amber-400 overflow-hidden shadow-sm group-hover:scale-105 transition-all">
+                          {member.avatar_url ? (
+                            <img src={member.avatar_url} className="w-full h-full object-cover rounded-[14px]" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-lg font-black text-slate-600">
+                              {member.first_name?.[0] || 'M'}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900 mt-2 truncate w-full text-center">
+                          {member.first_name || 'Family'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -942,7 +1124,7 @@ export default function Hub() {
                       </div>
                     </div>
 
-                    {/* 2. FAMILY CHECKLIST & POTLUCK SIGN-UP BENTO BOX (INSPIRED BY MOCKUP) */}
+                    {/* 2. FAMILY CHECKLIST & POTLUCK SIGN-UP BENTO BOX */}
                     <div className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2">
@@ -1089,9 +1271,17 @@ export default function Hub() {
                     )}
                   </div>
                   <div className="text-center md:text-left flex-1">
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">
-                      {viewingMember.first_name} {viewingMember.last_name}
-                    </h1>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                      <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+                        {viewingMember.first_name} {viewingMember.last_name}
+                      </h1>
+                      {(viewingMember.status_text || viewingMember.status_emoji) && (
+                        <span className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200/80 px-3 py-1 rounded-full text-xs font-bold text-slate-700 self-center sm:self-auto">
+                          <span>{viewingMember.status_emoji || '👋'}</span>
+                          <span>{viewingMember.status_text || 'Checking in'}</span>
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center justify-center md:justify-start gap-6 text-xs font-bold text-slate-500 mb-4">
                       <span className="bg-slate-100 px-3 py-1 rounded-full">
                         <strong className="text-slate-900">{memberPosts.length}</strong> updates shared
