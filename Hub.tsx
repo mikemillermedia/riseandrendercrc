@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square, Smile, CalendarHeart
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square, Smile, CalendarHeart, AtSign
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -81,13 +81,15 @@ export default function Hub() {
   const [postMediaUrl, setPostMediaUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // INTERACTION STATE
+  // INTERACTION & @MENTION STATE
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [replyingToPostId, setReplyingToPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [expandedReactionsPostId, setExpandedReactionsPostId] = useState<string | null>(null);
+  const [mentionTarget, setMentionTarget] = useState<'post' | 'reply' | null>(null);
+  const [mentionQuery, setMentionQuery] = useState('');
 
   // MEMBER PROFILE VIEW STATE
   const [viewingMember, setViewingMember] = useState<any | null>(null);
@@ -101,6 +103,73 @@ export default function Hub() {
     if (!emoji || emoji === '👋') return '👋🏾';
     if (emoji === '🙏') return '🙏🏾';
     return emoji;
+  };
+
+  // @MENTION HANDLERS
+  const handlePostTextChange = (val: string) => {
+    setNewPost(val);
+    const match = val.match(/(?:^|\s)@(\w*)$/);
+    if (match) {
+      setMentionTarget('post');
+      setMentionQuery(match[1]);
+    } else if (mentionTarget === 'post') {
+      setMentionTarget(null);
+      setMentionQuery('');
+    }
+  };
+
+  const handleReplyTextChange = (val: string) => {
+    setReplyContent(val);
+    const match = val.match(/(?:^|\s)@(\w*)$/);
+    if (match) {
+      setMentionTarget('reply');
+      setMentionQuery(match[1]);
+    } else if (mentionTarget === 'reply') {
+      setMentionTarget(null);
+      setMentionQuery('');
+    }
+  };
+
+  const insertMention = (member: any) => {
+    const tag = `@${member.first_name || 'Family'} `;
+    if (mentionTarget === 'post') {
+      setNewPost(prev => prev.replace(/(?:^|\s)@\w*$/, (m) => (m.startsWith(' ') ? ' ' : '') + tag));
+    } else if (mentionTarget === 'reply') {
+      setReplyContent(prev => prev.replace(/(?:^|\s)@\w*$/, (m) => (m.startsWith(' ') ? ' ' : '') + tag));
+    }
+    setMentionTarget(null);
+    setMentionQuery('');
+  };
+
+  const filteredMentionMembers = familyMembers.filter(m =>
+    (m.first_name || '').toLowerCase().includes(mentionQuery.toLowerCase()) ||
+    (m.last_name || '').toLowerCase().includes(mentionQuery.toLowerCase())
+  );
+
+  // Render post/reply text with clickable @mentions
+  const renderTextWithMentions = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('@') && part.length > 1) {
+        const handle = part.slice(1).toLowerCase();
+        const matchedMember = familyMembers.find(
+          m => (m.first_name || '').toLowerCase() === handle
+        );
+        if (matchedMember) {
+          return (
+            <span
+              key={idx}
+              onClick={(e) => { e.stopPropagation(); openMemberProfile(matchedMember.id); }}
+              className="text-[#ff4d00] font-bold bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded-md cursor-pointer transition-colors"
+            >
+              {part}
+            </span>
+          );
+        }
+      }
+      return <React.Fragment key={idx}>{part}</React.Fragment>;
+    });
   };
 
   // Helper to calculate days until a milestone (handles annual repeating birthdays/anniversaries)
@@ -372,7 +441,7 @@ export default function Hub() {
     try {
       const { error } = await supabase.from('community_posts').insert([{ user_id: userId, content: newPost.trim(), media_url: postMediaUrl }]);
       if (error) throw error;
-      setNewPost(''); setPostMediaUrl('');
+      setNewPost(''); setPostMediaUrl(''); setMentionTarget(null);
       await fetchCommunityData(); 
     } catch (err: any) { 
       alert("Error Posting: " + err.message); 
@@ -516,7 +585,7 @@ export default function Hub() {
     if (!replyContent.trim() || !userId) return;
     const { error } = await supabase!.from('post_replies').insert([{ post_id: postId, user_id: userId, content: replyContent }]);
     if (error) alert("Error replying: " + error.message);
-    setReplyContent(''); setReplyingToPostId(null);
+    setReplyContent(''); setReplyingToPostId(null); setMentionTarget(null);
     fetchCommunityData();
   };
 
@@ -888,8 +957,8 @@ export default function Hub() {
                   {/* LEFT COLUMN: COMPOSER & FEED */}
                   <div className="lg:col-span-8 space-y-5">
                     
-                    {/* Apple Glass Post Composer */}
-                    <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 sm:p-6 rounded-[28px] transition-all">
+                    {/* Apple Glass Post Composer with @Mention Support */}
+                    <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 sm:p-6 rounded-[28px] transition-all relative">
                       <div className="flex gap-4 items-start">
                         <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/80 shrink-0 flex items-center justify-center text-sm font-bold text-slate-700 overflow-hidden shadow-sm">
                           {profile.avatar_url ? (
@@ -898,14 +967,48 @@ export default function Hub() {
                             profile.first_name?.[0] || 'M'
                           )}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 relative">
                           <textarea 
                             rows={2} 
-                            placeholder="Share a family update, photo, or video..." 
+                            placeholder="Share a family update, photo, or type @ to tag someone..." 
                             value={newPost} 
-                            onChange={(e) => setNewPost(e.target.value)}
+                            onChange={(e) => handlePostTextChange(e.target.value)}
                             className="w-full bg-transparent text-slate-800 text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400 pt-1"
                           />
+
+                          {/* @Mention Autocomplete Dropdown (Post Composer) */}
+                          {mentionTarget === 'post' && filteredMentionMembers.length > 0 && (
+                            <div className="mt-1 mb-2 bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-xl p-1.5 max-h-48 overflow-y-auto z-30">
+                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-2.5 py-1">
+                                Tag a Family Member
+                              </p>
+                              {filteredMentionMembers.map(member => (
+                                <button
+                                  key={member.id}
+                                  type="button"
+                                  onClick={() => insertMention(member)}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 transition-colors text-left"
+                                >
+                                  <div className="w-7 h-7 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
+                                    {member.avatar_url ? (
+                                      <img src={member.avatar_url} className="w-full h-full object-cover" />
+                                    ) : (
+                                      member.first_name?.[0] || 'M'
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold text-slate-900 leading-none">
+                                      {member.first_name} {member.last_name}
+                                    </p>
+                                    <p className="text-[10px] text-[#ff4d00] font-semibold mt-0.5">
+                                      @{member.first_name}
+                                    </p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
                           {postMediaUrl && (
                             <div className="relative mt-3 inline-block">
                               {isVideo(postMediaUrl) ? (
@@ -919,14 +1022,25 @@ export default function Hub() {
                             </div>
                           )}
                           <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
-                            <button 
-                              onClick={() => fileInputRef.current?.click()} 
-                              className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
-                            >
-                              <ImageIcon size={16} className="text-[#ff4d00]" />
-                              <span>Photo / Video</span>
-                              <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => fileInputRef.current?.click()} 
+                                className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                              >
+                                <ImageIcon size={16} className="text-[#ff4d00]" />
+                                <span>Photo / Video</span>
+                                <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePostTextChange(newPost + (newPost && !newPost.endsWith(' ') ? ' @' : '@'))}
+                                className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                                title="Tag a family member"
+                              >
+                                <AtSign size={15} className="text-[#ff4d00]" />
+                                <span className="hidden sm:inline">Tag</span>
+                              </button>
+                            </div>
                             <button 
                               onClick={handleCreatePost} 
                               disabled={isPosting || (!newPost.trim() && !postMediaUrl)} 
@@ -1010,7 +1124,7 @@ export default function Hub() {
                                 <>
                                   {post.content && (
                                     <p className="text-slate-700 text-[15px] leading-relaxed mb-4 whitespace-pre-wrap">
-                                      {post.content}
+                                      {renderTextWithMentions(post.content)}
                                     </p>
                                   )}
                                   {post.media_url && (
@@ -1159,26 +1273,54 @@ export default function Hub() {
                                           </span>
                                           <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
                                         </div>
-                                        <p className="text-xs text-slate-700 leading-relaxed">{reply.content}</p>
+                                        <p className="text-xs text-slate-700 leading-relaxed">
+                                          {renderTextWithMentions(reply.content)}
+                                        </p>
                                       </div>
                                     </div>
                                   ))}
                                   {replyingToPostId === post.id && (
-                                    <div className="flex gap-2 pt-1">
-                                      <input 
-                                        autoFocus 
-                                        type="text" 
-                                        placeholder="Write a reply..." 
-                                        value={replyContent} 
-                                        onChange={(e) => setReplyContent(e.target.value)} 
-                                        className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
-                                      />
-                                      <button 
-                                        onClick={() => submitReply(post.id)} 
-                                        className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
-                                      >
-                                        <Send size={13}/>
-                                      </button>
+                                    <div className="pt-1 space-y-2">
+                                      {/* @Mention Autocomplete Dropdown (Reply) */}
+                                      {mentionTarget === 'reply' && filteredMentionMembers.length > 0 && (
+                                        <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-lg p-1.5 max-h-40 overflow-y-auto">
+                                          {filteredMentionMembers.map(member => (
+                                            <button
+                                              key={member.id}
+                                              type="button"
+                                              onClick={() => insertMention(member)}
+                                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors text-left"
+                                            >
+                                              <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[9px] font-bold text-slate-700">
+                                                {member.avatar_url ? (
+                                                  <img src={member.avatar_url} className="w-full h-full object-cover" />
+                                                ) : (
+                                                  member.first_name?.[0] || 'M'
+                                                )}
+                                              </div>
+                                              <span className="text-xs font-bold text-slate-800">{member.first_name} {member.last_name}</span>
+                                              <span className="text-[10px] text-[#ff4d00] font-semibold ml-auto">@{member.first_name}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <div className="flex gap-2">
+                                        <input 
+                                          autoFocus 
+                                          type="text" 
+                                          placeholder="Write a reply or type @ to tag..." 
+                                          value={replyContent} 
+                                          onChange={(e) => handleReplyTextChange(e.target.value)}
+                                          onKeyDown={(e) => e.key === 'Enter' && !mentionTarget && submitReply(post.id)}
+                                          className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                                        />
+                                        <button 
+                                          onClick={() => submitReply(post.id)} 
+                                          className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
+                                        >
+                                          <Send size={13}/>
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1422,7 +1564,7 @@ export default function Hub() {
                                 </div>
 
                                 <p className="text-slate-700 text-xs leading-relaxed mb-3.5 whitespace-pre-wrap">
-                                  {prayer.content}
+                                  {renderTextWithMentions(prayer.content)}
                                 </p>
 
                                 {/* Interactive Footer */}
