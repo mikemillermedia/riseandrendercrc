@@ -87,6 +87,7 @@ export default function Hub() {
   const [replyingToPostId, setReplyingToPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [expandedReactionsPostId, setExpandedReactionsPostId] = useState<string | null>(null);
 
   // MEMBER PROFILE VIEW STATE
   const [viewingMember, setViewingMember] = useState<any | null>(null);
@@ -1024,49 +1025,111 @@ export default function Hub() {
                                 </>
                               )}
 
-                              {/* FEATURE #5: MULTI-EMOJI REACTIONS & ACTIONS BAR */}
-                              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {POST_REACTIONS.map(emoji => {
-                                    const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
-                                    const isSelected = myReaction === emoji;
-                                    return (
-                                      <button
-                                        key={emoji}
-                                        type="button"
-                                        onClick={() => toggleReaction(post, emoji)}
-                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                                          isSelected
-                                            ? 'bg-[#1C1C2E] text-white shadow-sm'
-                                            : count > 0
-                                            ? 'bg-amber-500/10 text-slate-800 border border-amber-500/20 hover:bg-amber-500/20'
-                                            : 'bg-slate-100/80 text-slate-500 hover:bg-slate-200/70'
-                                        }`}
-                                      >
-                                        <span className="text-sm leading-none">{emoji}</span>
-                                        {count > 0 && <span className="text-[11px]">{count}</span>}
-                                      </button>
-                                    );
-                                  })}
+                              {/* FEATURE #5: MULTI-EMOJI REACTIONS & WHO REACTED */}
+                              <div className="border-t border-slate-100 pt-3 space-y-2.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {POST_REACTIONS.map(emoji => {
+                                      const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
+                                      const isSelected = myReaction === emoji;
+                                      return (
+                                        <button
+                                          key={emoji}
+                                          type="button"
+                                          onClick={() => toggleReaction(post, emoji)}
+                                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all active:scale-95 ${
+                                            isSelected
+                                              ? 'bg-[#1C1C2E] text-white shadow-sm'
+                                              : count > 0
+                                              ? 'bg-amber-500/10 text-slate-800 border border-amber-500/20 hover:bg-amber-500/20'
+                                              : 'bg-slate-100/80 text-slate-500 hover:bg-slate-200/70'
+                                          }`}
+                                        >
+                                          <span className="text-sm leading-none">{emoji}</span>
+                                          {count > 0 && <span className="text-[11px]">{count}</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
+                                    <button 
+                                      onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                    >
+                                      <MessageSquare size={15} /> 
+                                      <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
+                                    </button>
+
+                                    <button 
+                                      onClick={() => handleRepost(post)} 
+                                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                      title="Repost"
+                                    >
+                                      <Repeat size={15} />
+                                    </button>
+                                  </div>
                                 </div>
 
-                                <div className="flex items-center gap-1">
-                                  <button 
-                                    onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                  >
-                                    <MessageSquare size={15} /> 
-                                    <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
-                                  </button>
+                                {/* WHO REACTED SUMMARY ROW (Tappable to expand full list) */}
+                                {post.likes.length > 0 && (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedReactionsPostId(expandedReactionsPostId === post.id ? null : post.id)}
+                                      className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                                    >
+                                      <div className="flex -space-x-1.5">
+                                        {post.likes.slice(0, 4).map((like: any) => (
+                                          <div
+                                            key={like.id || like.user_id}
+                                            className="w-5 h-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
+                                          >
+                                            {like.profile?.avatar_url ? (
+                                              <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                              like.profile?.first_name?.[0] || 'M'
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <span>
+                                        {post.likes.length === 1
+                                          ? `${post.likes[0].profile?.first_name || 'Someone'} reacted`
+                                          : post.likes.length === 2
+                                          ? `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes[1].profile?.first_name || '1 other'} reacted`
+                                          : `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes.length - 1} others reacted`}
+                                      </span>
+                                    </button>
 
-                                  <button 
-                                    onClick={() => handleRepost(post)} 
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                    title="Repost"
-                                  >
-                                    <Repeat size={15} />
-                                  </button>
-                                </div>
+                                    {/* EXPANDED LIST OF WHO REACTED */}
+                                    {expandedReactionsPostId === post.id && (
+                                      <div className="mt-2 p-3 bg-slate-50/90 border border-slate-200/70 rounded-2xl space-y-2 animate-in fade-in">
+                                        {post.likes.map((like: any) => (
+                                          <div
+                                            key={like.id || like.user_id}
+                                            onClick={() => openMemberProfile(like.user_id)}
+                                            className="flex items-center justify-between gap-2 cursor-pointer group"
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-700">
+                                                {like.profile?.avatar_url ? (
+                                                  <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                                ) : (
+                                                  like.profile?.first_name?.[0] || 'M'
+                                                )}
+                                              </div>
+                                              <span className="text-xs font-bold text-slate-800 group-hover:text-[#ff4d00] transition-colors">
+                                                {like.profile?.first_name ? `${like.profile.first_name} ${like.profile.last_name || ''}`.trim() : 'Family Member'}
+                                              </span>
+                                            </div>
+                                            <span className="text-sm">{like.emoji || '❤️'}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Replies Section */}
