@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import Login from './Login';
+import FamilyAuth from './FamilyAuth';
 import Hub from './Hub';
 import AdminDashboard from './AdminDashboard';
 
@@ -11,6 +12,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/family" element={<FamilyAuth />} />
         <Route path="/hub" element={<Hub />} />
         
         {/* Hidden Admin Route */}
