@@ -20,6 +20,8 @@ const VIBE_EMOJIS = [
   '🏈', '🏀', '⚽', '⚾', '🎮', '🎬', '🎧', '📚', '⛪', '✝️', '🎉', '😴', '❤️', '🔥', '✨', '💯'
 ];
 
+const POST_REACTIONS = ['❤️', '😂', '🙌🏾', '🙏🏾', '🔥'];
+
 const MILESTONE_TYPES = [
   { label: 'Birthday', emoji: '🎂', annual: true },
   { label: 'Anniversary', emoji: '💍', annual: true },
@@ -238,7 +240,9 @@ export default function Hub() {
       setPosts(safePosts.map((p: any) => ({
         ...p,
         profile: profileMap[p.user_id],
-        likes: safeLikes.filter((l: any) => l.post_id === p.id),
+        likes: safeLikes
+          .filter((l: any) => l.post_id === p.id)
+          .map((l: any) => ({ ...l, emoji: l.emoji || '❤️', profile: profileMap[l.user_id] })),
         replies: safeReplies
           .filter((r: any) => r.post_id === p.id)
           .map((r: any) => ({ ...r, profiles: profileMap[r.user_id] }))
@@ -487,14 +491,24 @@ export default function Hub() {
     fetchCommunityData();
   };
 
-  const toggleLike = async (postId: string, hasLiked: boolean) => {
+  // FEATURE #5: MULTI-EMOJI REACTION TOGGLE
+  const toggleReaction = async (post: any, emoji: string) => {
     if (!userId || !supabase) return;
-    if (hasLiked) {
-      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId);
-    } else {
-      await supabase.from('post_likes').insert([{ post_id: postId, user_id: userId }]);
+    try {
+      const existingReaction = post.likes.find((l: any) => l.user_id === userId);
+      if (existingReaction) {
+        if ((existingReaction.emoji || '❤️') === emoji) {
+          await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', userId);
+        } else {
+          await supabase.from('post_likes').update({ emoji }).eq('post_id', post.id).eq('user_id', userId);
+        }
+      } else {
+        await supabase.from('post_likes').insert([{ post_id: post.id, user_id: userId, emoji }]);
+      }
+      await fetchCommunityData();
+    } catch (err: any) {
+      console.error("Error toggling reaction:", err);
     }
-    fetchCommunityData();
   };
 
   const submitReply = async (postId: string) => {
@@ -933,7 +947,7 @@ export default function Hub() {
                       ) : (
                         posts.map(post => {
                           const isOwnPost = post.user_id === userId;
-                          const hasLiked = post.likes.some((l:any) => l.user_id === userId);
+                          const myReaction = post.likes.find((l: any) => l.user_id === userId)?.emoji;
                           
                           return (
                             <div key={post.id} className="bg-white/85 backdrop-blur-2xl border border-white p-6 rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all">
@@ -1010,31 +1024,49 @@ export default function Hub() {
                                 </>
                               )}
 
-                              {/* Actions */}
-                              <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
-                                <button 
-                                  onClick={() => toggleLike(post.id, hasLiked)} 
-                                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${hasLiked ? 'bg-red-50 text-red-500' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
-                                >
-                                  <Heart size={15} className={hasLiked ? "fill-red-500 text-red-500" : ""} /> 
-                                  <span>{post.likes.length > 0 ? post.likes.length : 'Like'}</span>
-                                </button>
+                              {/* FEATURE #5: MULTI-EMOJI REACTIONS & ACTIONS BAR */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {POST_REACTIONS.map(emoji => {
+                                    const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
+                                    const isSelected = myReaction === emoji;
+                                    return (
+                                      <button
+                                        key={emoji}
+                                        type="button"
+                                        onClick={() => toggleReaction(post, emoji)}
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all active:scale-95 ${
+                                          isSelected
+                                            ? 'bg-[#1C1C2E] text-white shadow-sm'
+                                            : count > 0
+                                            ? 'bg-amber-500/10 text-slate-800 border border-amber-500/20 hover:bg-amber-500/20'
+                                            : 'bg-slate-100/80 text-slate-500 hover:bg-slate-200/70'
+                                        }`}
+                                      >
+                                        <span className="text-sm leading-none">{emoji}</span>
+                                        {count > 0 && <span className="text-[11px]">{count}</span>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
 
-                                <button 
-                                  onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
-                                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                >
-                                  <MessageSquare size={15} /> 
-                                  <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                  >
+                                    <MessageSquare size={15} /> 
+                                    <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
+                                  </button>
 
-                                <button 
-                                  onClick={() => handleRepost(post)} 
-                                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold ml-auto"
-                                  title="Repost"
-                                >
-                                  <Repeat size={15} />
-                                </button>
+                                  <button 
+                                    onClick={() => handleRepost(post)} 
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                    title="Repost"
+                                  >
+                                    <Repeat size={15} />
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Replies Section */}
