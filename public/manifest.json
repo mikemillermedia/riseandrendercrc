@@ -1,21 +1,23 @@
 {
-  "name": "Rise & Render Community",
-  "short_name": "Rise & Render",
-  "description": "The private community for faith-driven creators.",
-  "start_url": "/",
+  "name": "Millerites Family Hub",
+  "short_name": "Millerites",
+  "description": "Private Miller family timeline, prayers, and milestones.",
+  "start_url": "/family",
   "display": "standalone",
-  "background_color": "#131313",
-  "theme_color": "#131313",
+  "background_color": "#F5F5F7",
+  "theme_color": "#1C1C2E",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
