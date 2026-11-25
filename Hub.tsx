@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import InstallAppBanner from './InstallAppBanner';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
