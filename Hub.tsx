@@ -754,6 +754,8 @@ export default function Hub() {
             {activeTab === 'millerites' && profile.is_millerite && (
               <div className="animate-in fade-in duration-500 max-w-6xl mx-auto relative z-10 space-y-6">
                 
+                <InstallAppBanner />
+
                 {/* TOP BENTO HEADER ROW */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
                   {/* Welcome Bento Card */}
