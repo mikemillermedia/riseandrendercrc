@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, Plus, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle, Award
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -32,6 +32,13 @@ const MILESTONE_TYPES = [
   { label: 'Family Dinner', emoji: '🍽️', annual: false }
 ];
 
+const SPOTLIGHT_CATEGORIES = [
+  { label: 'Accomplishment', emoji: '🏆' },
+  { label: 'Generosity', emoji: '💛' },
+  { label: 'Milestone', emoji: '🎉' },
+  { label: 'Accolade', emoji: '⭐' }
+];
+
 export default function Hub() {
   const navigate = useNavigate();
   
@@ -44,13 +51,12 @@ export default function Hub() {
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [blueprint, setBlueprint] = useState<any>(null);
 
-  // COLLAPSIBLE MODULES STATE (All closed by default)
+  // COLLAPSIBLE MODULES STATE (All closed by default; Timeline is always open)
   const [openModules, setOpenModules] = useState({
     vibe: false,
-    timeline: false,
+    spotlight: false,
     milestones: false,
     prayers: false,
-    checklist: false,
   });
 
   const toggleModule = (key: keyof typeof openModules) => {
@@ -80,6 +86,15 @@ export default function Hub() {
   const [statusTextInput, setStatusTextInput] = useState('');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
 
+  // FAMILY SPOTLIGHT STATE
+  const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [isAddingSpotlightOpen, setIsAddingSpotlightOpen] = useState(false);
+  const [spotlightHonoreeId, setSpotlightHonoreeId] = useState('');
+  const [spotlightCategory, setSpotlightCategory] = useState('Accomplishment');
+  const [spotlightTitle, setSpotlightTitle] = useState('');
+  const [spotlightReason, setSpotlightReason] = useState('');
+  const [isSavingSpotlight, setIsSavingSpotlight] = useState(false);
+
   // FAMILY MILESTONES & COUNTDOWN STATE
   const [milestones, setMilestones] = useState<any[]>([]);
   const [isAddingMilestoneFormOpen, setIsAddingMilestoneFormOpen] = useState(false);
@@ -88,18 +103,14 @@ export default function Hub() {
   const [milestoneCategory, setMilestoneCategory] = useState('Birthday');
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
 
-  // TIMELINE, PRAYER & TASKS STATE
+  // TIMELINE & PRAYER STATE
   const [posts, setPosts] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
-  const [familyTasks, setFamilyTasks] = useState<any[]>([]);
   const [prayerFilter, setPrayerFilter] = useState<'active' | 'answered'>('active');
   const [newPost, setNewPost] = useState('');
   const [newPrayer, setNewPrayer] = useState('');
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskCategory, setNewTaskCategory] = useState('Gatherings & Potluck');
   const [isPosting, setIsPosting] = useState(false);
   const [isPraying, setIsPraying] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState(false);
   const [postMediaUrl, setPostMediaUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -327,7 +338,7 @@ export default function Hub() {
       const { data: likesData } = await supabase.from('post_likes').select('*');
       const { data: repliesData } = await supabase.from('post_replies').select('*');
       const { data: prayerIntercessionsData } = await supabase.from('prayer_intercessions').select('*');
-      const { data: tasksData } = await supabase.from('family_tasks').select('*').order('created_at', { ascending: false });
+      const { data: spotlightsData } = await supabase.from('family_spotlights').select('*').order('created_at', { ascending: false });
       const { data: milestonesData } = await supabase.from('family_milestones').select('*');
       const { data: milleritesData } = await supabase
         .from('profiles')
@@ -342,7 +353,7 @@ export default function Hub() {
       const safeLikes = likesData || [];
       const safeReplies = repliesData || [];
       const safeIntercessions = prayerIntercessionsData || [];
-      const safeTasks = tasksData || [];
+      const safeSpotlights = spotlightsData || [];
       const safeMilestones = milestonesData || [];
       const safeMillerites = (milleritesData || []).map((m: any) => ({
         ...m,
@@ -357,9 +368,9 @@ export default function Hub() {
       safeLikes.forEach((l: any) => userIds.add(l.user_id));
       safeReplies.forEach((r: any) => userIds.add(r.user_id));
       safeIntercessions.forEach((i: any) => userIds.add(i.user_id));
-      safeTasks.forEach((t: any) => {
-        if (t.user_id) userIds.add(t.user_id);
-        if (t.completed_by) userIds.add(t.completed_by);
+      safeSpotlights.forEach((s: any) => {
+        if (s.user_id) userIds.add(s.user_id);
+        if (s.honoree_id) userIds.add(s.honoree_id);
       });
       safeMilestones.forEach((ms: any) => {
         if (ms.user_id) userIds.add(ms.user_id);
@@ -399,10 +410,10 @@ export default function Hub() {
           .map((i: any) => ({ ...i, profile: profileMap[i.user_id] }))
       })));
 
-      setFamilyTasks(safeTasks.map((t: any) => ({
-        ...t,
-        creatorProfile: profileMap[t.user_id],
-        completedByProfile: t.completed_by ? profileMap[t.completed_by] : null
+      setSpotlights(safeSpotlights.map((s: any) => ({
+        ...s,
+        nominatorProfile: profileMap[s.user_id],
+        honoreeProfile: profileMap[s.honoree_id]
       })));
 
       const enrichedMilestones = safeMilestones
@@ -424,6 +435,7 @@ export default function Hub() {
     }
   };
 
+  // SAVE FAMILY VIBE / STATUS
   const handleSaveStatus = async () => {
     if (!supabase || !userId) return;
     setIsSavingStatus(true);
@@ -448,6 +460,39 @@ export default function Hub() {
     }
   };
 
+  // FAMILY SPOTLIGHT ACTIONS
+  const handleCreateSpotlight = async () => {
+    if (!spotlightHonoreeId || !spotlightTitle.trim() || !spotlightReason.trim() || !supabase || !userId) return;
+    setIsSavingSpotlight(true);
+    try {
+      const { error } = await supabase.from('family_spotlights').insert([{
+        user_id: userId,
+        honoree_id: spotlightHonoreeId,
+        category: spotlightCategory,
+        title: spotlightTitle.trim(),
+        reason: spotlightReason.trim()
+      }]);
+      if (error) throw error;
+      setSpotlightHonoreeId('');
+      setSpotlightTitle('');
+      setSpotlightReason('');
+      setIsAddingSpotlightOpen(false);
+      await fetchCommunityData();
+    } catch (err: any) {
+      alert("Error saving spotlight: " + err.message);
+    } finally {
+      setIsSavingSpotlight(false);
+    }
+  };
+
+  const handleDeleteSpotlight = async (id: string) => {
+    if (!confirm("Remove this family spotlight?")) return;
+    const { error } = await supabase!.from('family_spotlights').delete().eq('id', id);
+    if (error) alert("Error deleting spotlight: " + error.message);
+    fetchCommunityData();
+  };
+
+  // MILESTONE ACTIONS
   const handleCreateMilestone = async () => {
     if (!milestoneTitle.trim() || !milestoneDate || !supabase || !userId) return;
     setIsSavingMilestone(true);
@@ -531,51 +576,6 @@ export default function Hub() {
     } finally { 
       setIsPraying(false); 
     }
-  };
-
-  const handleCreateTask = async () => {
-    if (!newTaskTitle.trim() || !supabase || !userId) return;
-    setIsAddingTask(true);
-    try {
-      const { error } = await supabase.from('family_tasks').insert([{
-        user_id: userId,
-        title: newTaskTitle.trim(),
-        category: newTaskCategory,
-        is_completed: false
-      }]);
-      if (error) throw error;
-      setNewTaskTitle('');
-      await fetchCommunityData();
-    } catch (err: any) {
-      alert("Error adding task: " + err.message);
-    } finally {
-      setIsAddingTask(false);
-    }
-  };
-
-  const toggleFamilyTask = async (task: any) => {
-    if (!userId || !supabase) return;
-    try {
-      const nextStatus = !task.is_completed;
-      const { error } = await supabase
-        .from('family_tasks')
-        .update({ 
-          is_completed: nextStatus, 
-          completed_by: nextStatus ? userId : null 
-        })
-        .eq('id', task.id);
-      if (error) throw error;
-      await fetchCommunityData();
-    } catch (err: any) {
-      console.error("Error toggling task:", err);
-    }
-  };
-
-  const handleDeleteTask = async (id: string) => {
-    if (!confirm("Remove this item from the family checklist?")) return;
-    const { error } = await supabase!.from('family_tasks').delete().eq('id', id);
-    if (error) alert("Error deleting item: " + error.message);
-    fetchCommunityData();
   };
 
   const togglePrayingForRequest = async (prayerId: string, hasPrayed: boolean) => {
@@ -739,9 +739,9 @@ export default function Hub() {
   const activePrayersCount = prayers.filter(p => !p.is_answered).length;
   const answeredPrayersCount = prayers.filter(p => p.is_answered).length;
   const filteredPrayers = prayers.filter(p => prayerFilter === 'answered' ? p.is_answered : !p.is_answered);
-  const completedTasksCount = familyTasks.filter(t => t.is_completed).length;
   const otherFamilyMembers = familyMembers.filter(m => m.id !== userId);
   const nextMilestone = milestones.length > 0 ? milestones[0] : null;
+  const currentSpotlight = spotlights.length > 0 ? spotlights[0] : null;
   const newPostsCount = lastSeenAt
     ? posts.filter(p => p.user_id !== userId && new Date(p.created_at) > new Date(lastSeenAt)).length
     : posts.filter(p => p.user_id !== userId).length;
@@ -827,7 +827,7 @@ export default function Hub() {
           <>
             {/* TOP HORIZONTAL FAMILY MEMBER CIRCLE BAR */}
             {showTopMemberBar && familyMembers.length > 0 && (
-              <div className="max-w-6xl mx-auto mb-5 relative z-10">
+              <div className="max-w-5xl mx-auto mb-5 relative z-10">
                 <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] px-4 py-3 flex items-center gap-3.5 overflow-x-auto custom-scrollbar">
                   {familyMembers.map(member => {
                     const isSelected = viewingMember?.id === member.id && activeTab === 'member_view';
@@ -855,7 +855,6 @@ export default function Hub() {
                             )}
                           </div>
 
-                          {/* Unread DM Badge */}
                           {unreadCount > 0 && (
                             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow">
                               {unreadCount}
@@ -872,9 +871,9 @@ export default function Hub() {
               </div>
             )}
 
-            {/* MILLERITES FAMILY TIMELINE - COLLAPSIBLE APPLE GLASS MODULES */}
+            {/* MILLERITES FAMILY HUB */}
             {activeTab === 'millerites' && profile.is_millerite && (
-              <div className="animate-in fade-in duration-500 max-w-6xl mx-auto relative z-10 space-y-5">
+              <div className="animate-in fade-in duration-500 max-w-5xl mx-auto relative z-10 space-y-5">
                 
                 <WelcomeTourModal
                   isOpen={showWelcomeTour}
@@ -889,7 +888,6 @@ export default function Hub() {
 
                 {/* TOP BENTO HEADER ROW */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                  {/* Welcome Bento Card */}
                   <div className="md:col-span-8 bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
                     <div className="absolute -right-12 -top-12 w-48 h-48 bg-gradient-to-br from-amber-200/40 to-orange-300/20 rounded-full blur-2xl pointer-events-none" />
                     
@@ -923,12 +921,12 @@ export default function Hub() {
                         Millerites
                       </h1>
                       <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-xl leading-relaxed">
-                        Tap any section below to open it, or tap a family member's photo at the top to view their profile and send a DM.
+                        Private family updates, weekly spotlights, milestones, and prayer requests to keep our crew connected.
                       </p>
                     </div>
                   </div>
 
-                  {/* Dark Navy Accent Bento Card (Family Pulse) */}
+                  {/* Family Pulse Card */}
                   <div className="md:col-span-4 bg-[#1C1C2E] text-white shadow-[0_12px_35px_rgba(28,28,46,0.18)] rounded-[32px] p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
                     <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-400/15 rounded-full blur-2xl pointer-events-none" />
                     
@@ -975,1015 +973,1034 @@ export default function Hub() {
                   </div>
                 </div>
 
-                {/* COLLAPSIBLE MODULE 1: FAMILY VIBE CHECK */}
-                <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => toggleModule('vibe')}
-                    className="w-full p-5 sm:p-6 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                        <Smile size={18} />
-                      </span>
-                      <div>
-                        <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm leading-none">
-                          Family Vibe Check
-                        </h3>
-                        <p className="text-[11px] text-slate-400 font-medium mt-1">
-                          {profile.status_emoji || '👋🏾'} {profile.status_text || 'Tap to share your daily vibe'} • {familyMembers.length} members
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full hidden sm:inline">
-                        {openModules.vibe ? 'Hide' : 'Open'}
-                      </span>
-                      <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${openModules.vibe ? 'rotate-180 text-slate-900' : ''}`} />
-                    </div>
-                  </button>
+                {/* COLLAPSIBLE MODULES STACKED ABOVE THE TIMELINE */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 
-                  {openModules.vibe && (
-                    <div className="px-5 sm:px-6 pb-6 pt-1 border-t border-slate-100 animate-in fade-in duration-200">
-                      <div className="flex justify-end mb-3 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsEditingStatus(!isEditingStatus)}
-                          className="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
-                        >
-                          <span>{profile.status_emoji || '👋🏾'}</span>
-                          <span>{isEditingStatus ? 'Close Editor' : 'Update My Vibe'}</span>
-                        </button>
-                      </div>
-
-                      {isEditingStatus && (
-                        <div className="mb-5 p-4 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-3 animate-in fade-in">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                              Choose Your Vibe Emoji ({VIBE_EMOJIS.length} Options)
-                            </span>
-                            <span className="text-xs font-bold text-slate-700">
-                              Selected: <span className="text-base">{statusEmojiInput}</span>
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-8 sm:grid-cols-13 gap-1.5 max-h-36 overflow-y-auto p-1 bg-white/70 rounded-xl border border-slate-200/60 custom-scrollbar">
-                            {VIBE_EMOJIS.map(emoji => (
-                              <button
-                                key={emoji}
-                                type="button"
-                                onClick={() => setStatusEmojiInput(emoji)}
-                                className={`h-9 rounded-xl text-lg flex items-center justify-center transition-all ${
-                                  statusEmojiInput === emoji
-                                    ? 'bg-[#1C1C2E] text-white shadow-md scale-105'
-                                    : 'bg-white border border-slate-200/70 hover:bg-slate-100'
-                                }`}
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              maxLength={40}
-                              placeholder="What are you up to? (e.g. At the kids' game, Coffee run...)"
-                              value={statusTextInput}
-                              onChange={(e) => setStatusTextInput(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSaveStatus()}
-                              className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleSaveStatus}
-                              disabled={isSavingStatus}
-                              className="bg-[#1C1C2E] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-50 shrink-0"
-                            >
-                              {isSavingStatus ? 'Saving...' : 'Save Vibe'}
-                            </button>
-                          </div>
+                  {/* 1. FAMILY VIBE CHECK (Collapsible) */}
+                  <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleModule('vibe')}
+                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
+                          <Smile size={18} />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
+                            Family Vibe Check
+                          </h3>
+                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
+                            {profile.status_emoji || '👋🏾'} {profile.status_text || 'Tap to share your daily vibe'}
+                          </p>
                         </div>
-                      )}
+                      </div>
+                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.vibe ? 'rotate-180 text-slate-900' : ''}`} />
+                    </button>
 
-                      <div className="flex items-end gap-5 overflow-x-auto pt-2 pb-2 px-1 custom-scrollbar">
-                        <div 
-                          onClick={() => setIsEditingStatus(!isEditingStatus)}
-                          className="flex flex-col items-center shrink-0 cursor-pointer group relative w-24"
-                        >
-                          <div className="mb-2 px-2.5 py-1 rounded-2xl bg-[#1C1C2E] text-white text-[10px] font-bold shadow-md max-w-[100px] truncate text-center">
-                            <span>{profile.status_emoji || '👋🏾'}</span>{' '}
-                            <span>{profile.status_text || 'Set status'}</span>
-                          </div>
-                          <div className="relative">
-                            <div className="w-16 h-16 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-[#ff4d00] overflow-hidden shadow-md group-hover:scale-105 transition-transform">
-                              {profile.avatar_url ? (
-                                <img src={profile.avatar_url} className="w-full h-full object-cover rounded-[14px]" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-lg font-black text-slate-700">
-                                  {profile.first_name?.[0] || 'M'}
-                                </div>
-                              )}
-                            </div>
-                            <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#ff4d00] text-white flex items-center justify-center text-xs shadow">
-                              +
-                            </span>
-                          </div>
-                          <span className="text-xs font-bold text-slate-900 mt-2 truncate w-full text-center">
-                            You
-                          </span>
-                        </div>
-
-                        {otherFamilyMembers.map(member => (
-                          <div
-                            key={member.id}
-                            onClick={() => openMemberProfile(member.id)}
-                            className="flex flex-col items-center shrink-0 cursor-pointer group relative w-24"
+                    {openModules.vibe && (
+                      <div className="px-5 pb-5 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
+                        <div className="flex justify-end mb-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingStatus(!isEditingStatus)}
+                            className="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
                           >
-                            <div className="mb-2 px-2.5 py-1 rounded-2xl bg-slate-100 border border-slate-200/80 text-slate-700 text-[10px] font-bold shadow-sm max-w-[105px] truncate text-center group-hover:bg-white transition-colors">
-                              <span>{member.status_emoji || '👋🏾'}</span>{' '}
-                              <span>{member.status_text || 'Checking in'}</span>
+                            <span>{profile.status_emoji || '👋🏾'}</span>
+                            <span>{isEditingStatus ? 'Close Editor' : 'Update My Vibe'}</span>
+                          </button>
+                        </div>
+
+                        {isEditingStatus && (
+                          <div className="mb-4 p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-3 animate-in fade-in">
+                            <div className="grid grid-cols-8 gap-1.5 max-h-32 overflow-y-auto p-1 bg-white/70 rounded-xl border border-slate-200/60 custom-scrollbar">
+                              {VIBE_EMOJIS.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => setStatusEmojiInput(emoji)}
+                                  className={`h-8 rounded-xl text-base flex items-center justify-center transition-all ${
+                                    statusEmojiInput === emoji
+                                      ? 'bg-[#1C1C2E] text-white shadow-md scale-105'
+                                      : 'bg-white border border-slate-200/70 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
                             </div>
-                            <div className="w-16 h-16 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-slate-200/80 group-hover:ring-amber-400 overflow-hidden shadow-sm group-hover:scale-105 transition-all">
-                              {member.avatar_url ? (
-                                <img src={member.avatar_url} className="w-full h-full object-cover rounded-[14px]" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-lg font-black text-slate-600">
-                                  {member.first_name?.[0] || 'M'}
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900 mt-2 truncate w-full text-center">
-                              {member.first_name || 'Family'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* MAIN BENTO WORKSPACE GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                  
-                  {/* LEFT COLUMN: COLLAPSIBLE MODULE 2 (FAMILY TIMELINE) */}
-                  <div className="lg:col-span-8">
-                    <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => toggleModule('timeline')}
-                        className="w-full p-5 sm:p-6 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                            <MessageSquare size={18} />
-                          </span>
-                          <div>
-                            <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm leading-none">
-                              Family Timeline
-                            </h3>
-                            <p className="text-[11px] text-slate-400 font-medium mt-1">
-                              {posts.length} {posts.length === 1 ? 'post' : 'posts'} • Share photos, videos, and updates
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {newPostsCount > 0 && (
-                            <span className="text-[10px] font-extrabold text-white bg-[#ff4d00] px-2.5 py-1 rounded-full">
-                              {newPostsCount} New
-                            </span>
-                          )}
-                          <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${openModules.timeline ? 'rotate-180 text-slate-900' : ''}`} />
-                        </div>
-                      </button>
-
-                      {openModules.timeline && (
-                        <div className="px-4 sm:px-6 pb-6 pt-3 border-t border-slate-100 space-y-5 animate-in fade-in duration-200">
-                          {/* Post Composer */}
-                          <div className="bg-slate-50/90 border border-slate-200/70 p-4 sm:p-5 rounded-[24px] relative">
-                            <div className="flex gap-3.5 items-start">
-                              <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 shrink-0 flex items-center justify-center text-sm font-bold text-slate-700 overflow-hidden shadow-sm">
-                                {profile.avatar_url ? (
-                                  <img src={profile.avatar_url} className="w-full h-full object-cover" />
-                                ) : (
-                                  profile.first_name?.[0] || 'M'
-                                )}
-                              </div>
-                              <div className="flex-1 relative">
-                                <textarea 
-                                  rows={2} 
-                                  placeholder="Share a family update, photo, or type @ to tag someone..." 
-                                  value={newPost} 
-                                  onChange={(e) => handlePostTextChange(e.target.value)}
-                                  className="w-full bg-transparent text-slate-800 text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400 pt-1"
-                                />
-
-                                {mentionTarget === 'post' && filteredMentionMembers.length > 0 && (
-                                  <div className="mt-1 mb-2 bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-xl p-1.5 max-h-48 overflow-y-auto z-30">
-                                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-2.5 py-1">
-                                      Tag a Family Member
-                                    </p>
-                                    {filteredMentionMembers.map(member => (
-                                      <button
-                                        key={member.id}
-                                        type="button"
-                                        onClick={() => insertMention(member)}
-                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 transition-colors text-left"
-                                      >
-                                        <div className="w-7 h-7 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
-                                          {member.avatar_url ? (
-                                            <img src={member.avatar_url} className="w-full h-full object-cover" />
-                                          ) : (
-                                            member.first_name?.[0] || 'M'
-                                          )}
-                                        </div>
-                                        <div>
-                                          <p className="text-xs font-bold text-slate-900 leading-none">
-                                            {member.first_name} {member.last_name}
-                                          </p>
-                                          <p className="text-[10px] text-[#ff4d00] font-semibold mt-0.5">
-                                            @{member.first_name}
-                                          </p>
-                                        </div>
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {postMediaUrl && (
-                                  <div className="relative mt-3 inline-block">
-                                    {isVideo(postMediaUrl) ? (
-                                      <video src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" autoPlay muted loop playsInline />
-                                    ) : (
-                                      <img src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" />
-                                    )}
-                                    <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-slate-900 text-white rounded-full p-1.5 shadow-md hover:bg-red-500 transition-colors">
-                                      <X size={12}/>
-                                    </button>
-                                  </div>
-                                )}
-                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200/60">
-                                  <div className="flex items-center gap-1">
-                                    <button 
-                                      onClick={() => fileInputRef.current?.click()} 
-                                      className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-white transition-colors"
-                                    >
-                                      <ImageIcon size={16} className="text-[#ff4d00]" />
-                                      <span>Photo / Video</span>
-                                      <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handlePostTextChange(newPost + (newPost && !newPost.endsWith(' ') ? ' @' : '@'))}
-                                      className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-white transition-colors"
-                                      title="Tag a family member"
-                                    >
-                                      <AtSign size={15} className="text-[#ff4d00]" />
-                                      <span className="hidden sm:inline">Tag</span>
-                                    </button>
-                                  </div>
-                                  <button 
-                                    onClick={handleCreatePost} 
-                                    disabled={isPosting || (!newPost.trim() && !postMediaUrl)} 
-                                    className="bg-[#1C1C2E] hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-2 shadow-md shadow-slate-900/10 transition-all disabled:opacity-40"
-                                  >
-                                    {isPosting ? 'Posting...' : 'Post'} <Send size={13} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Feed Cards */}
-                          <div className="space-y-4">
-                            {posts.length === 0 ? (
-                              <div className="bg-slate-50/70 border border-slate-100 rounded-[24px] p-10 text-center">
-                                <p className="text-slate-400 text-sm font-medium">No family updates yet. Be the first to share!</p>
-                              </div>
-                            ) : (
-                              posts.map(post => {
-                                const isOwnPost = post.user_id === userId;
-                                const myReaction = post.likes.find((l: any) => l.user_id === userId)?.emoji;
-                                
-                                return (
-                                  <div key={post.id} className="bg-white border border-slate-200/60 p-5 sm:p-6 rounded-[24px] shadow-sm transition-all">
-                                    <div className="flex items-start justify-between mb-4 relative">
-                                      <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => openMemberProfile(post.user_id)}>
-                                        <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/70 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 overflow-hidden shadow-sm">
-                                          {post.profile?.avatar_url ? (
-                                            <img src={post.profile.avatar_url} className="w-full h-full object-cover" />
-                                          ) : (
-                                            post.profile?.first_name?.[0] || 'M'
-                                          )}
-                                        </div>
-                                        <div>
-                                          <p className="text-slate-900 text-sm font-bold group-hover:text-[#ff4d00] transition-colors">
-                                            {post.profile?.first_name ? `${post.profile.first_name} ${post.profile.last_name}` : 'Family Member'}
-                                          </p>
-                                          <p className="text-slate-400 text-[11px] font-medium">{formatTime(post.created_at)}</p>
-                                        </div>
-                                      </div>
-                                      
-                                      {isOwnPost && (
-                                        <div className="relative">
-                                          <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
-                                            <MoreVertical size={16} />
-                                          </button>
-                                          {menuOpenId === post.id && (
-                                            <div className="absolute right-0 mt-1 w-36 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-xl py-1.5 z-20">
-                                              <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2">
-                                                <Edit2 size={13}/> Edit Post
-                                              </button>
-                                              <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                                <Trash2 size={13}/> Delete
-                                              </button>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {editingPostId === post.id ? (
-                                      <div className="mb-4">
-                                        <textarea 
-                                          value={editContent} 
-                                          onChange={(e) => setEditContent(e.target.value)} 
-                                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400" 
-                                        />
-                                        <div className="flex gap-2 justify-end mt-2.5">
-                                          <button onClick={() => setEditingPostId(null)} className="text-xs font-semibold text-slate-500 px-3 py-1.5 rounded-xl hover:bg-slate-100">
-                                            Cancel
-                                          </button>
-                                          <button onClick={() => submitEdit(post.id)} className="bg-[#1C1C2E] text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm">
-                                            Save
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        {post.content && (
-                                          <p className="text-slate-700 text-[15px] leading-relaxed mb-4 whitespace-pre-wrap">
-                                            {renderTextWithMentions(post.content)}
-                                          </p>
-                                        )}
-                                        {post.media_url && (
-                                          <div className="rounded-2xl overflow-hidden mb-4 border border-slate-100 bg-slate-50">
-                                            {isVideo(post.media_url) ? (
-                                              <video src={post.media_url} controls playsInline className="w-full max-h-[480px] object-contain" />
-                                            ) : (
-                                              <img src={post.media_url} className="w-full max-h-[520px] object-cover" />
-                                            )}
-                                          </div>
-                                        )}
-                                      </>
-                                    )}
-
-                                    <div className="border-t border-slate-100 pt-3 space-y-2.5">
-                                      <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          {POST_REACTIONS.map(emoji => {
-                                            const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
-                                            const isSelected = myReaction === emoji;
-                                            return (
-                                              <button
-                                                key={emoji}
-                                                type="button"
-                                                onClick={() => toggleReaction(post, emoji)}
-                                                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                                                  isSelected
-                                                    ? 'bg-[#1C1C2E] text-white shadow-sm'
-                                                    : count > 0
-                                                    ? 'bg-amber-500/10 text-slate-800 border border-amber-500/20 hover:bg-amber-500/20'
-                                                    : 'bg-slate-100/80 text-slate-500 hover:bg-slate-200/70'
-                                                }`}
-                                              >
-                                                <span className="text-sm leading-none">{emoji}</span>
-                                                {count > 0 && <span className="text-[11px]">{count}</span>}
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-
-                                        <div className="flex items-center gap-1">
-                                          <button 
-                                            onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                          >
-                                            <MessageSquare size={15} /> 
-                                            <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
-                                          </button>
-
-                                          <button 
-                                            onClick={() => handleRepost(post)} 
-                                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                            title="Repost"
-                                          >
-                                            <Repeat size={15} />
-                                          </button>
-                                        </div>
-                                      </div>
-
-                                      {post.likes.length > 0 && (
-                                        <div>
-                                          <button
-                                            type="button"
-                                            onClick={() => setExpandedReactionsPostId(expandedReactionsPostId === post.id ? null : post.id)}
-                                            className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-                                          >
-                                            <div className="flex -space-x-1.5">
-                                              {post.likes.slice(0, 4).map((like: any) => (
-                                                <div
-                                                  key={like.id || like.user_id}
-                                                  className="w-5 h-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
-                                                >
-                                                  {like.profile?.avatar_url ? (
-                                                    <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
-                                                  ) : (
-                                                    like.profile?.first_name?.[0] || 'M'
-                                                  )}
-                                                </div>
-                                              ))}
-                                            </div>
-                                            <span>
-                                              {post.likes.length === 1
-                                                ? `${post.likes[0].profile?.first_name || 'Someone'} reacted`
-                                                : post.likes.length === 2
-                                                ? `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes[1].profile?.first_name || '1 other'} reacted`
-                                                : `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes.length - 1} others reacted`}
-                                            </span>
-                                          </button>
-
-                                          {expandedReactionsPostId === post.id && (
-                                            <div className="mt-2 p-3 bg-slate-50/90 border border-slate-200/70 rounded-2xl space-y-2 animate-in fade-in">
-                                              {post.likes.map((like: any) => (
-                                                <div
-                                                  key={like.id || like.user_id}
-                                                  onClick={() => openMemberProfile(like.user_id)}
-                                                  className="flex items-center justify-between gap-2 cursor-pointer group"
-                                                >
-                                                  <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-700">
-                                                      {like.profile?.avatar_url ? (
-                                                        <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
-                                                      ) : (
-                                                        like.profile?.first_name?.[0] || 'M'
-                                                      )}
-                                                    </div>
-                                                    <span className="text-xs font-bold text-slate-800 group-hover:text-[#ff4d00] transition-colors">
-                                                      {like.profile?.first_name ? `${like.profile.first_name} ${like.profile.last_name || ''}`.trim() : 'Family Member'}
-                                                    </span>
-                                                  </div>
-                                                  <span className="text-sm">{like.emoji || '❤️'}</span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {(replyingToPostId === post.id || post.replies.length > 0) && (
-                                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                                        {post.replies.map((reply:any) => (
-                                          <div key={reply.id} className="flex gap-3 items-start">
-                                            <div 
-                                              className="w-7 h-7 rounded-xl bg-slate-100 border border-slate-200/70 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
-                                              onClick={() => openMemberProfile(reply.user_id)}
-                                            >
-                                              {reply.profiles?.avatar_url ? (
-                                                <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
-                                              ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-600 font-bold">
-                                                  {reply.profiles?.first_name?.[0] || 'M'}
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="bg-slate-100/80 border border-slate-200/50 rounded-2xl px-4 py-2.5 flex-1">
-                                              <div className="flex items-center justify-between mb-0.5">
-                                                <span 
-                                                  className="text-xs font-bold text-slate-900 hover:text-[#ff4d00] cursor-pointer" 
-                                                  onClick={() => openMemberProfile(reply.user_id)}
-                                                >
-                                                  {reply.profiles?.first_name || 'Family'}
-                                                </span>
-                                                <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
-                                              </div>
-                                              <p className="text-xs text-slate-700 leading-relaxed">
-                                                {renderTextWithMentions(reply.content)}
-                                              </p>
-                                            </div>
-                                          </div>
-                                        ))}
-                                        {replyingToPostId === post.id && (
-                                          <div className="pt-1 space-y-2">
-                                            {mentionTarget === 'reply' && filteredMentionMembers.length > 0 && (
-                                              <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-lg p-1.5 max-h-40 overflow-y-auto">
-                                                {filteredMentionMembers.map(member => (
-                                                  <button
-                                                    key={member.id}
-                                                    type="button"
-                                                    onClick={() => insertMention(member)}
-                                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors text-left"
-                                                  >
-                                                    <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[9px] font-bold text-slate-700">
-                                                      {member.avatar_url ? (
-                                                        <img src={member.avatar_url} className="w-full h-full object-cover" />
-                                                      ) : (
-                                                        member.first_name?.[0] || 'M'
-                                                      )}
-                                                    </div>
-                                                    <span className="text-xs font-bold text-slate-800">{member.first_name} {member.last_name}</span>
-                                                    <span className="text-[10px] text-[#ff4d00] font-semibold ml-auto">@{member.first_name}</span>
-                                                  </button>
-                                                ))}
-                                              </div>
-                                            )}
-                                            <div className="flex gap-2">
-                                              <input 
-                                                autoFocus 
-                                                type="text" 
-                                                placeholder="Write a reply or type @ to tag..." 
-                                                value={replyContent} 
-                                                onChange={(e) => handleReplyTextChange(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && !mentionTarget && submitReply(post.id)}
-                                                className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
-                                              />
-                                              <button 
-                                                onClick={() => submitReply(post.id)} 
-                                                className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
-                                              >
-                                                <Send size={13}/>
-                                              </button>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* RIGHT COLUMN: COLLAPSIBLE MODULES 3, 4 & 5 */}
-                  <div className="lg:col-span-4 space-y-5">
-
-                    {/* COLLAPSIBLE MODULE 3: UPCOMING MILESTONES */}
-                    <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => toggleModule('milestones')}
-                        className="w-full p-5 sm:p-6 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                            <CalendarHeart size={18} />
-                          </span>
-                          <div className="min-w-0">
-                            <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm leading-none">
-                              Upcoming Milestones
-                            </h3>
-                            <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
-                              {nextMilestone ? `${nextMilestone.emoji} ${nextMilestone.title} (${nextMilestone.label})` : `${milestones.length} dates saved`}
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.milestones ? 'rotate-180 text-slate-900' : ''}`} />
-                      </button>
-
-                      {openModules.milestones && (
-                        <div className="px-5 sm:px-6 pb-6 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
-                          <div className="flex justify-end mb-3">
-                            <button
-                              type="button"
-                              onClick={() => setIsAddingMilestoneFormOpen(!isAddingMilestoneFormOpen)}
-                              className="text-[10px] font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
-                            >
-                              <Plus size={11} /> {isAddingMilestoneFormOpen ? 'Close' : 'Add Milestone'}
-                            </button>
-                          </div>
-
-                          {isAddingMilestoneFormOpen && (
-                            <div className="mb-4 p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-2.5 animate-in fade-in">
-                              <div className="flex gap-1.5 overflow-x-auto pb-1">
-                                {MILESTONE_TYPES.map(type => (
-                                  <button
-                                    key={type.label}
-                                    type="button"
-                                    onClick={() => setMilestoneCategory(type.label)}
-                                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1 transition-all ${
-                                      milestoneCategory === type.label
-                                        ? 'bg-[#1C1C2E] text-white shadow-sm'
-                                        : 'bg-white border border-slate-200/70 text-slate-600'
-                                    }`}
-                                  >
-                                    <span>{type.emoji}</span>
-                                    <span>{type.label}</span>
-                                  </button>
-                                ))}
-                              </div>
+                            <div className="flex gap-2">
                               <input
                                 type="text"
-                                placeholder="Event title (e.g. Sarah's Birthday, Lake Trip)"
-                                value={milestoneTitle}
-                                onChange={(e) => setMilestoneTitle(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                                maxLength={40}
+                                placeholder="What are you up to today?"
+                                value={statusTextInput}
+                                onChange={(e) => setStatusTextInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSaveStatus()}
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
                               />
-                              <div className="flex gap-2">
-                                <input
-                                  type="date"
-                                  value={milestoneDate}
-                                  onChange={(e) => setMilestoneDate(e.target.value)}
-                                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-slate-400"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleCreateMilestone}
-                                  disabled={isSavingMilestone || !milestoneTitle.trim() || !milestoneDate}
-                                  className="bg-[#1C1C2E] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-40 shrink-0"
-                                >
-                                  {isSavingMilestone ? '...' : 'Save'}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                            {milestones.length === 0 ? (
-                              <div className="text-center py-6 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
-                                <p className="text-slate-400 text-xs font-medium">
-                                  No birthdays, anniversaries, or trips logged yet.
-                                </p>
-                              </div>
-                            ) : (
-                              milestones.map((ms, idx) => (
-                                <div
-                                  key={ms.id}
-                                  className={`group p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                    ms.daysUntil === 0
-                                      ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-amber-400/50 shadow-sm'
-                                      : idx === 0
-                                      ? 'bg-white border-slate-200/80 shadow-sm'
-                                      : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/60 flex items-center justify-center text-lg shrink-0">
-                                      {ms.emoji || '🎂'}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="text-xs font-bold text-slate-900 truncate">
-                                        {ms.title}
-                                      </p>
-                                      <p className="text-[10px] font-semibold text-slate-400">
-                                        {ms.formattedDate} • {ms.category}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    <span
-                                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
-                                        ms.daysUntil === 0
-                                          ? 'bg-[#ff4d00] text-white shadow-sm'
-                                          : ms.daysUntil <= 7
-                                          ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30'
-                                          : 'bg-slate-100 text-slate-600'
-                                      }`}
-                                    >
-                                      {ms.label}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteMilestone(ms.id)}
-                                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 rounded-lg transition-all"
-                                      title="Delete milestone"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* COLLAPSIBLE MODULE 4: PRAYER WALL */}
-                    <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => toggleModule('prayers')}
-                        className="w-full p-5 sm:p-6 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                            <BookHeart size={18} />
-                          </span>
-                          <div className="min-w-0">
-                            <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm leading-none">
-                              Prayer Wall
-                            </h3>
-                            <p className="text-[11px] text-slate-400 font-medium mt-1">
-                              {activePrayersCount} Active • {answeredPrayersCount} Answered
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.prayers ? 'rotate-180 text-slate-900' : ''}`} />
-                      </button>
-
-                      {openModules.prayers && (
-                        <div className="px-5 sm:px-6 pb-6 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
-                          <div className="flex justify-end mb-4">
-                            <div className="flex bg-slate-100 p-0.5 rounded-full border border-slate-200/60">
-                              <button 
-                                onClick={() => setPrayerFilter('active')} 
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                              >
-                                Active ({activePrayersCount})
-                              </button>
-                              <button 
-                                onClick={() => setPrayerFilter('answered')} 
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'answered' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                              >
-                                Answered ({answeredPrayersCount})
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="mb-5 relative">
-                            <input 
-                              type="text" 
-                              placeholder="Share a prayer request..." 
-                              value={newPrayer} 
-                              onChange={(e) => setNewPrayer(e.target.value)} 
-                              className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
-                            />
-                            <button 
-                              onClick={handleCreatePrayer} 
-                              disabled={isPraying || !newPrayer.trim()} 
-                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#1C1C2E] text-white p-2 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-40"
-                            >
-                              <Send size={12} />
-                            </button>
-                          </div>
-
-                          <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
-                            {filteredPrayers.length === 0 ? (
-                              <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
-                                <p className="text-slate-400 text-xs font-medium">
-                                  {prayerFilter === 'answered' ? 'No answered prayers marked yet. Keep praying!' : 'No active prayer requests right now.'}
-                                </p>
-                              </div>
-                            ) : (
-                              filteredPrayers.map(prayer => {
-                                const isOwnPrayer = prayer.user_id === userId;
-                                const intercessions = prayer.intercessions || [];
-                                const hasPrayed = intercessions.some((i: any) => i.user_id === userId);
-
-                                return (
-                                  <div 
-                                    key={prayer.id} 
-                                    className={`p-4 rounded-2xl transition-all shadow-sm border ${
-                                      prayer.is_answered 
-                                        ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/50 border-amber-200/80' 
-                                        : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
-                                    }`}
-                                  >
-                                    <div className="flex justify-between items-start gap-2 mb-2">
-                                      <div className="flex items-center gap-2 cursor-pointer group" onClick={() => openMemberProfile(prayer.user_id)}>
-                                        <div className="w-6 h-6 rounded-lg bg-slate-200 border border-slate-300/60 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                                          {prayer.profile?.avatar_url ? (
-                                            <img src={prayer.profile.avatar_url} className="w-full h-full object-cover" />
-                                          ) : (
-                                            prayer.profile?.first_name?.[0] || 'M'
-                                          )}
-                                        </div>
-                                        <div>
-                                          <p className="text-slate-900 text-xs font-bold group-hover:text-[#ff4d00] transition-colors leading-none">
-                                            {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Family Member'}
-                                          </p>
-                                          <span className="text-[10px] font-medium text-slate-400">{formatTime(prayer.created_at)}</span>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-1">
-                                        {prayer.is_answered && (
-                                          <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                                            <CheckCircle2 size={10} className="text-amber-600" /> Answered
-                                          </span>
-                                        )}
-                                        {isOwnPrayer && (
-                                          <button 
-                                            onClick={() => handleDeletePrayer(prayer.id)} 
-                                            className="text-slate-300 hover:text-red-500 p-1 rounded-lg transition-colors"
-                                            title="Delete prayer"
-                                          >
-                                            <Trash2 size={12} />
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <p className="text-slate-700 text-xs leading-relaxed mb-3.5 whitespace-pre-wrap">
-                                      {renderTextWithMentions(prayer.content)}
-                                    </p>
-
-                                    <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/50">
-                                      <div className="flex items-center gap-2">
-                                        <button 
-                                          onClick={() => togglePrayingForRequest(prayer.id, hasPrayed)}
-                                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all ${
-                                            hasPrayed 
-                                              ? 'bg-[#1C1C2E] text-white shadow-sm' 
-                                              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
-                                          }`}
-                                        >
-                                          <span>🙏🏾</span>
-                                          <span>{hasPrayed ? 'Praying' : 'Pray'}</span>
-                                          {intercessions.length > 0 && (
-                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${hasPrayed ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                                              {intercessions.length}
-                                            </span>
-                                          )}
-                                        </button>
-
-                                        {intercessions.length > 0 && (
-                                          <div className="flex -space-x-1.5 overflow-hidden py-0.5">
-                                            {intercessions.slice(0, 4).map((intercession: any) => (
-                                              <div 
-                                                key={intercession.id} 
-                                                title={`${intercession.profile?.first_name || 'Family'} is praying`}
-                                                className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
-                                              >
-                                                {intercession.profile?.avatar_url ? (
-                                                  <img src={intercession.profile.avatar_url} className="w-full h-full object-cover" />
-                                                ) : (
-                                                  intercession.profile?.first_name?.[0] || 'M'
-                                                )}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {isOwnPrayer && (
-                                        <button 
-                                          onClick={() => togglePrayerAnswered(prayer.id, !!prayer.is_answered)}
-                                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
-                                            prayer.is_answered 
-                                              ? 'text-slate-500 hover:bg-slate-200/60' 
-                                              : 'text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
-                                          }`}
-                                        >
-                                          <CheckCircle2 size={11} />
-                                          {prayer.is_answered ? 'Move to Active' : 'Mark Answered'}
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* COLLAPSIBLE MODULE 5: FAMILY CHECKLIST */}
-                    <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => toggleModule('checklist')}
-                        className="w-full p-5 sm:p-6 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-9 h-9 rounded-2xl bg-[#1C1C2E] flex items-center justify-center text-amber-400 shrink-0">
-                            <ListTodo size={18} />
-                          </span>
-                          <div className="min-w-0">
-                            <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm leading-none">
-                              Family Checklist
-                            </h3>
-                            <p className="text-[11px] text-slate-400 font-medium mt-1">
-                              {completedTasksCount}/{familyTasks.length} Claimed
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.checklist ? 'rotate-180 text-slate-900' : ''}`} />
-                      </button>
-
-                      {openModules.checklist && (
-                        <div className="px-5 sm:px-6 pb-6 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
-                          <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
-                            {['Gatherings & Potluck', 'Trips & Holidays', 'Family To-Do'].map(cat => (
                               <button
-                                key={cat}
                                 type="button"
-                                onClick={() => setNewTaskCategory(cat)}
-                                className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
-                                  newTaskCategory === cat 
-                                    ? 'bg-[#1C1C2E] text-white shadow-sm' 
-                                    : 'bg-slate-100 text-slate-500 hover:text-slate-800'
-                                }`}
+                                onClick={handleSaveStatus}
+                                disabled={isSavingStatus}
+                                className="bg-[#1C1C2E] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-50 shrink-0"
                               >
-                                {cat}
+                                {isSavingStatus ? '...' : 'Save'}
                               </button>
-                            ))}
+                            </div>
                           </div>
+                        )}
 
-                          <div className="mb-5 relative">
-                            <input 
-                              type="text" 
-                              placeholder="Add item to bring or family task..." 
-                              value={newTaskTitle} 
-                              onChange={(e) => setNewTaskTitle(e.target.value)} 
-                              onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
-                              className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
-                            />
-                            <button 
-                              onClick={handleCreateTask} 
-                              disabled={isAddingTask || !newTaskTitle.trim()} 
-                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl transition-all disabled:opacity-40 shadow-sm"
-                            >
-                              <Plus size={13} />
-                            </button>
-                          </div>
-
-                          <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
-                            {familyTasks.length === 0 ? (
-                              <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
-                                <p className="text-slate-400 text-xs font-medium">
-                                  No items yet. Add a dish for the next family dinner or a shared to-do!
-                                </p>
+                        <div className="flex items-end gap-4 overflow-x-auto pt-2 pb-1 px-1 custom-scrollbar">
+                          <div 
+                            onClick={() => setIsEditingStatus(!isEditingStatus)}
+                            className="flex flex-col items-center shrink-0 cursor-pointer group relative w-20"
+                          >
+                            <div className="mb-1.5 px-2 py-1 rounded-2xl bg-[#1C1C2E] text-white text-[10px] font-bold shadow-md max-w-[90px] truncate text-center">
+                              <span>{profile.status_emoji || '👋🏾'}</span>{' '}
+                              <span>{profile.status_text || 'Set status'}</span>
+                            </div>
+                            <div className="relative">
+                              <div className="w-14 h-14 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-[#ff4d00] overflow-hidden shadow-md group-hover:scale-105 transition-transform">
+                                {profile.avatar_url ? (
+                                  <img src={profile.avatar_url} className="w-full h-full object-cover rounded-[14px]" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-base font-black text-slate-700">
+                                    {profile.first_name?.[0] || 'M'}
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              familyTasks.map(task => (
-                                <div 
-                                  key={task.id} 
-                                  onClick={() => toggleFamilyTask(task)}
-                                  className={`group p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                                    task.is_completed 
-                                      ? 'bg-amber-50/60 border-amber-200/70' 
-                                      : 'bg-slate-50/90 hover:bg-white border-slate-200/60 shadow-sm'
+                              <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#ff4d00] text-white flex items-center justify-center text-[10px] shadow">
+                                +
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-900 mt-1.5 truncate w-full text-center">
+                              You
+                            </span>
+                          </div>
+
+                          {otherFamilyMembers.map(member => (
+                            <div
+                              key={member.id}
+                              onClick={() => openMemberProfile(member.id)}
+                              className="flex flex-col items-center shrink-0 cursor-pointer group relative w-20"
+                            >
+                              <div className="mb-1.5 px-2 py-1 rounded-2xl bg-slate-100 border border-slate-200/80 text-slate-700 text-[10px] font-bold shadow-sm max-w-[95px] truncate text-center group-hover:bg-white transition-colors">
+                                <span>{member.status_emoji || '👋🏾'}</span>{' '}
+                                <span>{member.status_text || 'Checking in'}</span>
+                              </div>
+                              <div className="w-14 h-14 rounded-2xl bg-slate-100 p-0.5 ring-2 ring-slate-200/80 group-hover:ring-amber-400 overflow-hidden shadow-sm group-hover:scale-105 transition-all">
+                                {member.avatar_url ? (
+                                  <img src={member.avatar_url} className="w-full h-full object-cover rounded-[14px]" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-base font-black text-slate-600">
+                                    {member.first_name?.[0] || 'M'}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-[11px] font-semibold text-slate-700 group-hover:text-slate-900 mt-1.5 truncate w-full text-center">
+                                {member.first_name || 'Family'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. WEEKLY FAMILY SPOTLIGHT (Replaces Family Checklist) */}
+                  <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleModule('spotlight')}
+                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-2xl bg-[#1C1C2E] flex items-center justify-center text-amber-400 shrink-0">
+                          <Award size={18} />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
+                            Family Spotlight
+                          </h3>
+                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
+                            {currentSpotlight
+                              ? `🌟 ${currentSpotlight.honoreeProfile?.first_name || 'Family'} — ${currentSpotlight.title}`
+                              : 'Weekly member highlight & shoutouts'}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.spotlight ? 'rotate-180 text-slate-900' : ''}`} />
+                    </button>
+
+                    {openModules.spotlight && (
+                      <div className="px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200 space-y-4">
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingSpotlightOpen(!isAddingSpotlightOpen)}
+                            className="text-[10px] font-extrabold text-white bg-[#1C1C2E] hover:bg-slate-800 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
+                          >
+                            <Plus size={11} /> {isAddingSpotlightOpen ? 'Close' : 'Highlight a Member'}
+                          </button>
+                        </div>
+
+                        {/* Add Spotlight Form */}
+                        {isAddingSpotlightOpen && (
+                          <div className="p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-2.5 animate-in fade-in">
+                            <select
+                              value={spotlightHonoreeId}
+                              onChange={(e) => setSpotlightHonoreeId(e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400"
+                            >
+                              <option value="">Select family member to spotlight...</option>
+                              {familyMembers.map(m => (
+                                <option key={m.id} value={m.id}>
+                                  {m.first_name} {m.last_name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <div className="flex gap-1.5 overflow-x-auto pb-1">
+                              {SPOTLIGHT_CATEGORIES.map(cat => (
+                                <button
+                                  key={cat.label}
+                                  type="button"
+                                  onClick={() => setSpotlightCategory(cat.label)}
+                                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1 transition-all ${
+                                    spotlightCategory === cat.label
+                                      ? 'bg-[#1C1C2E] text-white shadow-sm'
+                                      : 'bg-white border border-slate-200/70 text-slate-600'
                                   }`}
                                 >
-                                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                                    <button 
-                                      type="button"
-                                      className="mt-0.5 shrink-0 text-amber-500 transition-transform active:scale-90"
-                                    >
-                                      {task.is_completed ? (
-                                        <CheckSquare size={18} className="fill-amber-500 text-white" />
-                                      ) : (
-                                        <Square size={18} className="text-slate-300 group-hover:text-amber-500" />
-                                      )}
-                                    </button>
-                                    <div className="flex-1 min-w-0">
-                                      <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">
-                                        {task.category || 'Family Event'}
-                                      </span>
-                                      <p className={`text-xs font-bold leading-snug break-words ${task.is_completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
-                                        {task.title}
-                                      </p>
-                                      {task.is_completed && task.completedByProfile && (
-                                        <div className="flex items-center gap-1.5 mt-1.5">
-                                          <div className="w-4 h-4 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700">
-                                            {task.completedByProfile.avatar_url ? (
-                                              <img src={task.completedByProfile.avatar_url} className="w-full h-full object-cover" />
-                                            ) : (
-                                              task.completedByProfile.first_name?.[0] || 'M'
-                                            )}
-                                          </div>
-                                          <span className="text-[10px] font-bold text-amber-700">
-                                            Claimed by {task.completedByProfile.first_name}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
+                                  <span>{cat.emoji}</span>
+                                  <span>{cat.label}</span>
+                                </button>
+                              ))}
+                            </div>
 
-                                  <button 
+                            <input
+                              type="text"
+                              placeholder="Headline (e.g. Made the Honor Roll, Hosted Dinner!)"
+                              value={spotlightTitle}
+                              onChange={(e) => setSpotlightTitle(e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                            />
+                            <textarea
+                              rows={2}
+                              placeholder="Share why we're celebrating them this week..."
+                              value={spotlightReason}
+                              onChange={(e) => setSpotlightReason(e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleCreateSpotlight}
+                              disabled={isSavingSpotlight || !spotlightHonoreeId || !spotlightTitle.trim() || !spotlightReason.trim()}
+                              className="w-full bg-[#ff4d00] hover:bg-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all disabled:opacity-40"
+                            >
+                              {isSavingSpotlight ? 'Publishing...' : 'Publish Weekly Spotlight'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Current Weekly Spotlight Hero Card */}
+                        {!currentSpotlight ? (
+                          <div className="text-center py-6 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                            <p className="text-slate-400 text-xs font-medium">
+                              No weekly spotlight yet. Tap "Highlight a Member" to celebrate someone's win or kindness!
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="bg-gradient-to-br from-[#1C1C2E] to-slate-800 text-white p-5 rounded-2xl relative overflow-hidden shadow-md">
+                              <div className="absolute -right-6 -top-6 w-28 h-28 bg-amber-400/20 rounded-full blur-2xl pointer-events-none" />
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-400/15 border border-amber-400/30 text-amber-300 px-2.5 py-1 rounded-full">
+                                  ✨ Weekly Spotlight • {currentSpotlight.category}
+                                </span>
+                                {currentSpotlight.user_id === userId && (
+                                  <button
                                     type="button"
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 rounded-lg transition-all shrink-0"
-                                    title="Remove item"
+                                    onClick={() => handleDeleteSpotlight(currentSpotlight.id)}
+                                    className="text-white/40 hover:text-red-400 p-1 rounded-lg transition-colors"
+                                    title="Delete spotlight"
                                   >
                                     <Trash2 size={13} />
                                   </button>
+                                )}
+                              </div>
+
+                              <div
+                                onClick={() => openMemberProfile(currentSpotlight.honoree_id)}
+                                className="flex items-center gap-3.5 cursor-pointer group mb-3"
+                              >
+                                <div className="w-14 h-14 rounded-full ring-2 ring-amber-400 bg-white/10 overflow-hidden shrink-0 flex items-center justify-center text-lg font-black">
+                                  {currentSpotlight.honoreeProfile?.avatar_url ? (
+                                    <img src={currentSpotlight.honoreeProfile.avatar_url} className="w-full h-full object-cover" />
+                                  ) : (
+                                    currentSpotlight.honoreeProfile?.first_name?.[0] || 'M'
+                                  )}
                                 </div>
-                              ))
+                                <div className="min-w-0">
+                                  <p className="text-base font-black text-white group-hover:text-amber-300 transition-colors truncate">
+                                    {currentSpotlight.honoreeProfile?.first_name} {currentSpotlight.honoreeProfile?.last_name}
+                                  </p>
+                                  <p className="text-xs font-bold text-amber-400 truncate">
+                                    {currentSpotlight.title}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-white/80 leading-relaxed whitespace-pre-wrap">
+                                {currentSpotlight.reason}
+                              </p>
+                              <p className="text-[10px] text-white/40 font-medium mt-3">
+                                Highlighted by {currentSpotlight.nominatorProfile?.first_name || 'Family'} • {formatTime(currentSpotlight.created_at)}
+                              </p>
+                            </div>
+
+                            {/* Past Spotlights */}
+                            {spotlights.length > 1 && (
+                              <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">
+                                  Previous Spotlights
+                                </p>
+                                {spotlights.slice(1).map(sp => (
+                                  <div key={sp.id} className="p-3 bg-slate-50/90 border border-slate-200/60 rounded-2xl flex items-center justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-slate-900 truncate">
+                                        {sp.honoreeProfile?.first_name} — {sp.title}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500 truncate">
+                                        {sp.category} • {formatTime(sp.created_at)}
+                                      </p>
+                                    </div>
+                                    {sp.user_id === userId && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteSpotlight(sp.id)}
+                                        className="text-slate-300 hover:text-red-500 p-1 shrink-0"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-
+                        )}
+                      </div>
+                    )}
                   </div>
 
+                  {/* 3. UPCOMING MILESTONES (Collapsible) */}
+                  <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleModule('milestones')}
+                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
+                          <CalendarHeart size={18} />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
+                            Upcoming Milestones
+                          </h3>
+                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
+                            {nextMilestone ? `${nextMilestone.emoji} ${nextMilestone.title} (${nextMilestone.label})` : `${milestones.length} dates saved`}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.milestones ? 'rotate-180 text-slate-900' : ''}`} />
+                    </button>
+
+                    {openModules.milestones && (
+                      <div className="px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
+                        <div className="flex justify-end mb-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingMilestoneFormOpen(!isAddingMilestoneFormOpen)}
+                            className="text-[10px] font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
+                          >
+                            <Plus size={11} /> {isAddingMilestoneFormOpen ? 'Close' : 'Add Milestone'}
+                          </button>
+                        </div>
+
+                        {isAddingMilestoneFormOpen && (
+                          <div className="mb-4 p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-2.5 animate-in fade-in">
+                            <div className="flex gap-1.5 overflow-x-auto pb-1">
+                              {MILESTONE_TYPES.map(type => (
+                                <button
+                                  key={type.label}
+                                  type="button"
+                                  onClick={() => setMilestoneCategory(type.label)}
+                                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1 transition-all ${
+                                    milestoneCategory === type.label
+                                      ? 'bg-[#1C1C2E] text-white shadow-sm'
+                                      : 'bg-white border border-slate-200/70 text-slate-600'
+                                  }`}
+                                >
+                                  <span>{type.emoji}</span>
+                                  <span>{type.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Event title (e.g. Sarah's Birthday, Lake Trip)"
+                              value={milestoneTitle}
+                              onChange={(e) => setMilestoneTitle(e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="date"
+                                value={milestoneDate}
+                                onChange={(e) => setMilestoneDate(e.target.value)}
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-slate-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleCreateMilestone}
+                                disabled={isSavingMilestone || !milestoneTitle.trim() || !milestoneDate}
+                                className="bg-[#1C1C2E] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all disabled:opacity-40 shrink-0"
+                              >
+                                {isSavingMilestone ? '...' : 'Save'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+                          {milestones.length === 0 ? (
+                            <div className="text-center py-6 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                              <p className="text-slate-400 text-xs font-medium">
+                                No birthdays, anniversaries, or trips logged yet.
+                              </p>
+                            </div>
+                          ) : (
+                            milestones.map((ms, idx) => (
+                              <div
+                                key={ms.id}
+                                className={`group p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                                  ms.daysUntil === 0
+                                    ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-amber-400/50 shadow-sm'
+                                    : idx === 0
+                                    ? 'bg-white border-slate-200/80 shadow-sm'
+                                    : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/60 flex items-center justify-center text-lg shrink-0">
+                                    {ms.emoji || '🎂'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-900 truncate">
+                                      {ms.title}
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-slate-400">
+                                      {ms.formattedDate} • {ms.category}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span
+                                    className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                                      ms.daysUntil === 0
+                                        ? 'bg-[#ff4d00] text-white shadow-sm'
+                                        : ms.daysUntil <= 7
+                                        ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30'
+                                        : 'bg-slate-100 text-slate-600'
+                                    }`}
+                                  >
+                                    {ms.label}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMilestone(ms.id)}
+                                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 rounded-lg transition-all"
+                                    title="Delete milestone"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 4. PRAYER WALL (Collapsible) */}
+                  <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleModule('prayers')}
+                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
+                          <BookHeart size={18} />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
+                            Prayer Wall
+                          </h3>
+                          <p className="text-[11px] text-slate-400 font-medium mt-1">
+                            {activePrayersCount} Active • {answeredPrayersCount} Answered
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.prayers ? 'rotate-180 text-slate-900' : ''}`} />
+                    </button>
+
+                    {openModules.prayers && (
+                      <div className="px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
+                        <div className="flex justify-end mb-4">
+                          <div className="flex bg-slate-100 p-0.5 rounded-full border border-slate-200/60">
+                            <button 
+                              onClick={() => setPrayerFilter('active')} 
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                              Active ({activePrayersCount})
+                            </button>
+                            <button 
+                              onClick={() => setPrayerFilter('answered')} 
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${prayerFilter === 'answered' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                              Answered ({answeredPrayersCount})
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-4 relative">
+                          <input 
+                            type="text" 
+                            placeholder="Share a prayer request..." 
+                            value={newPrayer} 
+                            onChange={(e) => setNewPrayer(e.target.value)} 
+                            className="w-full bg-slate-100/90 border border-slate-200/80 rounded-2xl pl-4 pr-11 py-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                          />
+                          <button 
+                            onClick={handleCreatePrayer} 
+                            disabled={isPraying || !newPrayer.trim()} 
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#1C1C2E] text-white p-2 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-40"
+                          >
+                            <Send size={12} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+                          {filteredPrayers.length === 0 ? (
+                            <div className="text-center py-8 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                              <p className="text-slate-400 text-xs font-medium">
+                                {prayerFilter === 'answered' ? 'No answered prayers marked yet. Keep praying!' : 'No active prayer requests right now.'}
+                              </p>
+                            </div>
+                          ) : (
+                            filteredPrayers.map(prayer => {
+                              const isOwnPrayer = prayer.user_id === userId;
+                              const intercessions = prayer.intercessions || [];
+                              const hasPrayed = intercessions.some((i: any) => i.user_id === userId);
+
+                              return (
+                                <div 
+                                  key={prayer.id} 
+                                  className={`p-4 rounded-2xl transition-all shadow-sm border ${
+                                    prayer.is_answered 
+                                      ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/50 border-amber-200/80' 
+                                      : 'bg-slate-50/90 hover:bg-white border-slate-200/60'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-start gap-2 mb-2">
+                                    <div className="flex items-center gap-2 cursor-pointer group" onClick={() => openMemberProfile(prayer.user_id)}>
+                                      <div className="w-6 h-6 rounded-lg bg-slate-200 border border-slate-300/60 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                        {prayer.profile?.avatar_url ? (
+                                          <img src={prayer.profile.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                          prayer.profile?.first_name?.[0] || 'M'
+                                        )}
+                                      </div>
+                                      <div>
+                                        <p className="text-slate-900 text-xs font-bold group-hover:text-[#ff4d00] transition-colors leading-none">
+                                          {prayer.profile?.first_name ? `${prayer.profile.first_name} ${prayer.profile.last_name}` : 'Family Member'}
+                                        </p>
+                                        <span className="text-[10px] font-medium text-slate-400">{formatTime(prayer.created_at)}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                      {prayer.is_answered && (
+                                        <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                                          <CheckCircle2 size={10} className="text-amber-600" /> Answered
+                                        </span>
+                                      )}
+                                      {isOwnPrayer && (
+                                        <button 
+                                          onClick={() => handleDeletePrayer(prayer.id)} 
+                                          className="text-slate-300 hover:text-red-500 p-1 rounded-lg transition-colors"
+                                          title="Delete prayer"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <p className="text-slate-700 text-xs leading-relaxed mb-3.5 whitespace-pre-wrap">
+                                    {renderTextWithMentions(prayer.content)}
+                                  </p>
+
+                                  <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/50">
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        onClick={() => togglePrayingForRequest(prayer.id, hasPrayed)}
+                                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all ${
+                                          hasPrayed 
+                                            ? 'bg-[#1C1C2E] text-white shadow-sm' 
+                                            : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                                        }`}
+                                      >
+                                        <span>🙏🏾</span>
+                                        <span>{hasPrayed ? 'Praying' : 'Pray'}</span>
+                                        {intercessions.length > 0 && (
+                                          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${hasPrayed ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                                            {intercessions.length}
+                                          </span>
+                                        )}
+                                      </button>
+
+                                      {intercessions.length > 0 && (
+                                        <div className="flex -space-x-1.5 overflow-hidden py-0.5">
+                                          {intercessions.slice(0, 4).map((intercession: any) => (
+                                            <div 
+                                              key={intercession.id} 
+                                              title={`${intercession.profile?.first_name || 'Family'} is praying`}
+                                              className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
+                                            >
+                                              {intercession.profile?.avatar_url ? (
+                                                <img src={intercession.profile.avatar_url} className="w-full h-full object-cover" />
+                                              ) : (
+                                                intercession.profile?.first_name?.[0] || 'M'
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {isOwnPrayer && (
+                                      <button 
+                                        onClick={() => togglePrayerAnswered(prayer.id, !!prayer.is_answered)}
+                                        className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+                                          prayer.is_answered 
+                                            ? 'text-slate-500 hover:bg-slate-200/60' 
+                                            : 'text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                                        }`}
+                                      >
+                                        <CheckCircle2 size={11} />
+                                        {prayer.is_answered ? 'Move to Active' : 'Mark Answered'}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ALWAYS-OPEN FAMILY POSTS / TIMELINE SECTION */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
+                        <MessageSquare size={16} />
+                      </span>
+                      <h2 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm">
+                        Family Posts
+                      </h2>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      {posts.length} {posts.length === 1 ? 'update' : 'updates'}
+                    </span>
+                  </div>
+
+                  {/* Post Composer */}
+                  <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 sm:p-6 rounded-[28px] relative">
+                    <div className="flex gap-3.5 items-start">
+                      <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/80 shrink-0 flex items-center justify-center text-sm font-bold text-slate-700 overflow-hidden shadow-sm">
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                        ) : (
+                          profile.first_name?.[0] || 'M'
+                        )}
+                      </div>
+                      <div className="flex-1 relative">
+                        <textarea 
+                          rows={2} 
+                          placeholder="Share a family update, photo, or type @ to tag someone..." 
+                          value={newPost} 
+                          onChange={(e) => handlePostTextChange(e.target.value)}
+                          className="w-full bg-transparent text-slate-800 text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400 pt-1"
+                        />
+
+                        {mentionTarget === 'post' && filteredMentionMembers.length > 0 && (
+                          <div className="mt-1 mb-2 bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-xl p-1.5 max-h-48 overflow-y-auto z-30">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-2.5 py-1">
+                              Tag a Family Member
+                            </p>
+                            {filteredMentionMembers.map(member => (
+                              <button
+                                key={member.id}
+                                type="button"
+                                onClick={() => insertMention(member)}
+                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 transition-colors text-left"
+                              >
+                                <div className="w-7 h-7 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
+                                  {member.avatar_url ? (
+                                    <img src={member.avatar_url} className="w-full h-full object-cover" />
+                                  ) : (
+                                    member.first_name?.[0] || 'M'
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-slate-900 leading-none">
+                                    {member.first_name} {member.last_name}
+                                  </p>
+                                  <p className="text-[10px] text-[#ff4d00] font-semibold mt-0.5">
+                                    @{member.first_name}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {postMediaUrl && (
+                          <div className="relative mt-3 inline-block">
+                            {isVideo(postMediaUrl) ? (
+                              <video src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" autoPlay muted loop playsInline />
+                            ) : (
+                              <img src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" />
+                            )}
+                            <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-slate-900 text-white rounded-full p-1.5 shadow-md hover:bg-red-500 transition-colors">
+                              <X size={12}/>
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
+                          <div className="flex items-center gap-1">
+                            <button 
+                              onClick={() => fileInputRef.current?.click()} 
+                              className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                            >
+                              <ImageIcon size={16} className="text-[#ff4d00]" />
+                              <span>Photo / Video</span>
+                              <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePostTextChange(newPost + (newPost && !newPost.endsWith(' ') ? ' @' : '@'))}
+                              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                              title="Tag a family member"
+                            >
+                              <AtSign size={15} className="text-[#ff4d00]" />
+                              <span className="hidden sm:inline">Tag</span>
+                            </button>
+                          </div>
+                          <button 
+                            onClick={handleCreatePost} 
+                            disabled={isPosting || (!newPost.trim() && !postMediaUrl)} 
+                            className="bg-[#1C1C2E] hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-2 shadow-md shadow-slate-900/10 transition-all disabled:opacity-40"
+                          >
+                            {isPosting ? 'Posting...' : 'Post'} <Send size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feed Cards */}
+                  <div className="space-y-4">
+                    {posts.length === 0 ? (
+                      <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center shadow-[0_8px_30px_rgb(0,0,0,0.03)]">
+                        <p className="text-slate-400 text-sm font-medium">No family updates yet. Be the first to share!</p>
+                      </div>
+                    ) : (
+                      posts.map(post => {
+                        const isOwnPost = post.user_id === userId;
+                        const myReaction = post.likes.find((l: any) => l.user_id === userId)?.emoji;
+                        
+                        return (
+                          <div key={post.id} className="bg-white/85 backdrop-blur-2xl border border-white p-5 sm:p-6 rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all">
+                            <div className="flex items-start justify-between mb-4 relative">
+                              <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => openMemberProfile(post.user_id)}>
+                                <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/70 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 overflow-hidden shadow-sm">
+                                  {post.profile?.avatar_url ? (
+                                    <img src={post.profile.avatar_url} className="w-full h-full object-cover" />
+                                  ) : (
+                                    post.profile?.first_name?.[0] || 'M'
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-slate-900 text-sm font-bold group-hover:text-[#ff4d00] transition-colors">
+                                    {post.profile?.first_name ? `${post.profile.first_name} ${post.profile.last_name}` : 'Family Member'}
+                                  </p>
+                                  <p className="text-slate-400 text-[11px] font-medium">{formatTime(post.created_at)}</p>
+                                </div>
+                              </div>
+                              
+                              {isOwnPost && (
+                                <div className="relative">
+                                  <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
+                                    <MoreVertical size={16} />
+                                  </button>
+                                  {menuOpenId === post.id && (
+                                    <div className="absolute right-0 mt-1 w-36 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-xl py-1.5 z-20">
+                                      <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                                        <Edit2 size={13}/> Edit Post
+                                      </button>
+                                      <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                        <Trash2 size={13}/> Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {editingPostId === post.id ? (
+                              <div className="mb-4">
+                                <textarea 
+                                  value={editContent} 
+                                  onChange={(e) => setEditContent(e.target.value)} 
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400" 
+                                />
+                                <div className="flex gap-2 justify-end mt-2.5">
+                                  <button onClick={() => setEditingPostId(null)} className="text-xs font-semibold text-slate-500 px-3 py-1.5 rounded-xl hover:bg-slate-100">
+                                    Cancel
+                                  </button>
+                                  <button onClick={() => submitEdit(post.id)} className="bg-[#1C1C2E] text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm">
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {post.content && (
+                                  <p className="text-slate-700 text-[15px] leading-relaxed mb-4 whitespace-pre-wrap">
+                                    {renderTextWithMentions(post.content)}
+                                  </p>
+                                )}
+                                {post.media_url && (
+                                  <div className="rounded-2xl overflow-hidden mb-4 border border-slate-100 bg-slate-50">
+                                    {isVideo(post.media_url) ? (
+                                      <video src={post.media_url} controls playsInline className="w-full max-h-[480px] object-contain" />
+                                    ) : (
+                                      <img src={post.media_url} className="w-full max-h-[520px] object-cover" />
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            <div className="border-t border-slate-100 pt-3 space-y-2.5">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {POST_REACTIONS.map(emoji => {
+                                    const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
+                                    const isSelected = myReaction === emoji;
+                                    return (
+                                      <button
+                                        key={emoji}
+                                        type="button"
+                                        onClick={() => toggleReaction(post, emoji)}
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all active:scale-95 ${
+                                          isSelected
+                                            ? 'bg-[#1C1C2E] text-white shadow-sm'
+                                            : count > 0
+                                            ? 'bg-amber-500/10 text-slate-800 border border-amber-500/20 hover:bg-amber-500/20'
+                                            : 'bg-slate-100/80 text-slate-500 hover:bg-slate-200/70'
+                                        }`}
+                                      >
+                                        <span className="text-sm leading-none">{emoji}</span>
+                                        {count > 0 && <span className="text-[11px]">{count}</span>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                  >
+                                    <MessageSquare size={15} /> 
+                                    <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
+                                  </button>
+
+                                  <button 
+                                    onClick={() => handleRepost(post)} 
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
+                                    title="Repost"
+                                  >
+                                    <Repeat size={15} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {post.likes.length > 0 && (
+                                <div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedReactionsPostId(expandedReactionsPostId === post.id ? null : post.id)}
+                                    className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                                  >
+                                    <div className="flex -space-x-1.5">
+                                      {post.likes.slice(0, 4).map((like: any) => (
+                                        <div
+                                          key={like.id || like.user_id}
+                                          className="w-5 h-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
+                                        >
+                                          {like.profile?.avatar_url ? (
+                                            <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                          ) : (
+                                            like.profile?.first_name?.[0] || 'M'
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <span>
+                                      {post.likes.length === 1
+                                        ? `${post.likes[0].profile?.first_name || 'Someone'} reacted`
+                                        : post.likes.length === 2
+                                        ? `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes[1].profile?.first_name || '1 other'} reacted`
+                                        : `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes.length - 1} others reacted`}
+                                    </span>
+                                  </button>
+
+                                  {expandedReactionsPostId === post.id && (
+                                    <div className="mt-2 p-3 bg-slate-50/90 border border-slate-200/70 rounded-2xl space-y-2 animate-in fade-in">
+                                      {post.likes.map((like: any) => (
+                                        <div
+                                          key={like.id || like.user_id}
+                                          onClick={() => openMemberProfile(like.user_id)}
+                                          className="flex items-center justify-between gap-2 cursor-pointer group"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-700">
+                                              {like.profile?.avatar_url ? (
+                                                <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                              ) : (
+                                                like.profile?.first_name?.[0] || 'M'
+                                              )}
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-800 group-hover:text-[#ff4d00] transition-colors">
+                                              {like.profile?.first_name ? `${like.profile.first_name} ${like.profile.last_name || ''}`.trim() : 'Family Member'}
+                                            </span>
+                                          </div>
+                                          <span className="text-sm">{like.emoji || '❤️'}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {(replyingToPostId === post.id || post.replies.length > 0) && (
+                              <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                                {post.replies.map((reply:any) => (
+                                  <div key={reply.id} className="flex gap-3 items-start">
+                                    <div 
+                                      className="w-7 h-7 rounded-xl bg-slate-100 border border-slate-200/70 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
+                                      onClick={() => openMemberProfile(reply.user_id)}
+                                    >
+                                      {reply.profiles?.avatar_url ? (
+                                        <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-600 font-bold">
+                                          {reply.profiles?.first_name?.[0] || 'M'}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="bg-slate-100/80 border border-slate-200/50 rounded-2xl px-4 py-2.5 flex-1">
+                                      <div className="flex items-center justify-between mb-0.5">
+                                        <span 
+                                          className="text-xs font-bold text-slate-900 hover:text-[#ff4d00] cursor-pointer" 
+                                          onClick={() => openMemberProfile(reply.user_id)}
+                                        >
+                                          {reply.profiles?.first_name || 'Family'}
+                                        </span>
+                                        <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
+                                      </div>
+                                      <p className="text-xs text-slate-700 leading-relaxed">
+                                        {renderTextWithMentions(reply.content)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                                {replyingToPostId === post.id && (
+                                  <div className="pt-1 space-y-2">
+                                    {mentionTarget === 'reply' && filteredMentionMembers.length > 0 && (
+                                      <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-lg p-1.5 max-h-40 overflow-y-auto">
+                                        {filteredMentionMembers.map(member => (
+                                          <button
+                                            key={member.id}
+                                            type="button"
+                                            onClick={() => insertMention(member)}
+                                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors text-left"
+                                          >
+                                            <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[9px] font-bold text-slate-700">
+                                              {member.avatar_url ? (
+                                                <img src={member.avatar_url} className="w-full h-full object-cover" />
+                                              ) : (
+                                                member.first_name?.[0] || 'M'
+                                              )}
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-800">{member.first_name} {member.last_name}</span>
+                                            <span className="text-[10px] text-[#ff4d00] font-semibold ml-auto">@{member.first_name}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <div className="flex gap-2">
+                                      <input 
+                                        autoFocus 
+                                        type="text" 
+                                        placeholder="Write a reply or type @ to tag..." 
+                                        value={replyContent} 
+                                        onChange={(e) => handleReplyTextChange(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && !mentionTarget && submitReply(post.id)}
+                                        className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
+                                      />
+                                      <button 
+                                        onClick={() => submitReply(post.id)} 
+                                        className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
+                                      >
+                                        <Send size={13}/>
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             )}
