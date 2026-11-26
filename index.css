@@ -1,0 +1,51 @@
+/* MILLERITES DARK MODE OVERRIDES */
+.millerites-dark .bg-white,
+.millerites-dark .bg-white\/80,
+.millerites-dark .bg-white\/85,
+.millerites-dark .bg-white\/95,
+.millerites-dark .bg-white\/70 {
+  background-color: rgba(24, 24, 29, 0.88) !important;
+}
+
+.millerites-dark .bg-slate-50\/90,
+.millerites-dark .bg-slate-50\/70,
+.millerites-dark .bg-slate-100,
+.millerites-dark .bg-slate-100\/90,
+.millerites-dark .bg-slate-200\/80,
+.millerites-dark .bg-slate-200\/70 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.millerites-dark .border-white,
+.millerites-dark .border-white\/90,
+.millerites-dark .border-slate-200,
+.millerites-dark .border-slate-200\/80,
+.millerites-dark .border-slate-200\/70,
+.millerites-dark .border-slate-200\/60,
+.millerites-dark .border-slate-100,
+.millerites-dark .divide-slate-200\/75 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.millerites-dark .text-slate-900,
+.millerites-dark .text-slate-800 {
+  color: #F5F5F7 !important;
+}
+
+.millerites-dark .text-slate-700,
+.millerites-dark .text-slate-600 {
+  color: rgba(245, 245, 247, 0.78) !important;
+}
+
+.millerites-dark .text-slate-500,
+.millerites-dark .text-slate-400 {
+  color: rgba(245, 245, 247, 0.5) !important;
+}
+
+.millerites-dark .ring-white {
+  --tw-ring-color: #18181d !important;
+}
+
+.millerites-dark .ring-\[\#F5F5F7\] {
+  --tw-ring-color: #050505 !important;
+}
