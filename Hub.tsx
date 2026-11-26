@@ -143,7 +143,7 @@ export default function Hub() {
   const [newPrayer, setNewPrayer] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [isPraying, setIsPraying] = useState(false);
-  const [postMediaUrl, setPostMediaUrl] = useState('');
+  const [postMediaUrls, setPostMediaUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // INTERACTION & @MENTION STATE
@@ -566,30 +566,63 @@ export default function Hub() {
     return url.match(/\.(mp4|webm|ogg|mov)$/i);
   };
 
+  // MULTI-MEDIA PARSER (Supports both legacy single URLs and JSON arrays)
+  const getPostMedia = (mediaUrl?: string | null): string[] => {
+    if (!mediaUrl) return [];
+    if (mediaUrl.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(mediaUrl);
+        return Array.isArray(parsed) ? parsed.filter(Boolean) : [mediaUrl];
+      } catch {
+        return [mediaUrl];
+      }
+    }
+    return [mediaUrl];
+  };
+
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !supabase || !userId) return;
     setIsPosting(true);
     try {
-      const file = e.target.files[0];
-      const filePath = `post-media/${userId}-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from('avatars').upload(filePath, file);
-      if (error) throw error;
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      setPostMediaUrl(data.publicUrl);
+      const files = Array.from(e.target.files);
+      const uploadedUrls: string[] = [];
+
+      for (const file of files) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = `post-media/${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safeName}`;
+        const { error } = await supabase.storage.from('avatars').upload(filePath, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        uploadedUrls.push(data.publicUrl);
+      }
+
+      setPostMediaUrls(prev => [...prev, ...uploadedUrls]);
     } catch (err: any) {
       alert("Error uploading media: " + err.message);
     } finally {
       setIsPosting(false);
+      e.target.value = '';
     }
   };
 
   const handleCreatePost = async () => {
-    if ((!newPost.trim() && !postMediaUrl) || !supabase || !userId) return;
+    if ((!newPost.trim() && postMediaUrls.length === 0) || !supabase || !userId) return;
     setIsPosting(true);
     try {
-      const { error } = await supabase.from('community_posts').insert([{ user_id: userId, content: newPost.trim(), media_url: postMediaUrl }]);
+      const mediaPayload =
+        postMediaUrls.length === 0
+          ? ''
+          : postMediaUrls.length === 1
+          ? postMediaUrls[0]
+          : JSON.stringify(postMediaUrls);
+
+      const { error } = await supabase
+        .from('community_posts')
+        .insert([{ user_id: userId, content: newPost.trim(), media_url: mediaPayload }]);
       if (error) throw error;
-      setNewPost(''); setPostMediaUrl(''); setMentionTarget(null);
+      setNewPost('');
+      setPostMediaUrls([]);
+      setMentionTarget(null);
       await fetchCommunityData(); 
     } catch (err: any) { 
       alert("Error Posting: " + err.message); 
@@ -879,6 +912,55 @@ export default function Hub() {
 
   const activePulse = pulseSlides[pulseIndex % pulseSlides.length] || pulseSlides[0];
 
+  // Reusable Swipeable Media Gallery for Single or Multi-Media Posts
+  const renderPostMedia = (mediaUrl?: string | null, isModal = false) => {
+    const mediaList = getPostMedia(mediaUrl);
+    if (mediaList.length === 0) return null;
+
+    if (mediaList.length === 1) {
+      const url = mediaList[0];
+      return (
+        <div className="rounded-2xl overflow-hidden mb-3 bg-slate-200/40">
+          {isVideo(url) ? (
+            <video src={url} controls playsInline className={`w-full ${isModal ? 'max-h-[380px]' : 'max-h-[480px]'} object-contain`} />
+          ) : (
+            <img src={url} className={`w-full ${isModal ? 'max-h-[420px]' : 'max-h-[520px]'} object-cover`} />
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative mb-3">
+        <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1 custom-scrollbar">
+          {mediaList.map((url, idx) => (
+            <div
+              key={idx}
+              className="relative shrink-0 w-[85%] sm:w-[75%] snap-center rounded-2xl overflow-hidden bg-slate-200/40"
+            >
+              {isVideo(url) ? (
+                <video
+                  src={url}
+                  controls
+                  playsInline
+                  className={`w-full ${isModal ? 'h-64' : 'h-72 sm:h-80'} object-contain bg-black`}
+                />
+              ) : (
+                <img
+                  src={url}
+                  className={`w-full ${isModal ? 'h-64' : 'h-72 sm:h-80'} object-cover`}
+                />
+              )}
+              <span className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                {idx + 1} / {mediaList.length}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Reusable Horizontal Member Circle Bar
   const renderMemberCircleBar = () => {
     if (familyMembers.length === 0) return null;
@@ -1072,15 +1154,7 @@ export default function Hub() {
                   </p>
                 )}
 
-                {activeModalPost.media_url && (
-                  <div className="rounded-2xl overflow-hidden bg-slate-200/40">
-                    {isVideo(activeModalPost.media_url) ? (
-                      <video src={activeModalPost.media_url} controls playsInline className="w-full max-h-[380px] object-contain" />
-                    ) : (
-                      <img src={activeModalPost.media_url} className="w-full max-h-[420px] object-cover" />
-                    )}
-                  </div>
-                )}
+                {renderPostMedia(activeModalPost.media_url, true)}
 
                 {/* Emoji Reactions + Repost */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200/80">
@@ -2016,7 +2090,7 @@ export default function Hub() {
                       <div className="flex-1 min-w-0 relative">
                         <textarea 
                           rows={2} 
-                          placeholder="Share a family update, photo, or type @ to tag..." 
+                          placeholder="Share a family update, photos/videos, or type @ to tag..." 
                           value={newPost} 
                           onChange={(e) => handlePostTextChange(e.target.value)}
                           className="w-full bg-transparent text-slate-800 text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400 pt-1"
@@ -2054,16 +2128,24 @@ export default function Hub() {
                           </div>
                         )}
 
-                        {postMediaUrl && (
-                          <div className="relative mt-2 inline-block">
-                            {isVideo(postMediaUrl) ? (
-                              <video src={postMediaUrl} className="h-32 rounded-xl object-cover" autoPlay muted loop playsInline />
-                            ) : (
-                              <img src={postMediaUrl} className="h-32 rounded-xl object-cover" />
-                            )}
-                            <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-slate-900 text-white rounded-full p-1 shadow hover:bg-red-500 transition-colors">
-                              <X size={11}/>
-                            </button>
+                        {postMediaUrls.length > 0 && (
+                          <div className="flex gap-2.5 overflow-x-auto mt-2.5 pb-1 custom-scrollbar">
+                            {postMediaUrls.map((url, idx) => (
+                              <div key={idx} className="relative shrink-0">
+                                {isVideo(url) ? (
+                                  <video src={url} className="h-28 w-28 rounded-xl object-cover bg-black" muted playsInline />
+                                ) : (
+                                  <img src={url} className="h-28 w-28 rounded-xl object-cover" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setPostMediaUrls(prev => prev.filter((_, i) => i !== idx))}
+                                  className="absolute -top-1.5 -right-1.5 bg-slate-900 text-white rounded-full p-1 shadow hover:bg-red-500 transition-colors"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         )}
 
@@ -2075,7 +2157,7 @@ export default function Hub() {
                             >
                               <ImageIcon size={15} className="text-[#ff4d00]" />
                               <span>Media</span>
-                              <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
+                              <input type="file" accept="image/*,video/*" multiple hidden ref={fileInputRef} onChange={handleMediaUpload} />
                             </button>
                             <button
                               type="button"
@@ -2089,7 +2171,7 @@ export default function Hub() {
                           </div>
                           <button 
                             onClick={handleCreatePost} 
-                            disabled={isPosting || (!newPost.trim() && !postMediaUrl)} 
+                            disabled={isPosting || (!newPost.trim() && postMediaUrls.length === 0)} 
                             className="bg-[#1C1C2E] hover:bg-slate-800 text-white px-5 py-1.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-1.5 transition-all disabled:opacity-35"
                           >
                             {isPosting ? 'Posting...' : 'Post'} <Send size={12} />
@@ -2174,15 +2256,7 @@ export default function Hub() {
                                       {renderTextWithMentions(post.content)}
                                     </p>
                                   )}
-                                  {post.media_url && (
-                                    <div className="rounded-2xl overflow-hidden mb-3 bg-slate-200/40">
-                                      {isVideo(post.media_url) ? (
-                                        <video src={post.media_url} controls playsInline className="w-full max-h-[480px] object-contain" />
-                                      ) : (
-                                        <img src={post.media_url} className="w-full max-h-[520px] object-cover" />
-                                      )}
-                                    </div>
-                                  )}
+                                  {renderPostMedia(post.media_url)}
                                 </>
                               )}
 
@@ -2455,31 +2529,40 @@ export default function Hub() {
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                    {currentMemberPosts.map(post => (
-                      <div
-                        key={post.id}
-                        onClick={() => setSelectedPostId(post.id)}
-                        className="aspect-square bg-white/85 backdrop-blur-xl border border-white shadow-[0_8px_25px_rgb(0,0,0,0.04)] relative group cursor-pointer overflow-hidden rounded-[24px] active:scale-[0.98] transition-transform"
-                      >
-                        {post.media_url ? (
-                          isVideo(post.media_url) ? (
-                            <video src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted playsInline />
+                    {currentMemberPosts.map(post => {
+                      const mediaList = getPostMedia(post.media_url);
+                      const coverMedia = mediaList[0];
+                      return (
+                        <div
+                          key={post.id}
+                          onClick={() => setSelectedPostId(post.id)}
+                          className="aspect-square bg-white/85 backdrop-blur-xl border border-white shadow-[0_8px_25px_rgb(0,0,0,0.04)] relative group cursor-pointer overflow-hidden rounded-[24px] active:scale-[0.98] transition-transform"
+                        >
+                          {coverMedia ? (
+                            isVideo(coverMedia) ? (
+                              <video src={coverMedia} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted playsInline />
+                            ) : (
+                              <img src={coverMedia} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            )
                           ) : (
-                            <img src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                          )
-                        ) : (
-                          <div className="w-full h-full p-5 flex flex-col justify-center items-center text-center bg-slate-50/70">
-                            <p className="text-slate-800 text-xs md:text-sm line-clamp-4 leading-relaxed font-semibold">
-                              "{post.content}"
-                            </p>
+                            <div className="w-full h-full p-5 flex flex-col justify-center items-center text-center bg-slate-50/70">
+                              <p className="text-slate-800 text-xs md:text-sm line-clamp-4 leading-relaxed font-semibold">
+                                "{post.content}"
+                              </p>
+                            </div>
+                          )}
+                          {mediaList.length > 1 && (
+                            <span className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              +{mediaList.length - 1}
+                            </span>
+                          )}
+                          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-5">
+                            <span className="text-white text-sm font-bold flex items-center gap-1.5"><Heart size={17} className="fill-white"/> {post.likes.length}</span>
+                            <span className="text-white text-sm font-bold flex items-center gap-1.5"><MessageSquare size={17} className="fill-white"/> {post.replies.length}</span>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-5">
-                          <span className="text-white text-sm font-bold flex items-center gap-1.5"><Heart size={17} className="fill-white"/> {post.likes.length}</span>
-                          <span className="text-white text-sm font-bold flex items-center gap-1.5"><MessageSquare size={17} className="fill-white"/> {post.replies.length}</span>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {currentMemberPosts.length === 0 && (
                     <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center">
