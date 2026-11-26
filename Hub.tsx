@@ -746,7 +746,52 @@ export default function Hub() {
     ? posts.filter(p => p.user_id !== userId && new Date(p.created_at) > new Date(lastSeenAt)).length
     : posts.filter(p => p.user_id !== userId).length;
 
-  const showTopMemberBar = profile.is_millerite && (activeTab === 'millerites' || activeTab === 'member_view');
+  // Reusable Horizontal Member Circle Bar
+  const renderMemberCircleBar = () => {
+    if (familyMembers.length === 0) return null;
+    return (
+      <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] px-4 py-3 flex items-center gap-3.5 overflow-x-auto custom-scrollbar">
+        {familyMembers.map(member => {
+          const isSelected = viewingMember?.id === member.id && activeTab === 'member_view';
+          const unreadCount = unreadDmSenders[member.id] || 0;
+          return (
+            <button
+              key={member.id}
+              type="button"
+              onClick={() => openMemberProfile(member.id)}
+              title={`${member.first_name || 'Family'} ${member.last_name || ''}`.trim()}
+              className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none w-14"
+            >
+              <div className="relative">
+                <div
+                  className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-xs font-black transition-all shadow-sm ${
+                    isSelected
+                      ? 'ring-2 ring-[#ff4d00] scale-105'
+                      : 'ring-2 ring-slate-200/80 group-hover:ring-amber-400 group-hover:scale-105'
+                  } bg-slate-100 text-slate-700`}
+                >
+                  {member.avatar_url ? (
+                    <img src={member.avatar_url} className="w-full h-full object-cover" />
+                  ) : (
+                    member.first_name?.[0] || 'M'
+                  )}
+                </div>
+
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[10px] font-bold truncate w-full text-center transition-colors ${isSelected ? 'text-[#ff4d00]' : 'text-slate-600 group-hover:text-slate-900'}`}>
+                {member.id === userId ? 'You' : (member.first_name || 'Family')}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
@@ -825,52 +870,6 @@ export default function Hub() {
           </div>
         ) : (
           <>
-            {/* TOP HORIZONTAL FAMILY MEMBER CIRCLE BAR */}
-            {showTopMemberBar && familyMembers.length > 0 && (
-              <div className="max-w-5xl mx-auto mb-5 relative z-10">
-                <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] px-4 py-3 flex items-center gap-3.5 overflow-x-auto custom-scrollbar">
-                  {familyMembers.map(member => {
-                    const isSelected = viewingMember?.id === member.id && activeTab === 'member_view';
-                    const unreadCount = unreadDmSenders[member.id] || 0;
-                    return (
-                      <button
-                        key={member.id}
-                        type="button"
-                        onClick={() => openMemberProfile(member.id)}
-                        title={`${member.first_name || 'Family'} ${member.last_name || ''}`.trim()}
-                        className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none w-14"
-                      >
-                        <div className="relative">
-                          <div
-                            className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-xs font-black transition-all shadow-sm ${
-                              isSelected
-                                ? 'ring-2 ring-[#ff4d00] scale-105'
-                                : 'ring-2 ring-slate-200/80 group-hover:ring-amber-400 group-hover:scale-105'
-                            } bg-slate-100 text-slate-700`}
-                          >
-                            {member.avatar_url ? (
-                              <img src={member.avatar_url} className="w-full h-full object-cover" />
-                            ) : (
-                              member.first_name?.[0] || 'M'
-                            )}
-                          </div>
-
-                          {unreadCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow">
-                              {unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        <span className={`text-[10px] font-bold truncate w-full text-center transition-colors ${isSelected ? 'text-[#ff4d00]' : 'text-slate-600 group-hover:text-slate-900'}`}>
-                          {member.id === userId ? 'You' : (member.first_name || 'Family')}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* MILLERITES FAMILY HUB */}
             {activeTab === 'millerites' && profile.is_millerite && (
               <div className="animate-in fade-in duration-500 max-w-5xl mx-auto relative z-10 space-y-5">
@@ -972,6 +971,9 @@ export default function Hub() {
                     </div>
                   </div>
                 </div>
+
+                {/* HORIZONTAL FAMILY MEMBER CIRCLE BAR (Directly below Welcome & Pulse) */}
+                {renderMemberCircleBar()}
 
                 {/* 2x2 SIDE-BY-SIDE COLLAPSIBLE MODULES ABOVE THE TIMELINE */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 items-start">
@@ -2004,10 +2006,12 @@ export default function Hub() {
 
             {/* MEMBER PROFILE VIEW WITH SEND DM BUTTON */}
             {activeTab === 'member_view' && viewingMember && (
-              <div className="animate-in fade-in max-w-4xl mx-auto relative z-10">
+              <div className="animate-in fade-in max-w-4xl mx-auto relative z-10 space-y-5">
+                {renderMemberCircleBar()}
+
                 <button 
                   onClick={() => setActiveTab('millerites')} 
-                  className="text-xs text-slate-500 hover:text-slate-900 uppercase font-bold tracking-widest mb-6 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm"
+                  className="text-xs text-slate-500 hover:text-slate-900 uppercase font-bold tracking-widest flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm"
                 >
                   ← Back to Millerites
                 </button>
