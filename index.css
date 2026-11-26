@@ -1,13 +1,27 @@
-/* MILLERITES DARK MODE OVERRIDES */
+/* MILLERITES DARK MODE OVERRIDES (PURE NEUTRAL DARK — NO BLUE) */
 
-/* 1. Darker, Blended Card Surfaces */
+/* 1. Pure Dark, Blended Card Surfaces */
 .millerites-dark .bg-white,
 .millerites-dark .bg-white\/80,
 .millerites-dark .bg-white\/85,
 .millerites-dark .bg-white\/95,
 .millerites-dark .bg-white\/70 {
-  background-color: rgba(14, 14, 17, 0.88) !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
+  background-color: rgba(15, 15, 15, 0.92) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Remove Dark Blue from Family Pulse, Buttons & Badges */
+.millerites-dark .bg-\[\#1C1C2E\],
+.millerites-dark .bg-slate-900 {
+  background-color: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Remove Dark Blue Gradient from Weekly Spotlight Card */
+.millerites-dark .from-\[\#1C1C2E\] {
+  background-image: linear-gradient(to bottom right, #1B1B1B, #0E0E0E) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Subtle Inner Boxes, Pills & Inputs */
@@ -21,10 +35,15 @@
 .millerites-dark .bg-slate-200\/70,
 .millerites-dark .bg-slate-200\/40,
 .millerites-dark .bg-slate-900\/5 {
-  background-color: rgba(255, 255, 255, 0.045) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Keep Dark Hover States Subtle (No White Flash) */
+/* Neutral Charcoal Hover States (No Blue or White Flash) */
+.millerites-dark .hover\:bg-\[\#232338\]:hover,
+.millerites-dark .hover\:bg-slate-800:hover {
+  background-color: #262626 !important;
+}
+
 .millerites-dark .hover\:bg-white:hover,
 .millerites-dark .hover\:bg-white\/60:hover,
 .millerites-dark .hover\:bg-slate-50:hover,
@@ -32,7 +51,7 @@
 .millerites-dark .hover\:bg-slate-100\/80:hover,
 .millerites-dark .hover\:bg-slate-200\/80:hover,
 .millerites-dark .hover\:bg-slate-200\/50:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.09) !important;
 }
 
 /* Warm Tinted Cards (Bible Verse / Answered Prayers) */
@@ -52,7 +71,7 @@
 .millerites-dark .border-slate-300,
 .millerites-dark .border-slate-900\/10,
 .millerites-dark .divide-slate-200\/75 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* 3. High-Contrast, Easy-to-Read Text */
@@ -63,12 +82,12 @@
 
 .millerites-dark .text-slate-700,
 .millerites-dark .text-slate-600 {
-  color: #E4E4E7 !important;
+  color: #E5E5E5 !important;
 }
 
 .millerites-dark .text-slate-500,
 .millerites-dark .text-slate-400 {
-  color: #A1A1AA !important;
+  color: #A3A3A3 !important;
 }
 
 .millerites-dark .text-amber-800,
@@ -78,12 +97,12 @@
 
 .millerites-dark input::placeholder,
 .millerites-dark textarea::placeholder {
-  color: rgba(228, 228, 231, 0.45) !important;
+  color: rgba(229, 229, 229, 0.45) !important;
 }
 
 /* 4. Avatar Rings */
 .millerites-dark .ring-white {
-  --tw-ring-color: #0e0e11 !important;
+  --tw-ring-color: #0f0f0f !important;
 }
 
 .millerites-dark .ring-\[\#F5F5F7\] {
