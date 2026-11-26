@@ -1,35 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#1C1C2E" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Millerites" />
-<link rel="apple-touch-icon" href="/icon-192.png" />
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X95Y8Z072K"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-X95Y8Z072K');
-    </script>
-    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Rise & Render | DFW Podcast Studio for Christian Creatives</title>
     
+    <!-- PWA & Icons -->
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
-    
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#131313" />
+    <meta name="theme-color" content="#1C1C2E" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Millerites" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X95Y8Z072K"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-X95Y8Z072K');
+    </script>
     
+    <!-- SEO & Social Meta -->
     <meta name="title" content="Rise & Render | DFW Podcast Studio for Christian Creatives">
     <meta name="description" content="Rise & Render is DFW's premium video podcast studio and community hub for Christian creatives. Rise in your purpose and render your calling. Book today!">
     <meta name="keywords" content="Christian content creators, DFW podcast studio, Duncanville podcast recording, Christian creatives community, content creation gear, Mike Miller Media, mobile podcast studio Dallas, Creatives Representing Christ">
@@ -122,6 +118,7 @@
     
     <link rel="stylesheet" href="/index.css">
     
+    <!-- OneSignal Push Notifications -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -137,13 +134,6 @@
     </script>
   </head>
   <body>
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  }
-</script>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
