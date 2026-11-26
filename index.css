@@ -1,21 +1,47 @@
 /* MILLERITES DARK MODE OVERRIDES */
+
+/* 1. Darker, Blended Card Surfaces */
 .millerites-dark .bg-white,
 .millerites-dark .bg-white\/80,
 .millerites-dark .bg-white\/85,
 .millerites-dark .bg-white\/95,
 .millerites-dark .bg-white\/70 {
-  background-color: rgba(24, 24, 29, 0.88) !important;
+  background-color: rgba(14, 14, 17, 0.88) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
 }
 
+/* Subtle Inner Boxes, Pills & Inputs */
+.millerites-dark .bg-slate-50,
 .millerites-dark .bg-slate-50\/90,
 .millerites-dark .bg-slate-50\/70,
 .millerites-dark .bg-slate-100,
 .millerites-dark .bg-slate-100\/90,
+.millerites-dark .bg-slate-100\/80,
 .millerites-dark .bg-slate-200\/80,
-.millerites-dark .bg-slate-200\/70 {
-  background-color: rgba(255, 255, 255, 0.06) !important;
+.millerites-dark .bg-slate-200\/70,
+.millerites-dark .bg-slate-200\/40,
+.millerites-dark .bg-slate-900\/5 {
+  background-color: rgba(255, 255, 255, 0.045) !important;
 }
 
+/* Keep Dark Hover States Subtle (No White Flash) */
+.millerites-dark .hover\:bg-white:hover,
+.millerites-dark .hover\:bg-white\/60:hover,
+.millerites-dark .hover\:bg-slate-50:hover,
+.millerites-dark .hover\:bg-slate-100:hover,
+.millerites-dark .hover\:bg-slate-100\/80:hover,
+.millerites-dark .hover\:bg-slate-200\/80:hover,
+.millerites-dark .hover\:bg-slate-200\/50:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Warm Tinted Cards (Bible Verse / Answered Prayers) */
+.millerites-dark .bg-amber-50\/60,
+.millerites-dark .from-amber-50\/90 {
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+/* 2. Blended Hairline Borders & Dividers */
 .millerites-dark .border-white,
 .millerites-dark .border-white\/90,
 .millerites-dark .border-slate-200,
@@ -23,27 +49,41 @@
 .millerites-dark .border-slate-200\/70,
 .millerites-dark .border-slate-200\/60,
 .millerites-dark .border-slate-100,
+.millerites-dark .border-slate-300,
+.millerites-dark .border-slate-900\/10,
 .millerites-dark .divide-slate-200\/75 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
 }
 
+/* 3. High-Contrast, Easy-to-Read Text */
 .millerites-dark .text-slate-900,
 .millerites-dark .text-slate-800 {
-  color: #F5F5F7 !important;
+  color: #FFFFFF !important;
 }
 
 .millerites-dark .text-slate-700,
 .millerites-dark .text-slate-600 {
-  color: rgba(245, 245, 247, 0.78) !important;
+  color: #E4E4E7 !important;
 }
 
 .millerites-dark .text-slate-500,
 .millerites-dark .text-slate-400 {
-  color: rgba(245, 245, 247, 0.5) !important;
+  color: #A1A1AA !important;
 }
 
+.millerites-dark .text-amber-800,
+.millerites-dark .text-amber-700 {
+  color: #FCD34D !important;
+}
+
+.millerites-dark input::placeholder,
+.millerites-dark textarea::placeholder {
+  color: rgba(228, 228, 231, 0.45) !important;
+}
+
+/* 4. Avatar Rings */
 .millerites-dark .ring-white {
-  --tw-ring-color: #18181d !important;
+  --tw-ring-color: #0e0e11 !important;
 }
 
 .millerites-dark .ring-\[\#F5F5F7\] {
