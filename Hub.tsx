@@ -138,9 +138,9 @@ export default function Hub() {
   const [mentionTarget, setMentionTarget] = useState<'post' | 'reply' | null>(null);
   const [mentionQuery, setMentionQuery] = useState('');
 
-  // MEMBER PROFILE VIEW STATE
+  // MEMBER PROFILE VIEW & POST MODAL STATE
   const [viewingMember, setViewingMember] = useState<any | null>(null);
-  const [memberPosts, setMemberPosts] = useState<any[]>([]);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES & PROFILE
   const isHubThemeable = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile';
@@ -252,7 +252,7 @@ export default function Hub() {
           return (
             <span
               key={idx}
-              onClick={(e) => { e.stopPropagation(); openMemberProfile(matchedMember.id); }}
+              onClick={(e) => { e.stopPropagation(); setSelectedPostId(null); openMemberProfile(matchedMember.id); }}
               className="text-[#ff4d00] font-bold bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded-md cursor-pointer transition-colors"
             >
               {part}
@@ -682,7 +682,6 @@ export default function Hub() {
       prayers.find(p => p.user_id === memberId)?.profile;
     if (!member) return;
     setViewingMember(member);
-    setMemberPosts(posts.filter(p => p.user_id === memberId));
     setActiveTab('member_view');
   };
 
@@ -761,6 +760,14 @@ export default function Hub() {
   const newPostsCount = lastSeenAt
     ? posts.filter(p => p.user_id !== userId && new Date(p.created_at) > new Date(lastSeenAt)).length
     : posts.filter(p => p.user_id !== userId).length;
+
+  // Live Member Profile Posts & Interactive Modal Post
+  const currentMemberPosts = viewingMember
+    ? posts.filter(p => p.user_id === viewingMember.id)
+    : [];
+  const activeModalPost = selectedPostId
+    ? posts.find(p => p.id === selectedPostId) || null
+    : null;
 
   // Find the newest family member who joined
   const newestMember = [...familyMembers]
@@ -969,6 +976,189 @@ export default function Hub() {
           recipient={dmRecipient}
           onMessagesRead={() => userId && fetchUnreadDms(userId)}
         />
+
+        {/* INTERACTIVE PROFILE POST MODAL */}
+        {activeModalPost && (
+          <div
+            onClick={() => setSelectedPostId(null)}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-200"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full sm:max-w-lg max-h-[88vh] bg-white border border-slate-200/80 rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="px-5 py-4 border-b border-slate-200/80 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-slate-200/80 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-700">
+                    {activeModalPost.profile?.avatar_url ? (
+                      <img src={activeModalPost.profile.avatar_url} className="w-full h-full object-cover" />
+                    ) : (
+                      activeModalPost.profile?.first_name?.[0] || 'M'
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {activeModalPost.profile?.first_name} {activeModalPost.profile?.last_name}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      {formatTime(activeModalPost.created_at)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {activeModalPost.user_id === userId && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleDeletePost(activeModalPost.id);
+                        setSelectedPostId(null);
+                      }}
+                      className="text-slate-400 hover:text-red-500 p-2 rounded-full transition-colors"
+                      title="Delete post"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPostId(null)}
+                    className="text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable Post Content + Replies */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+                {activeModalPost.content && (
+                  <p className="text-slate-800 text-[15px] leading-relaxed whitespace-pre-wrap">
+                    {renderTextWithMentions(activeModalPost.content)}
+                  </p>
+                )}
+
+                {activeModalPost.media_url && (
+                  <div className="rounded-2xl overflow-hidden bg-slate-200/40">
+                    {isVideo(activeModalPost.media_url) ? (
+                      <video src={activeModalPost.media_url} controls playsInline className="w-full max-h-[380px] object-contain" />
+                    ) : (
+                      <img src={activeModalPost.media_url} className="w-full max-h-[420px] object-cover" />
+                    )}
+                  </div>
+                )}
+
+                {/* Emoji Reactions + Repost */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200/80">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {POST_REACTIONS.map(emoji => {
+                      const count = activeModalPost.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
+                      const isSelected = activeModalPost.likes.find((l: any) => l.user_id === userId)?.emoji === emoji;
+                      return (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => toggleReaction(activeModalPost, emoji)}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all active:scale-95 ${
+                            isSelected
+                              ? 'bg-[#1C1C2E] text-white'
+                              : count > 0
+                              ? 'bg-slate-200/70 text-slate-800'
+                              : 'text-slate-500 hover:bg-slate-200/50'
+                          }`}
+                        >
+                          <span className="text-sm leading-none">{emoji}</span>
+                          {count > 0 && <span className="text-[11px]">{count}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRepost(activeModalPost)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-semibold transition-colors"
+                  >
+                    <Repeat size={14} /> Repost
+                  </button>
+                </div>
+
+                {/* Replies List */}
+                <div className="space-y-3 pt-2">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Replies ({activeModalPost.replies.length})
+                  </p>
+                  {activeModalPost.replies.length === 0 ? (
+                    <p className="text-xs text-slate-400">No replies yet. Be the first to comment!</p>
+                  ) : (
+                    activeModalPost.replies.map((reply: any) => (
+                      <div key={reply.id} className="flex gap-2.5 items-start">
+                        <div
+                          onClick={() => { setSelectedPostId(null); openMemberProfile(reply.user_id); }}
+                          className="w-7 h-7 rounded-full bg-slate-200/80 shrink-0 overflow-hidden mt-0.5 cursor-pointer flex items-center justify-center text-[10px] font-bold text-slate-600"
+                        >
+                          {reply.profiles?.avatar_url ? (
+                            <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
+                          ) : (
+                            reply.profiles?.first_name?.[0] || 'M'
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 bg-slate-100 rounded-2xl px-3.5 py-2">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-900">
+                              {reply.profiles?.first_name || 'Family'}
+                            </span>
+                            <span className="text-[10px] text-slate-400">{formatTime(reply.created_at)}</span>
+                          </div>
+                          <p className="text-xs text-slate-700 leading-relaxed mt-0.5">
+                            {renderTextWithMentions(reply.content)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Reply Input Bar */}
+              <div className="p-3.5 border-t border-slate-200/80 shrink-0 space-y-2">
+                {mentionTarget === 'reply' && filteredMentionMembers.length > 0 && (
+                  <div className="bg-white border border-slate-200 rounded-xl shadow-md p-1 max-h-32 overflow-y-auto">
+                    {filteredMentionMembers.map(member => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => insertMention(member)}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left"
+                      >
+                        <span className="text-xs font-bold text-slate-800">{member.first_name} {member.last_name}</span>
+                        <span className="text-[10px] text-[#ff4d00] font-semibold ml-auto">@{member.first_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Write a reply or type @ to tag..."
+                    value={replyContent}
+                    onChange={(e) => handleReplyTextChange(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !mentionTarget && submitReply(activeModalPost.id)}
+                    className="flex-1 bg-slate-100 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => submitReply(activeModalPost.id)}
+                    disabled={!replyContent.trim()}
+                    className="bg-[#ff4d00] hover:bg-orange-600 text-white p-2.5 rounded-full transition-colors disabled:opacity-40 shrink-0"
+                  >
+                    <Send size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SUBTLE TOP-RIGHT DARK / LIGHT MODE TOGGLE */}
         {isHubThemeable && (
@@ -2155,7 +2345,7 @@ export default function Hub() {
               </div>
             )}
 
-            {/* MEMBER PROFILE VIEW WITH SEND DM BUTTON */}
+            {/* MEMBER PROFILE VIEW WITH SEND DM & INTERACTIVE POSTS */}
             {activeTab === 'member_view' && viewingMember && (
               <div className="animate-in fade-in max-w-4xl mx-auto relative z-10 space-y-5">
                 {renderMemberCircleBar()}
@@ -2192,7 +2382,7 @@ export default function Hub() {
 
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs font-bold text-slate-500 mb-4">
                       <span className="bg-slate-100 px-3 py-1.5 rounded-full">
-                        <strong className="text-slate-900">{memberPosts.length}</strong> updates shared
+                        <strong className="text-slate-900">{currentMemberPosts.length}</strong> updates shared
                       </span>
                       {viewingMember.id !== userId && (
                         <button
@@ -2231,8 +2421,12 @@ export default function Hub() {
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                    {memberPosts.map(post => (
-                      <div key={post.id} className="aspect-square bg-white/85 backdrop-blur-xl border border-white shadow-[0_8px_25px_rgb(0,0,0,0.04)] relative group cursor-pointer overflow-hidden rounded-[24px]">
+                    {currentMemberPosts.map(post => (
+                      <div
+                        key={post.id}
+                        onClick={() => setSelectedPostId(post.id)}
+                        className="aspect-square bg-white/85 backdrop-blur-xl border border-white shadow-[0_8px_25px_rgb(0,0,0,0.04)] relative group cursor-pointer overflow-hidden rounded-[24px] active:scale-[0.98] transition-transform"
+                      >
                         {post.media_url ? (
                           isVideo(post.media_url) ? (
                             <video src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted playsInline />
@@ -2240,8 +2434,8 @@ export default function Hub() {
                             <img src={post.media_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           )
                         ) : (
-                          <div className="w-full h-full p-5 flex flex-col justify-center items-center text-center bg-gradient-to-br from-white to-slate-50">
-                            <p className="text-slate-700 text-xs md:text-sm line-clamp-4 leading-relaxed font-medium">
+                          <div className="w-full h-full p-5 flex flex-col justify-center items-center text-center bg-slate-50/70">
+                            <p className="text-slate-800 text-xs md:text-sm line-clamp-4 leading-relaxed font-semibold">
                               "{post.content}"
                             </p>
                           </div>
@@ -2253,7 +2447,7 @@ export default function Hub() {
                       </div>
                     ))}
                   </div>
-                  {memberPosts.length === 0 && (
+                  {currentMemberPosts.length === 0 && (
                     <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center">
                       <p className="text-slate-400 text-sm font-medium">No posts yet.</p>
                     </div>
