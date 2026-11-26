@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square, Smile, CalendarHeart, AtSign, ChevronDown, ChevronRight, ChevronLeft, MessageCircle
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, ListTodo, Plus, CheckSquare, Square, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -57,8 +57,7 @@ export default function Hub() {
     setOpenModules(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // RIGHT MEMBER SIDEBAR & DIRECT MESSAGES STATE
-  const [isMemberRailOpen, setIsMemberRailOpen] = useState(true);
+  // DIRECT MESSAGES STATE
   const [dmRecipient, setDmRecipient] = useState<any | null>(null);
   const [unreadDmSenders, setUnreadDmSenders] = useState<Record<string, number>>({});
   
@@ -747,7 +746,7 @@ export default function Hub() {
     ? posts.filter(p => p.user_id !== userId && new Date(p.created_at) > new Date(lastSeenAt)).length
     : posts.filter(p => p.user_id !== userId).length;
 
-  const showRightMemberRail = profile.is_millerite && (activeTab === 'millerites' || activeTab === 'member_view');
+  const showTopMemberBar = profile.is_millerite && (activeTab === 'millerites' || activeTab === 'member_view');
 
   return (
     <div className={`h-screen font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-500 selection:bg-[#ff4d00] selection:text-white ${isLightMode ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-[#050505] text-[#F5F5F0]'}`}>
@@ -800,7 +799,7 @@ export default function Hub() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className={`flex-1 overflow-y-auto p-4 sm:p-6 pb-28 md:p-10 md:pb-12 relative scroll-smooth ${showRightMemberRail && isMemberRailOpen ? 'pr-16 sm:pr-20' : ''}`}>
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:p-10 md:pb-12 relative scroll-smooth">
         {isLightMode ? (
           <>
             <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] bg-amber-300/25 rounded-full blur-[130px] pointer-events-none" />
@@ -826,6 +825,53 @@ export default function Hub() {
           </div>
         ) : (
           <>
+            {/* TOP HORIZONTAL FAMILY MEMBER CIRCLE BAR */}
+            {showTopMemberBar && familyMembers.length > 0 && (
+              <div className="max-w-6xl mx-auto mb-5 relative z-10">
+                <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] px-4 py-3 flex items-center gap-3.5 overflow-x-auto custom-scrollbar">
+                  {familyMembers.map(member => {
+                    const isSelected = viewingMember?.id === member.id && activeTab === 'member_view';
+                    const unreadCount = unreadDmSenders[member.id] || 0;
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => openMemberProfile(member.id)}
+                        title={`${member.first_name || 'Family'} ${member.last_name || ''}`.trim()}
+                        className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none w-14"
+                      >
+                        <div className="relative">
+                          <div
+                            className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-xs font-black transition-all shadow-sm ${
+                              isSelected
+                                ? 'ring-2 ring-[#ff4d00] scale-105'
+                                : 'ring-2 ring-slate-200/80 group-hover:ring-amber-400 group-hover:scale-105'
+                            } bg-slate-100 text-slate-700`}
+                          >
+                            {member.avatar_url ? (
+                              <img src={member.avatar_url} className="w-full h-full object-cover" />
+                            ) : (
+                              member.first_name?.[0] || 'M'
+                            )}
+                          </div>
+
+                          {/* Unread DM Badge */}
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-bold truncate w-full text-center transition-colors ${isSelected ? 'text-[#ff4d00]' : 'text-slate-600 group-hover:text-slate-900'}`}>
+                          {member.id === userId ? 'You' : (member.first_name || 'Family')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* MILLERITES FAMILY TIMELINE - COLLAPSIBLE APPLE GLASS MODULES */}
             {activeTab === 'millerites' && profile.is_millerite && (
               <div className="animate-in fade-in duration-500 max-w-6xl mx-auto relative z-10 space-y-5">
@@ -877,7 +923,7 @@ export default function Hub() {
                         Millerites
                       </h1>
                       <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-xl leading-relaxed">
-                        Tap any section below to open it, or tap a family member's circle on the right to view their profile and send a DM.
+                        Tap any section below to open it, or tap a family member's photo at the top to view their profile and send a DM.
                       </p>
                     </div>
                   </div>
@@ -2258,84 +2304,90 @@ export default function Hub() {
         )}
       </main>
 
-      {/* RIGHT-SIDE VERTICAL MEMBER CIRCLE SIDEBAR TAB */}
-      {showRightMemberRail && (
-        <div className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 flex items-center">
-          {/* Collapse / Expand Tab Handle */}
-          <button
-            type="button"
-            onClick={() => setIsMemberRailOpen(!isMemberRailOpen)}
-            title={isMemberRailOpen ? 'Hide family bar' : 'Show family bar'}
-            className="bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-md rounded-l-2xl py-3 px-1 text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            {isMemberRailOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          </button>
-
-          {isMemberRailOpen && (
-            <div className="bg-white/90 backdrop-blur-2xl border border-white shadow-[0_10px_35px_rgba(28,28,46,0.12)] rounded-full py-3 px-2 flex flex-col items-center gap-2.5 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              {familyMembers.map(member => {
-                const isSelected = viewingMember?.id === member.id && activeTab === 'member_view';
-                const unreadCount = unreadDmSenders[member.id] || 0;
-                return (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => openMemberProfile(member.id)}
-                    title={`${member.first_name || 'Family'} ${member.last_name || ''}`.trim()}
-                    className="relative group focus:outline-none shrink-0"
-                  >
-                    <div
-                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden flex items-center justify-center text-xs font-black transition-all shadow-sm ${
-                        isSelected
-                          ? 'ring-2 ring-[#ff4d00] scale-105'
-                          : 'ring-2 ring-slate-200/80 group-hover:ring-amber-400 group-hover:scale-105'
-                      } bg-slate-100 text-slate-700`}
-                    >
-                      {member.avatar_url ? (
-                        <img src={member.avatar_url} className="w-full h-full object-cover" />
-                      ) : (
-                        member.first_name?.[0] || 'M'
-                      )}
-                    </div>
-
-                    {/* Unread DM Badge */}
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* MOBILE BOTTOM NAVIGATION */}
-      <nav className={`md:hidden fixed bottom-0 left-0 w-full backdrop-blur-2xl border-t flex justify-around items-center p-3 z-30 pb-safe transition-colors duration-500 ${isLightMode ? 'bg-white/85 border-slate-200/80' : 'bg-[#111]/95 border-white/5'}`}>
+      {/* FLOATING GLASS MOBILE BOTTOM NAVIGATION */}
+      <nav
+        className={`md:hidden fixed bottom-4 inset-x-4 z-30 rounded-[28px] backdrop-blur-2xl border flex justify-around items-center px-2 py-2.5 transition-all duration-500 ${
+          isLightMode
+            ? 'bg-white/75 border-white/90 shadow-[0_12px_40px_rgba(28,28,46,0.14)]'
+            : 'bg-[#141414]/80 border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.6)]'
+        }`}
+      >
         {profile.is_client && (
-          <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'vault' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
-            <FolderDown size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
+          <button
+            onClick={() => setActiveTab('vault')}
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+              activeTab === 'vault'
+                ? 'text-[#ff4d00] bg-[#ff4d00]/10'
+                : isLightMode
+                ? 'text-slate-400 hover:text-slate-700'
+                : 'text-white/40 hover:text-white'
+            }`}
+          >
+            <FolderDown size={19} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
           </button>
         )}
         {profile.is_millerite && (
-          <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'millerites' || activeTab === 'member_view' ? (isLightMode ? 'text-[#1C1C2E]' : 'text-[#ff4d00]') : (isLightMode ? 'text-slate-400' : 'text-white/40')}`}>
-            <Users size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Family</span>
+          <button
+            onClick={() => { setActiveTab('millerites'); setViewingMember(null); }}
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+              activeTab === 'millerites' || activeTab === 'member_view'
+                ? isLightMode
+                  ? 'text-white bg-[#1C1C2E] shadow-sm'
+                  : 'text-[#ff4d00] bg-[#ff4d00]/10'
+                : isLightMode
+                ? 'text-slate-400 hover:text-slate-700'
+                : 'text-white/40 hover:text-white'
+            }`}
+          >
+            <Users size={19} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Family</span>
           </button>
         )}
         {profile.is_client && blueprint && (
-          <button onClick={() => setActiveTab('blueprint')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'blueprint' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
-            <LayoutDashboard size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
+          <button
+            onClick={() => setActiveTab('blueprint')}
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+              activeTab === 'blueprint'
+                ? 'text-[#ff4d00] bg-[#ff4d00]/10'
+                : isLightMode
+                ? 'text-slate-400 hover:text-slate-700'
+                : 'text-white/40 hover:text-white'
+            }`}
+          >
+            <LayoutDashboard size={19} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
           </button>
         )}
         {profile.is_client && profile.has_retainer && (
-          <button onClick={() => setActiveTab('retainer')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'retainer' ? 'text-[#ff4d00]' : isLightMode ? 'text-slate-400' : 'text-white/40'}`}>
-            <Film size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
+          <button
+            onClick={() => setActiveTab('retainer')}
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+              activeTab === 'retainer'
+                ? 'text-[#ff4d00] bg-[#ff4d00]/10'
+                : isLightMode
+                ? 'text-slate-400 hover:text-slate-700'
+                : 'text-white/40 hover:text-white'
+            }`}
+          >
+            <Film size={19} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
           </button>
         )}
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'profile' ? (isLightMode ? 'text-[#1C1C2E]' : 'text-[#ff4d00]') : (isLightMode ? 'text-slate-400' : 'text-white/40')}`}>
-          <User size={20} /><span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            activeTab === 'profile'
+              ? isLightMode
+                ? 'text-white bg-[#1C1C2E] shadow-sm'
+                : 'text-[#ff4d00] bg-[#ff4d00]/10'
+              : isLightMode
+              ? 'text-slate-400 hover:text-slate-700'
+              : 'text-white/40 hover:text-white'
+          }`}
+        >
+          <User size={19} />
+          <span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
         </button>
       </nav>
     </div>
