@@ -51,6 +51,9 @@ export default function Hub() {
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [blueprint, setBlueprint] = useState<any>(null);
 
+  // FAMILY PULSE CAROUSEL STATE
+  const [pulseIndex, setPulseIndex] = useState(0);
+
   // COLLAPSIBLE MODULES STATE (All closed by default; Timeline is always open)
   const [openModules, setOpenModules] = useState({
     vibe: false,
@@ -342,7 +345,7 @@ export default function Hub() {
       const { data: milestonesData } = await supabase.from('family_milestones').select('*');
       const { data: milleritesData } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar_url, bio, bible_verse, is_millerite, status_emoji, status_text, status_updated_at')
+        .select('id, first_name, last_name, avatar_url, bio, bible_verse, is_millerite, status_emoji, status_text, status_updated_at, created_at')
         .eq('is_millerite', true);
 
       if (pError) console.error("Posts Error:", pError.message);
@@ -746,6 +749,96 @@ export default function Hub() {
     ? posts.filter(p => p.user_id !== userId && new Date(p.created_at) > new Date(lastSeenAt)).length
     : posts.filter(p => p.user_id !== userId).length;
 
+  // Find the newest family member who joined
+  const newestMember = [...familyMembers]
+    .filter(m => m.created_at)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
+
+  // Build the rotating Family Pulse slides
+  const pulseSlides = [
+    {
+      id: 'updates',
+      badge: 'Family Pulse',
+      headline: `${newPostsCount}`,
+      subHeadline: newPostsCount === 1 ? 'New Update' : 'New Updates',
+      detail: lastSeenAt ? 'Since you last logged in' : 'New since you joined',
+      progress: newPostsCount > 0 ? Math.min(100, newPostsCount * 20) : 0,
+      footerLeft: nextMilestone ? `${nextMilestone.emoji} ${nextMilestone.title}` : 'Prayers Answered',
+      footerRight: nextMilestone ? nextMilestone.label : `${answeredPrayersCount} ✨`,
+      onClick: undefined,
+    },
+    ...(newestMember
+      ? [
+          {
+            id: 'welcome',
+            badge: 'New Member 🎉',
+            headline: `Welcome, ${newestMember.first_name || 'Family'}!`,
+            subHeadline: '',
+            detail: 'Tap to view their profile & say hello',
+            progress: 100,
+            footerLeft: 'Newest Millerite',
+            footerRight: formatTime(newestMember.created_at),
+            onClick: () => openMemberProfile(newestMember.id),
+          },
+        ]
+      : []),
+    ...(nextMilestone
+      ? [
+          {
+            id: 'milestone',
+            badge: 'Next Milestone',
+            headline: `${nextMilestone.emoji} ${nextMilestone.label}`,
+            subHeadline: '',
+            detail: `${nextMilestone.title} • ${nextMilestone.formattedDate}`,
+            progress: Math.max(15, 100 - Math.min(100, nextMilestone.daysUntil * 2)),
+            footerLeft: nextMilestone.category,
+            footerRight: 'Tap to view',
+            onClick: () => setOpenModules(prev => ({ ...prev, milestones: true })),
+          },
+        ]
+      : []),
+    {
+      id: 'prayers',
+      badge: 'Prayer Wall 🙏🏾',
+      headline: `${activePrayersCount}`,
+      subHeadline: activePrayersCount === 1 ? 'Active Prayer' : 'Active Prayers',
+      detail: `${answeredPrayersCount} prayers answered so far ✨`,
+      progress:
+        activePrayersCount + answeredPrayersCount > 0
+          ? Math.round((answeredPrayersCount / (activePrayersCount + answeredPrayersCount)) * 100)
+          : 0,
+      footerLeft: 'Lift the family up',
+      footerRight: 'Tap to open',
+      onClick: () => setOpenModules(prev => ({ ...prev, prayers: true })),
+    },
+    ...(currentSpotlight
+      ? [
+          {
+            id: 'spotlight',
+            badge: 'Weekly Spotlight 🏆',
+            headline: currentSpotlight.honoreeProfile?.first_name || 'Family',
+            subHeadline: '',
+            detail: currentSpotlight.title,
+            progress: 100,
+            footerLeft: currentSpotlight.category,
+            footerRight: 'Tap to read',
+            onClick: () => setOpenModules(prev => ({ ...prev, spotlight: true })),
+          },
+        ]
+      : []),
+  ];
+
+  // Auto-cycle Family Pulse every 4.5 seconds
+  useEffect(() => {
+    if (pulseSlides.length <= 1) return;
+    const timer = setInterval(() => {
+      setPulseIndex(prev => (prev + 1) % pulseSlides.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [pulseSlides.length]);
+
+  const activePulse = pulseSlides[pulseIndex % pulseSlides.length] || pulseSlides[0];
+
   // Reusable Horizontal Member Circle Bar
   const renderMemberCircleBar = () => {
     if (familyMembers.length === 0) return null;
@@ -925,49 +1018,62 @@ export default function Hub() {
                     </div>
                   </div>
 
-                  {/* Family Pulse Card */}
-                  <div className="md:col-span-4 bg-[#1C1C2E] text-white shadow-[0_12px_35px_rgba(28,28,46,0.18)] rounded-[32px] p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
+                  {/* Family Pulse Card (Auto-Cycling) */}
+                  <div
+                    onClick={activePulse.onClick}
+                    className={`md:col-span-4 bg-[#1C1C2E] text-white shadow-[0_12px_35px_rgba(28,28,46,0.18)] rounded-[32px] p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden transition-all ${
+                      activePulse.onClick ? 'cursor-pointer hover:bg-[#232338]' : ''
+                    }`}
+                  >
                     <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-400/15 rounded-full blur-2xl pointer-events-none" />
                     
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full">
-                        Family Pulse
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full truncate">
+                        {activePulse.badge}
                       </span>
-                      <Users size={18} className="text-white/40" />
+                      {/* Interactive Slide Dots */}
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {pulseSlides.map((slide, idx) => (
+                          <button
+                            key={slide.id}
+                            type="button"
+                            onClick={() => setPulseIndex(idx)}
+                            className={`h-1.5 rounded-full transition-all ${
+                              idx === pulseIndex % pulseSlides.length
+                                ? 'w-4 bg-amber-400'
+                                : 'w-1.5 bg-white/25 hover:bg-white/50'
+                            }`}
+                            aria-label={`Show ${slide.badge}`}
+                          />
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="my-4">
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                          {newPostsCount}
+                    <div key={activePulse.id} className="my-4 animate-in fade-in duration-300">
+                      <div className="flex items-baseline gap-2.5 flex-wrap">
+                        <span className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                          {activePulse.headline}
                         </span>
-                        <span className="text-xs text-white/60 font-medium">
-                          {newPostsCount === 1 ? 'New Update' : 'New Updates'}
-                        </span>
+                        {activePulse.subHeadline && (
+                          <span className="text-xs text-white/60 font-medium">
+                            {activePulse.subHeadline}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[11px] text-white/40 font-medium mt-1">
-                        {lastSeenAt ? 'Since you last logged in' : 'New since you joined'}
+                      <p className="text-[11px] text-white/55 font-medium mt-1.5 truncate">
+                        {activePulse.detail}
                       </p>
                       <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
                         <div
                           className="bg-gradient-to-r from-amber-400 to-[#ff4d00] h-full rounded-full transition-all duration-500"
-                          style={{ width: newPostsCount > 0 ? `${Math.min(100, newPostsCount * 20)}%` : '0%' }}
+                          style={{ width: `${activePulse.progress}%` }}
                         />
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-white/60 pt-3 border-t border-white/10">
-                      {nextMilestone ? (
-                        <>
-                          <span className="truncate max-w-[170px]">{nextMilestone.emoji} {nextMilestone.title}</span>
-                          <span className="font-bold text-amber-400 shrink-0">{nextMilestone.label}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Prayers Answered</span>
-                          <span className="font-bold text-amber-400">{answeredPrayersCount} ✨</span>
-                        </>
-                      )}
+                      <span className="truncate max-w-[170px]">{activePulse.footerLeft}</span>
+                      <span className="font-bold text-amber-400 shrink-0">{activePulse.footerRight}</span>
                     </div>
                   </div>
                 </div>
