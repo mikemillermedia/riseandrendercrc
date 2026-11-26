@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Sparkles, Smile, MessageSquareHeart, BookHeart,
+  Sparkles, User, Smile, MessageSquareHeart, Award,
   CalendarHeart, BellRing, X, ArrowRight, ArrowLeft, Check
 } from 'lucide-react';
 
@@ -16,51 +16,60 @@ const TOUR_STEPS = [
     title: 'Welcome to Millerites! 🏡',
     description:
       'This is our private family hub—no ads, no algorithms, just our crew staying connected. Take 20 seconds to see what you can do here.',
-    tip: 'You can replay this quick guide anytime from the top of your feed.',
+    tip: 'You can replay this quick guide anytime by tapping "? Tour" at the top of your feed.',
     icon: Sparkles,
     accent: 'from-amber-400 to-[#ff4d00]'
   },
   {
-    badge: 'Step 1 of 5',
+    badge: 'Step 1 of 6',
+    title: 'Update Your Profile 📸',
+    description:
+      'Head over to the Profile tab to upload a profile picture, add a short bio, and share your favorite Bible verse so the whole family can recognize you.',
+    tip: 'Tap your profile photo on the Profile page anytime to swap in a new picture.',
+    icon: User,
+    accent: 'from-slate-700 to-[#1C1C2E]'
+  },
+  {
+    badge: 'Step 2 of 6',
     title: 'Share Your Daily Vibe 👋🏾',
     description:
-      'At the top of the feed is the Family Vibe Check. Tap your own photo to pick an emoji and drop a quick status like "Coffee run" or "At the kids\' game."',
-    tip: 'Tap any family member’s photo to view their profile, bio, and favorite Bible verse.',
+      'Open the Vibe Check box to see what everyone is up to. Tap your own photo to pick an emoji and drop a quick status like "Coffee run" or "At the kids\' game."',
+    tip: 'Tap any family member’s circle under the welcome card to view their profile or send them a private DM.',
     icon: Smile,
     accent: 'from-orange-400 to-amber-500'
   },
   {
-    badge: 'Step 2 of 5',
+    badge: 'Step 3 of 6',
     title: 'Post, React & @Tag Family 💬',
     description:
-      'Share life updates, photos, and videos on the timeline. React with multiple emojis (❤️ 😂 🙌🏾 🙏🏾 🔥), and tap the reaction summary to see who reacted.',
+      'Share life updates, photos, and videos on the Family Posts timeline. React with multiple emojis (❤️ 😂 🙌🏾 🙏🏾 🔥), and tap the reaction summary to see who reacted.',
     tip: 'Type @ followed by someone’s first name in a post or reply to tag them directly!',
     icon: MessageSquareHeart,
     accent: 'from-rose-400 to-[#ff4d00]'
   },
   {
-    badge: 'Step 3 of 5',
-    title: 'Prayer Wall & Checklists 🙏🏾',
+    badge: 'Step 4 of 6',
+    title: 'Family Spotlight & Prayer Wall 🏆',
     description:
-      'Drop a prayer request anytime—family members can tap "Pray" so you know who is lifting you up, and you can mark prayers as Answered. Use the Family Checklist to claim dishes for dinners or trips.',
-    tip: 'Filter the Prayer Wall between Active and Answered prayers to celebrate testimonies.',
-    icon: BookHeart,
+      'Celebrate a family member each week in the Family Spotlight for accomplishments, accolades, milestones, or generosity. Drop prayer requests on the Prayer Wall anytime—family can tap "Pray" and you can mark prayers as Answered.',
+    tip: 'Filter the Prayer Wall between Active and Answered prayers to celebrate testimonies together.',
+    icon: Award,
     accent: 'from-amber-500 to-orange-600'
   },
   {
-    badge: 'Step 4 of 5',
+    badge: 'Step 5 of 6',
     title: 'Never Miss a Milestone 🎂',
     description:
-      'Log birthdays, anniversaries, and family trips in Upcoming Milestones. Birthdays and anniversaries automatically count down every year.',
+      'Log birthdays, anniversaries, and family trips in Milestones. Birthdays and anniversaries automatically count down every year.',
     tip: 'The dark navy Family Pulse card at the top always shows your next big date and how many new posts happened since your last visit.',
     icon: CalendarHeart,
     accent: 'from-indigo-500 to-slate-800'
   },
   {
-    badge: 'Step 5 of 5',
+    badge: 'Step 6 of 6',
     title: 'Get the App & Turn On Alerts 🔔',
     description:
-      'Add Millerites to your phone’s Home Screen using the banner at the top so it works like a real app. Then tap "🔔 Enable Alerts" to get instant lock-screen notifications when family posts or @tags you.',
+      'Add Millerites to your phone’s Home Screen using the banner at the top so it works like a real app. Then tap "🔔 Enable Alerts" to get instant lock-screen notifications for posts, @tags, and private DMs.',
     tip: 'iPhone users: Add to Home Screen via Safari first, open the app icon, then tap Enable Alerts.',
     icon: BellRing,
     accent: 'from-[#1C1C2E] to-slate-700'
