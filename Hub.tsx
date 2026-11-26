@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import InstallAppBanner from './InstallAppBanner';
+import WelcomeTourModal from './WelcomeTourModal';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
@@ -39,6 +40,7 @@ export default function Hub() {
   // USER & PROFILE STATE
   const [userId, setUserId] = useState<string | null>(null);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
+  const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [blueprint, setBlueprint] = useState<any>(null);
   
   const [profile, setProfile] = useState({
@@ -235,6 +237,11 @@ export default function Hub() {
 
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profileData) {
+          // Auto-open welcome tour for first-time Millerites members
+          if (profileData.is_millerite && !localStorage.getItem(`millerites_tour_seen_${session.user.id}`)) {
+            setShowWelcomeTour(true);
+          }
+
           // Capture previous visit timestamp & update to now for next login
           setLastSeenAt(profileData.last_seen_at || null);
           supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', session.user.id).then();
@@ -774,6 +781,15 @@ export default function Hub() {
             {activeTab === 'millerites' && profile.is_millerite && (
               <div className="animate-in fade-in duration-500 max-w-6xl mx-auto relative z-10 space-y-6">
                 
+                <WelcomeTourModal
+                  isOpen={showWelcomeTour}
+                  firstName={profile.first_name}
+                  onClose={() => {
+                    setShowWelcomeTour(false);
+                    if (userId) localStorage.setItem(`millerites_tour_seen_${userId}`, 'true');
+                  }}
+                />
+
                 <InstallAppBanner />
 
                 {/* TOP BENTO HEADER ROW */}
@@ -786,7 +802,14 @@ export default function Hub() {
                       <span className="inline-flex items-center gap-1.5 bg-slate-900/5 border border-slate-900/10 text-slate-700 text-[10px] font-extrabold uppercase tracking-widest px-3.5 py-1.5 rounded-full">
                         <Sparkles size={12} className="text-[#ff4d00]" /> Miller Family Hub
                       </span>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowWelcomeTour(true)}
+                          className="text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200/80 px-3 py-1 rounded-full transition-colors"
+                        >
+                          ? Tour
+                        </button>
                         <button
                           type="button"
                           onClick={handleEnableNotifications}
