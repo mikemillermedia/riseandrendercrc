@@ -973,34 +973,34 @@ export default function Hub() {
                   </div>
                 </div>
 
-                {/* COLLAPSIBLE MODULES STACKED ABOVE THE TIMELINE */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                {/* 2x2 SIDE-BY-SIDE COLLAPSIBLE MODULES ABOVE THE TIMELINE */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 items-start">
 
-                  {/* 1. FAMILY VIBE CHECK (Collapsible) */}
-                  <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] overflow-hidden">
+                  {/* 1. FAMILY VIBE CHECK (Collapsible, expands full-width when open) */}
+                  <div className={`bg-white/80 backdrop-blur-2xl border border-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all ${openModules.vibe ? 'col-span-2' : ''}`}>
                     <button
                       type="button"
                       onClick={() => toggleModule('vibe')}
-                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                      className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2 hover:bg-white/60 transition-colors text-left"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                          <Smile size={18} />
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
+                          <Smile size={16} />
                         </span>
                         <div className="min-w-0">
-                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
-                            Family Vibe Check
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-[10px] sm:text-xs leading-tight truncate">
+                            Vibe Check
                           </h3>
-                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
-                            {profile.status_emoji || '👋🏾'} {profile.status_text || 'Tap to share your daily vibe'}
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+                            {profile.status_emoji || '👋🏾'} {profile.status_text || 'Set vibe'}
                           </p>
                         </div>
                       </div>
-                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.vibe ? 'rotate-180 text-slate-900' : ''}`} />
+                      <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.vibe ? 'rotate-180 text-slate-900' : ''}`} />
                     </button>
 
                     {openModules.vibe && (
-                      <div className="px-5 pb-5 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
+                      <div className="px-4 sm:px-5 pb-5 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
                         <div className="flex justify-end mb-3">
                           <button
                             type="button"
@@ -1109,33 +1109,33 @@ export default function Hub() {
                     )}
                   </div>
 
-                  {/* 2. WEEKLY FAMILY SPOTLIGHT (Replaces Family Checklist) */}
-                  <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[28px] overflow-hidden">
+                  {/* 2. WEEKLY FAMILY SPOTLIGHT (Collapsible, expands full-width when open) */}
+                  <div className={`bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all ${openModules.spotlight ? 'col-span-2' : ''}`}>
                     <button
                       type="button"
                       onClick={() => toggleModule('spotlight')}
-                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                      className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2 hover:bg-white/60 transition-colors text-left"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-2xl bg-[#1C1C2E] flex items-center justify-center text-amber-400 shrink-0">
-                          <Award size={18} />
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-[#1C1C2E] flex items-center justify-center text-amber-400 shrink-0">
+                          <Award size={16} />
                         </span>
                         <div className="min-w-0">
-                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
-                            Family Spotlight
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-[10px] sm:text-xs leading-tight truncate">
+                            Spotlight
                           </h3>
-                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
                             {currentSpotlight
-                              ? `🌟 ${currentSpotlight.honoreeProfile?.first_name || 'Family'} — ${currentSpotlight.title}`
-                              : 'Weekly member highlight & shoutouts'}
+                              ? `🌟 ${currentSpotlight.honoreeProfile?.first_name || 'Family'}`
+                              : 'Weekly shoutout'}
                           </p>
                         </div>
                       </div>
-                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.spotlight ? 'rotate-180 text-slate-900' : ''}`} />
+                      <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.spotlight ? 'rotate-180 text-slate-900' : ''}`} />
                     </button>
 
                     {openModules.spotlight && (
-                      <div className="px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200 space-y-4">
+                      <div className="px-4 sm:px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200 space-y-4">
                         <div className="flex justify-end">
                           <button
                             type="button"
@@ -1146,7 +1146,6 @@ export default function Hub() {
                           </button>
                         </div>
 
-                        {/* Add Spotlight Form */}
                         {isAddingSpotlightOpen && (
                           <div className="p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl space-y-2.5 animate-in fade-in">
                             <select
@@ -1205,7 +1204,6 @@ export default function Hub() {
                           </div>
                         )}
 
-                        {/* Current Weekly Spotlight Hero Card */}
                         {!currentSpotlight ? (
                           <div className="text-center py-6 px-4 bg-slate-50/70 rounded-2xl border border-slate-100">
                             <p className="text-slate-400 text-xs font-medium">
@@ -1261,7 +1259,6 @@ export default function Hub() {
                               </p>
                             </div>
 
-                            {/* Past Spotlights */}
                             {spotlights.length > 1 && (
                               <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">
@@ -1296,31 +1293,31 @@ export default function Hub() {
                     )}
                   </div>
 
-                  {/* 3. UPCOMING MILESTONES (Collapsible) */}
-                  <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                  {/* 3. UPCOMING MILESTONES (Collapsible, expands full-width when open) */}
+                  <div className={`bg-white/85 backdrop-blur-2xl border border-white rounded-[24px] sm:rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-all ${openModules.milestones ? 'col-span-2' : ''}`}>
                     <button
                       type="button"
                       onClick={() => toggleModule('milestones')}
-                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                      className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2 hover:bg-white/60 transition-colors text-left"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                          <CalendarHeart size={18} />
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
+                          <CalendarHeart size={16} />
                         </span>
                         <div className="min-w-0">
-                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
-                            Upcoming Milestones
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-[10px] sm:text-xs leading-tight truncate">
+                            Milestones
                           </h3>
-                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">
-                            {nextMilestone ? `${nextMilestone.emoji} ${nextMilestone.title} (${nextMilestone.label})` : `${milestones.length} dates saved`}
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+                            {nextMilestone ? `${nextMilestone.emoji} ${nextMilestone.label}` : `${milestones.length} saved`}
                           </p>
                         </div>
                       </div>
-                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.milestones ? 'rotate-180 text-slate-900' : ''}`} />
+                      <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.milestones ? 'rotate-180 text-slate-900' : ''}`} />
                     </button>
 
                     {openModules.milestones && (
-                      <div className="px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
+                      <div className="px-4 sm:px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
                         <div className="flex justify-end mb-3">
                           <button
                             type="button"
@@ -1438,31 +1435,31 @@ export default function Hub() {
                     )}
                   </div>
                   
-                  {/* 4. PRAYER WALL (Collapsible) */}
-                  <div className="bg-white/85 backdrop-blur-2xl border border-white rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                  {/* 4. PRAYER WALL (Collapsible, expands full-width when open) */}
+                  <div className={`bg-white/85 backdrop-blur-2xl border border-white rounded-[24px] sm:rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-all ${openModules.prayers ? 'col-span-2' : ''}`}>
                     <button
                       type="button"
                       onClick={() => toggleModule('prayers')}
-                      className="w-full p-5 flex items-center justify-between gap-3 hover:bg-white/60 transition-colors text-left"
+                      className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2 hover:bg-white/60 transition-colors text-left"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
-                          <BookHeart size={18} />
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00] shrink-0">
+                          <BookHeart size={16} />
                         </span>
                         <div className="min-w-0">
-                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-xs leading-none">
+                          <h3 className="text-slate-900 font-black uppercase tracking-wider text-[10px] sm:text-xs leading-tight truncate">
                             Prayer Wall
                           </h3>
-                          <p className="text-[11px] text-slate-400 font-medium mt-1">
-                            {activePrayersCount} Active • {answeredPrayersCount} Answered
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+                            {activePrayersCount} Active • {answeredPrayersCount} Ans
                           </p>
                         </div>
                       </div>
-                      <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.prayers ? 'rotate-180 text-slate-900' : ''}`} />
+                      <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform duration-300 ${openModules.prayers ? 'rotate-180 text-slate-900' : ''}`} />
                     </button>
 
                     {openModules.prayers && (
-                      <div className="px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
+                      <div className="px-4 sm:px-5 pb-5 pt-3 border-t border-slate-100 animate-in fade-in duration-200">
                         <div className="flex justify-end mb-4">
                           <div className="flex bg-slate-100 p-0.5 rounded-full border border-slate-200/60">
                             <button 
