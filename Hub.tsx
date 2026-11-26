@@ -1619,43 +1619,40 @@ export default function Hub() {
                   </div>
                 </div>
 
-                {/* ALWAYS-OPEN FAMILY POSTS / TIMELINE SECTION */}
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[#ff4d00]">
-                        <MessageSquare size={16} />
-                      </span>
-                      <h2 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm">
-                        Family Posts
-                      </h2>
-                    </div>
-                    <span className="text-[11px] font-bold text-slate-400">
+                {/* ALWAYS-OPEN FAMILY POSTS / TIMELINE SECTION (Clean & Integrated) */}
+                <div className="pt-4">
+                  {/* Minimal Section Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 px-1">
+                    <h2 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm flex items-center gap-2">
+                      <MessageSquare size={15} className="text-[#ff4d00]" />
+                      Family Posts
+                    </h2>
+                    <span className="text-[11px] font-semibold text-slate-400">
                       {posts.length} {posts.length === 1 ? 'update' : 'updates'}
                     </span>
                   </div>
 
-                  {/* Post Composer */}
-                  <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 sm:p-6 rounded-[28px] relative">
-                    <div className="flex gap-3.5 items-start">
-                      <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/80 shrink-0 flex items-center justify-center text-sm font-bold text-slate-700 overflow-hidden shadow-sm">
+                  {/* Flat Integrated Post Composer */}
+                  <div className="py-4 px-1 border-b border-slate-200/80 relative">
+                    <div className="flex gap-3 items-start">
+                      <div className="w-10 h-10 rounded-full bg-slate-200/80 shrink-0 flex items-center justify-center text-xs font-bold text-slate-700 overflow-hidden">
                         {profile.avatar_url ? (
                           <img src={profile.avatar_url} className="w-full h-full object-cover" />
                         ) : (
                           profile.first_name?.[0] || 'M'
                         )}
                       </div>
-                      <div className="flex-1 relative">
+                      <div className="flex-1 min-w-0 relative">
                         <textarea 
                           rows={2} 
-                          placeholder="Share a family update, photo, or type @ to tag someone..." 
+                          placeholder="Share a family update, photo, or type @ to tag..." 
                           value={newPost} 
                           onChange={(e) => handlePostTextChange(e.target.value)}
                           className="w-full bg-transparent text-slate-800 text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400 pt-1"
                         />
 
                         {mentionTarget === 'post' && filteredMentionMembers.length > 0 && (
-                          <div className="mt-1 mb-2 bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-xl p-1.5 max-h-48 overflow-y-auto z-30">
+                          <div className="mt-1 mb-2 bg-white border border-slate-200 rounded-2xl shadow-lg p-1.5 max-h-48 overflow-y-auto z-30">
                             <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-2.5 py-1">
                               Tag a Family Member
                             </p>
@@ -1666,7 +1663,7 @@ export default function Hub() {
                                 onClick={() => insertMention(member)}
                                 className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 transition-colors text-left"
                               >
-                                <div className="w-7 h-7 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
+                                <div className="w-7 h-7 rounded-full bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
                                   {member.avatar_url ? (
                                     <img src={member.avatar_url} className="w-full h-full object-cover" />
                                   ) : (
@@ -1687,53 +1684,54 @@ export default function Hub() {
                         )}
 
                         {postMediaUrl && (
-                          <div className="relative mt-3 inline-block">
+                          <div className="relative mt-2 inline-block">
                             {isVideo(postMediaUrl) ? (
-                              <video src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" autoPlay muted loop playsInline />
+                              <video src={postMediaUrl} className="h-32 rounded-xl object-cover" autoPlay muted loop playsInline />
                             ) : (
-                              <img src={postMediaUrl} className="h-36 rounded-2xl object-cover border border-slate-200 shadow-sm" />
+                              <img src={postMediaUrl} className="h-32 rounded-xl object-cover" />
                             )}
-                            <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-slate-900 text-white rounded-full p-1.5 shadow-md hover:bg-red-500 transition-colors">
-                              <X size={12}/>
+                            <button onClick={() => setPostMediaUrl('')} className="absolute -top-2 -right-2 bg-slate-900 text-white rounded-full p-1 shadow hover:bg-red-500 transition-colors">
+                              <X size={11}/>
                             </button>
                           </div>
                         )}
-                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
-                          <div className="flex items-center gap-1">
+
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="flex items-center gap-1 -ml-2">
                             <button 
                               onClick={() => fileInputRef.current?.click()} 
-                              className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-slate-200/50 transition-colors"
                             >
-                              <ImageIcon size={16} className="text-[#ff4d00]" />
-                              <span>Photo / Video</span>
+                              <ImageIcon size={15} className="text-[#ff4d00]" />
+                              <span>Media</span>
                               <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleMediaUpload} />
                             </button>
                             <button
                               type="button"
                               onClick={() => handlePostTextChange(newPost + (newPost && !newPost.endsWith(' ') ? ' @' : '@'))}
-                              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/80 transition-colors"
+                              className="flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-slate-200/50 transition-colors"
                               title="Tag a family member"
                             >
-                              <AtSign size={15} className="text-[#ff4d00]" />
-                              <span className="hidden sm:inline">Tag</span>
+                              <AtSign size={14} className="text-[#ff4d00]" />
+                              <span>Tag</span>
                             </button>
                           </div>
                           <button 
                             onClick={handleCreatePost} 
                             disabled={isPosting || (!newPost.trim() && !postMediaUrl)} 
-                            className="bg-[#1C1C2E] hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-2 shadow-md shadow-slate-900/10 transition-all disabled:opacity-40"
+                            className="bg-[#1C1C2E] hover:bg-slate-800 text-white px-5 py-1.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-1.5 transition-all disabled:opacity-35"
                           >
-                            {isPosting ? 'Posting...' : 'Post'} <Send size={13} />
+                            {isPosting ? 'Posting...' : 'Post'} <Send size={12} />
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Feed Cards */}
-                  <div className="space-y-4">
+                  {/* Clean Hairline-Separated Feed */}
+                  <div className="divide-y divide-slate-200/75">
                     {posts.length === 0 ? (
-                      <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[28px] p-12 text-center shadow-[0_8px_30px_rgb(0,0,0,0.03)]">
+                      <div className="py-12 text-center">
                         <p className="text-slate-400 text-sm font-medium">No family updates yet. Be the first to share!</p>
                       </div>
                     ) : (
@@ -1742,36 +1740,37 @@ export default function Hub() {
                         const myReaction = post.likes.find((l: any) => l.user_id === userId)?.emoji;
                         
                         return (
-                          <div key={post.id} className="bg-white/85 backdrop-blur-2xl border border-white p-5 sm:p-6 rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all">
-                            <div className="flex items-start justify-between mb-4 relative">
-                              <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => openMemberProfile(post.user_id)}>
-                                <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/70 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 overflow-hidden shadow-sm">
+                          <article key={post.id} className="py-5 px-1">
+                            {/* Post Header */}
+                            <div className="flex items-center justify-between mb-2.5 relative">
+                              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => openMemberProfile(post.user_id)}>
+                                <div className="w-9 h-9 rounded-full bg-slate-200/80 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0 overflow-hidden">
                                   {post.profile?.avatar_url ? (
                                     <img src={post.profile.avatar_url} className="w-full h-full object-cover" />
                                   ) : (
                                     post.profile?.first_name?.[0] || 'M'
                                   )}
                                 </div>
-                                <div>
+                                <div className="flex items-baseline gap-2">
                                   <p className="text-slate-900 text-sm font-bold group-hover:text-[#ff4d00] transition-colors">
                                     {post.profile?.first_name ? `${post.profile.first_name} ${post.profile.last_name}` : 'Family Member'}
                                   </p>
-                                  <p className="text-slate-400 text-[11px] font-medium">{formatTime(post.created_at)}</p>
+                                  <span className="text-slate-400 text-[11px] font-medium">{formatTime(post.created_at)}</span>
                                 </div>
                               </div>
                               
                               {isOwnPost && (
                                 <div className="relative">
-                                  <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
-                                    <MoreVertical size={16} />
+                                  <button onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)} className="text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-200/50 transition-colors">
+                                    <MoreVertical size={15} />
                                   </button>
                                   {menuOpenId === post.id && (
-                                    <div className="absolute right-0 mt-1 w-36 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-xl py-1.5 z-20">
-                                      <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2">
-                                        <Edit2 size={13}/> Edit Post
+                                    <div className="absolute right-0 mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20">
+                                      <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setMenuOpenId(null); }} className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                                        <Edit2 size={12}/> Edit
                                       </button>
-                                      <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                        <Trash2 size={13}/> Delete
+                                      <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                        <Trash2 size={12}/> Delete
                                       </button>
                                     </div>
                                   )}
@@ -1779,223 +1778,228 @@ export default function Hub() {
                               )}
                             </div>
 
-                            {editingPostId === post.id ? (
-                              <div className="mb-4">
-                                <textarea 
-                                  value={editContent} 
-                                  onChange={(e) => setEditContent(e.target.value)} 
-                                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400" 
-                                />
-                                <div className="flex gap-2 justify-end mt-2.5">
-                                  <button onClick={() => setEditingPostId(null)} className="text-xs font-semibold text-slate-500 px-3 py-1.5 rounded-xl hover:bg-slate-100">
-                                    Cancel
-                                  </button>
-                                  <button onClick={() => submitEdit(post.id)} className="bg-[#1C1C2E] text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm">
-                                    Save
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {post.content && (
-                                  <p className="text-slate-700 text-[15px] leading-relaxed mb-4 whitespace-pre-wrap">
-                                    {renderTextWithMentions(post.content)}
-                                  </p>
-                                )}
-                                {post.media_url && (
-                                  <div className="rounded-2xl overflow-hidden mb-4 border border-slate-100 bg-slate-50">
-                                    {isVideo(post.media_url) ? (
-                                      <video src={post.media_url} controls playsInline className="w-full max-h-[480px] object-contain" />
-                                    ) : (
-                                      <img src={post.media_url} className="w-full max-h-[520px] object-cover" />
-                                    )}
+                            {/* Post Body */}
+                            <div className="sm:pl-12">
+                              {editingPostId === post.id ? (
+                                <div className="mb-3">
+                                  <textarea 
+                                    value={editContent} 
+                                    onChange={(e) => setEditContent(e.target.value)} 
+                                    className="w-full bg-white/80 border border-slate-300 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-slate-500" 
+                                  />
+                                  <div className="flex gap-2 justify-end mt-2">
+                                    <button onClick={() => setEditingPostId(null)} className="text-xs font-semibold text-slate-500 px-3 py-1 rounded-full hover:bg-slate-200/60">
+                                      Cancel
+                                    </button>
+                                    <button onClick={() => submitEdit(post.id)} className="bg-[#1C1C2E] text-white text-xs font-bold px-4 py-1 rounded-full">
+                                      Save
+                                    </button>
                                   </div>
-                                )}
-                              </>
-                            )}
-
-                            <div className="border-t border-slate-100 pt-3 space-y-2.5">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {POST_REACTIONS.map(emoji => {
-                                    const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
-                                    const isSelected = myReaction === emoji;
-                                    return (
-                                      <button
-                                        key={emoji}
-                                        type="button"
-                                        onClick={() => toggleReaction(post, emoji)}
-                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                                          isSelected
-                                            ? 'bg-[#1C1C2E] text-white shadow-sm'
-                                            : count > 0
-                                            ? 'bg-amber-500/10 text-slate-800 border border-amber-500/20 hover:bg-amber-500/20'
-                                            : 'bg-slate-100/80 text-slate-500 hover:bg-slate-200/70'
-                                        }`}
-                                      >
-                                        <span className="text-sm leading-none">{emoji}</span>
-                                        {count > 0 && <span className="text-[11px]">{count}</span>}
-                                      </button>
-                                    );
-                                  })}
                                 </div>
-
-                                <div className="flex items-center gap-1">
-                                  <button 
-                                    onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                  >
-                                    <MessageSquare size={15} /> 
-                                    <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
-                                  </button>
-
-                                  <button 
-                                    onClick={() => handleRepost(post)} 
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-all text-xs font-bold"
-                                    title="Repost"
-                                  >
-                                    <Repeat size={15} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              {post.likes.length > 0 && (
-                                <div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setExpandedReactionsPostId(expandedReactionsPostId === post.id ? null : post.id)}
-                                    className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-                                  >
-                                    <div className="flex -space-x-1.5">
-                                      {post.likes.slice(0, 4).map((like: any) => (
-                                        <div
-                                          key={like.id || like.user_id}
-                                          className="w-5 h-5 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[8px] font-bold text-slate-700"
-                                        >
-                                          {like.profile?.avatar_url ? (
-                                            <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
-                                          ) : (
-                                            like.profile?.first_name?.[0] || 'M'
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <span>
-                                      {post.likes.length === 1
-                                        ? `${post.likes[0].profile?.first_name || 'Someone'} reacted`
-                                        : post.likes.length === 2
-                                        ? `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes[1].profile?.first_name || '1 other'} reacted`
-                                        : `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes.length - 1} others reacted`}
-                                    </span>
-                                  </button>
-
-                                  {expandedReactionsPostId === post.id && (
-                                    <div className="mt-2 p-3 bg-slate-50/90 border border-slate-200/70 rounded-2xl space-y-2 animate-in fade-in">
-                                      {post.likes.map((like: any) => (
-                                        <div
-                                          key={like.id || like.user_id}
-                                          onClick={() => openMemberProfile(like.user_id)}
-                                          className="flex items-center justify-between gap-2 cursor-pointer group"
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-700">
-                                              {like.profile?.avatar_url ? (
-                                                <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
-                                              ) : (
-                                                like.profile?.first_name?.[0] || 'M'
-                                              )}
-                                            </div>
-                                            <span className="text-xs font-bold text-slate-800 group-hover:text-[#ff4d00] transition-colors">
-                                              {like.profile?.first_name ? `${like.profile.first_name} ${like.profile.last_name || ''}`.trim() : 'Family Member'}
-                                            </span>
-                                          </div>
-                                          <span className="text-sm">{like.emoji || '❤️'}</span>
-                                        </div>
-                                      ))}
-                                    </div>
+                              ) : (
+                                <>
+                                  {post.content && (
+                                    <p className="text-slate-800 text-[15px] leading-relaxed mb-3 whitespace-pre-wrap">
+                                      {renderTextWithMentions(post.content)}
+                                    </p>
                                   )}
-                                </div>
-                              )}
-                            </div>
-
-                            {(replyingToPostId === post.id || post.replies.length > 0) && (
-                              <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                                {post.replies.map((reply:any) => (
-                                  <div key={reply.id} className="flex gap-3 items-start">
-                                    <div 
-                                      className="w-7 h-7 rounded-xl bg-slate-100 border border-slate-200/70 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
-                                      onClick={() => openMemberProfile(reply.user_id)}
-                                    >
-                                      {reply.profiles?.avatar_url ? (
-                                        <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
+                                  {post.media_url && (
+                                    <div className="rounded-2xl overflow-hidden mb-3 bg-slate-200/40">
+                                      {isVideo(post.media_url) ? (
+                                        <video src={post.media_url} controls playsInline className="w-full max-h-[480px] object-contain" />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-600 font-bold">
-                                          {reply.profiles?.first_name?.[0] || 'M'}
-                                        </div>
+                                        <img src={post.media_url} className="w-full max-h-[520px] object-cover" />
                                       )}
                                     </div>
-                                    <div className="bg-slate-100/80 border border-slate-200/50 rounded-2xl px-4 py-2.5 flex-1">
-                                      <div className="flex items-center justify-between mb-0.5">
-                                        <span 
-                                          className="text-xs font-bold text-slate-900 hover:text-[#ff4d00] cursor-pointer" 
-                                          onClick={() => openMemberProfile(reply.user_id)}
+                                  )}
+                                </>
+                              )}
+
+                              {/* Minimal Action & Reaction Row */}
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {POST_REACTIONS.map(emoji => {
+                                      const count = post.likes.filter((l: any) => (l.emoji || '❤️') === emoji).length;
+                                      const isSelected = myReaction === emoji;
+                                      return (
+                                        <button
+                                          key={emoji}
+                                          type="button"
+                                          onClick={() => toggleReaction(post, emoji)}
+                                          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all active:scale-95 ${
+                                            isSelected
+                                              ? 'bg-[#1C1C2E] text-white'
+                                              : count > 0
+                                              ? 'bg-slate-200/70 text-slate-800 hover:bg-slate-200'
+                                              : 'text-slate-500 hover:bg-slate-200/50'
+                                          }`}
                                         >
-                                          {reply.profiles?.first_name || 'Family'}
-                                        </span>
-                                        <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
-                                      </div>
-                                      <p className="text-xs text-slate-700 leading-relaxed">
-                                        {renderTextWithMentions(reply.content)}
-                                      </p>
-                                    </div>
+                                          <span className="text-sm leading-none">{emoji}</span>
+                                          {count > 0 && <span className="text-[11px]">{count}</span>}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
-                                ))}
-                                {replyingToPostId === post.id && (
-                                  <div className="pt-1 space-y-2">
-                                    {mentionTarget === 'reply' && filteredMentionMembers.length > 0 && (
-                                      <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-2xl shadow-lg p-1.5 max-h-40 overflow-y-auto">
-                                        {filteredMentionMembers.map(member => (
-                                          <button
-                                            key={member.id}
-                                            type="button"
-                                            onClick={() => insertMention(member)}
-                                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition-colors text-left"
+
+                                  <div className="flex items-center gap-1">
+                                    <button 
+                                      onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)} 
+                                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all text-xs font-semibold"
+                                    >
+                                      <MessageSquare size={14} /> 
+                                      <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
+                                    </button>
+
+                                    <button 
+                                      onClick={() => handleRepost(post)} 
+                                      className="flex items-center p-1.5 rounded-full text-slate-400 hover:bg-slate-200/50 hover:text-slate-900 transition-all"
+                                      title="Repost"
+                                    >
+                                      <Repeat size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {post.likes.length > 0 && (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedReactionsPostId(expandedReactionsPostId === post.id ? null : post.id)}
+                                      className="flex items-center gap-2 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                                    >
+                                      <div className="flex -space-x-1.5">
+                                        {post.likes.slice(0, 4).map((like: any) => (
+                                          <div
+                                            key={like.id || like.user_id}
+                                            className="w-4 h-4 rounded-full ring-2 ring-[#F5F5F7] bg-slate-200 overflow-hidden flex items-center justify-center text-[7px] font-bold text-slate-700"
                                           >
-                                            <div className="w-6 h-6 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[9px] font-bold text-slate-700">
-                                              {member.avatar_url ? (
-                                                <img src={member.avatar_url} className="w-full h-full object-cover" />
-                                              ) : (
-                                                member.first_name?.[0] || 'M'
-                                              )}
+                                            {like.profile?.avatar_url ? (
+                                              <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                              like.profile?.first_name?.[0] || 'M'
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <span>
+                                        {post.likes.length === 1
+                                          ? `${post.likes[0].profile?.first_name || 'Someone'} reacted`
+                                          : post.likes.length === 2
+                                          ? `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes[1].profile?.first_name || '1 other'} reacted`
+                                          : `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes.length - 1} others reacted`}
+                                      </span>
+                                    </button>
+
+                                    {expandedReactionsPostId === post.id && (
+                                      <div className="mt-2 pl-2 border-l-2 border-slate-200 space-y-1.5 animate-in fade-in">
+                                        {post.likes.map((like: any) => (
+                                          <div
+                                            key={like.id || like.user_id}
+                                            onClick={() => openMemberProfile(like.user_id)}
+                                            className="flex items-center justify-between gap-2 cursor-pointer group max-w-xs"
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[9px] font-bold text-slate-700">
+                                                {like.profile?.avatar_url ? (
+                                                  <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                                ) : (
+                                                  like.profile?.first_name?.[0] || 'M'
+                                                )}
+                                              </div>
+                                              <span className="text-xs font-semibold text-slate-700 group-hover:text-[#ff4d00] transition-colors">
+                                                {like.profile?.first_name ? `${like.profile.first_name} ${like.profile.last_name || ''}`.trim() : 'Family Member'}
+                                              </span>
                                             </div>
-                                            <span className="text-xs font-bold text-slate-800">{member.first_name} {member.last_name}</span>
-                                            <span className="text-[10px] text-[#ff4d00] font-semibold ml-auto">@{member.first_name}</span>
-                                          </button>
+                                            <span className="text-xs">{like.emoji || '❤️'}</span>
+                                          </div>
                                         ))}
                                       </div>
                                     )}
-                                    <div className="flex gap-2">
-                                      <input 
-                                        autoFocus 
-                                        type="text" 
-                                        placeholder="Write a reply or type @ to tag..." 
-                                        value={replyContent} 
-                                        onChange={(e) => handleReplyTextChange(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && !mentionTarget && submitReply(post.id)}
-                                        className="flex-1 bg-slate-100/90 border border-slate-200/80 rounded-full px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all" 
-                                      />
-                                      <button 
-                                        onClick={() => submitReply(post.id)} 
-                                        className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2.5 rounded-full transition-colors shadow-sm"
-                                      >
-                                        <Send size={13}/>
-                                      </button>
-                                    </div>
                                   </div>
                                 )}
                               </div>
-                            )}
-                          </div>
+
+                              {/* Clean Threaded Replies */}
+                              {(replyingToPostId === post.id || post.replies.length > 0) && (
+                                <div className="mt-3 pt-2 pl-3 border-l-2 border-slate-200/80 space-y-2.5">
+                                  {post.replies.map((reply:any) => (
+                                    <div key={reply.id} className="flex gap-2.5 items-start">
+                                      <div 
+                                        className="w-6 h-6 rounded-full bg-slate-200/80 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
+                                        onClick={() => openMemberProfile(reply.user_id)}
+                                      >
+                                        {reply.profiles?.avatar_url ? (
+                                          <img src={reply.profiles.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-[9px] text-slate-600 font-bold">
+                                            {reply.profiles?.first_name?.[0] || 'M'}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-baseline gap-2">
+                                          <span 
+                                            className="text-xs font-bold text-slate-900 hover:text-[#ff4d00] cursor-pointer" 
+                                            onClick={() => openMemberProfile(reply.user_id)}
+                                          >
+                                            {reply.profiles?.first_name || 'Family'}
+                                          </span>
+                                          <span className="text-[10px] font-medium text-slate-400">{formatTime(reply.created_at)}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-700 leading-relaxed mt-0.5">
+                                          {renderTextWithMentions(reply.content)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {replyingToPostId === post.id && (
+                                    <div className="pt-1 space-y-2">
+                                      {mentionTarget === 'reply' && filteredMentionMembers.length > 0 && (
+                                        <div className="bg-white border border-slate-200 rounded-xl shadow-md p-1 max-h-40 overflow-y-auto">
+                                          {filteredMentionMembers.map(member => (
+                                            <button
+                                              key={member.id}
+                                              type="button"
+                                              onClick={() => insertMention(member)}
+                                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-left"
+                                            >
+                                              <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[8px] font-bold text-slate-700">
+                                                {member.avatar_url ? (
+                                                  <img src={member.avatar_url} className="w-full h-full object-cover" />
+                                                ) : (
+                                                  member.first_name?.[0] || 'M'
+                                                )}
+                                              </div>
+                                              <span className="text-xs font-bold text-slate-800">{member.first_name} {member.last_name}</span>
+                                              <span className="text-[10px] text-[#ff4d00] font-semibold ml-auto">@{member.first_name}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <div className="flex gap-2">
+                                        <input 
+                                          autoFocus 
+                                          type="text" 
+                                          placeholder="Write a reply or type @ to tag..." 
+                                          value={replyContent} 
+                                          onChange={(e) => handleReplyTextChange(e.target.value)}
+                                          onKeyDown={(e) => e.key === 'Enter' && !mentionTarget && submitReply(post.id)}
+                                          className="flex-1 bg-transparent border-b border-slate-300 px-1 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-600 transition-all" 
+                                        />
+                                        <button 
+                                          onClick={() => submitReply(post.id)} 
+                                          className="bg-[#1C1C2E] hover:bg-slate-800 text-white p-2 rounded-full transition-colors"
+                                        >
+                                          <Send size={12}/>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </article>
                         );
                       })
                     )}
