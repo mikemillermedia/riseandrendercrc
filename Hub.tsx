@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, Plus, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle, Award
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, Plus, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle, Award, Sun, Moon
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -50,6 +50,17 @@ export default function Hub() {
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [blueprint, setBlueprint] = useState<any>(null);
+
+  // THEME TOGGLE STATE (Saved per member device)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('millerites_theme') as 'light' | 'dark') || 'light';
+  });
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    localStorage.setItem('millerites_theme', next);
+  };
 
   // FAMILY PULSE CAROUSEL STATE
   const [pulseIndex, setPulseIndex] = useState(0);
@@ -131,8 +142,10 @@ export default function Hub() {
   const [viewingMember, setViewingMember] = useState<any | null>(null);
   const [memberPosts, setMemberPosts] = useState<any[]>([]);
 
-  // APPLE LIGHT THEME TOGGLE FOR MILLERITES & PROFILE
-  const isLightMode = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile';
+  // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES & PROFILE
+  const isHubThemeable = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile';
+  const isLightMode = isHubThemeable && theme === 'light';
+  const isDarkHub = isHubThemeable && theme === 'dark';
 
   const normalizeEmoji = (emoji?: string) => {
     if (!emoji || emoji === '👋') return '👋🏾';
@@ -937,7 +950,7 @@ export default function Hub() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:p-10 md:pb-12 relative scroll-smooth">
+      <main className={`flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:p-10 md:pb-12 relative scroll-smooth ${isDarkHub ? 'millerites-dark' : ''}`}>
         {isLightMode ? (
           <>
             <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] bg-amber-300/25 rounded-full blur-[130px] pointer-events-none" />
@@ -956,6 +969,34 @@ export default function Hub() {
           recipient={dmRecipient}
           onMessagesRead={() => userId && fetchUnreadDms(userId)}
         />
+
+        {/* SUBTLE TOP-RIGHT DARK / LIGHT MODE TOGGLE */}
+        {isHubThemeable && (
+          <div className="max-w-5xl mx-auto flex justify-end mb-3 relative z-20">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle dark or light mode"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all backdrop-blur-xl ${
+                isLightMode
+                  ? 'bg-white/75 border-slate-200/80 text-slate-600 hover:text-slate-900 hover:bg-white shadow-sm'
+                  : 'bg-white/10 border-white/15 text-white/80 hover:text-white hover:bg-white/15'
+              }`}
+            >
+              {isLightMode ? (
+                <>
+                  <Moon size={13} className="text-slate-600" />
+                  <span>Dark</span>
+                </>
+              ) : (
+                <>
+                  <Sun size={13} className="text-amber-400" />
+                  <span>Light</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
