@@ -65,6 +65,24 @@ export default function Hub() {
   // FAMILY PULSE CAROUSEL STATE
   const [pulseIndex, setPulseIndex] = useState(0);
 
+  // AUTO-HIDE BOTTOM NAV ON SCROLL
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMainScroll = () => {
+    setIsScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 280);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
+
   // COLLAPSIBLE MODULES STATE (All closed by default; Timeline is always open)
   const [openModules, setOpenModules] = useState({
     vibe: false,
@@ -970,7 +988,10 @@ export default function Hub() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className={`flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:p-10 md:pb-12 relative scroll-smooth ${isDarkHub ? 'millerites-dark' : ''}`}>
+      <main
+        onScroll={handleMainScroll}
+        className={`flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:p-10 md:pb-12 relative scroll-smooth ${isDarkHub ? 'millerites-dark' : ''}`}
+      >
         {isLightMode ? (
           <>
             <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] bg-amber-300/25 rounded-full blur-[130px] pointer-events-none" />
@@ -2750,9 +2771,13 @@ export default function Hub() {
         )}
       </main>
 
-      {/* FLOATING GLASS MOBILE BOTTOM NAVIGATION (Shrunken Centered Pill) */}
+      {/* FLOATING GLASS MOBILE BOTTOM NAVIGATION (Shrunken Centered Pill, Auto-Hides on Scroll) */}
       <nav
-        className={`md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-fit max-w-[calc(100%-2rem)] z-30 rounded-full backdrop-blur-2xl border flex items-center gap-1 px-2 py-1.5 transition-all duration-500 ${
+        className={`md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-fit max-w-[calc(100%-2rem)] z-30 rounded-full backdrop-blur-2xl border flex items-center gap-1 px-2 py-1.5 transition-all duration-500 ease-out ${
+          isScrolling
+            ? 'opacity-0 translate-y-6 pointer-events-none'
+            : 'opacity-100 translate-y-0'
+        } ${
           isLightMode
             ? 'bg-white/80 border-white/95 shadow-[0_12px_35px_rgba(28,28,46,0.14)]'
             : 'bg-[#141414]/85 border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.6)]'
