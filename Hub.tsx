@@ -142,10 +142,12 @@ export default function Hub() {
   const [viewingMember, setViewingMember] = useState<any | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
-  // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES & PROFILE
-  const isHubThemeable = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile';
+  // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES, DMS & PROFILE
+  const isHubThemeable = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile' || activeTab === 'dms';
   const isLightMode = isHubThemeable && theme === 'light';
   const isDarkHub = isHubThemeable && theme === 'dark';
+
+  const totalUnreadDms = Object.values(unreadDmSenders).reduce((sum, count) => sum + count, 0);
 
   const normalizeEmoji = (emoji?: string) => {
     if (!emoji || emoji === '👋') return '👋🏾';
@@ -926,6 +928,17 @@ export default function Hub() {
           {profile.is_millerite && (
             <button onClick={() => { setActiveTab('millerites'); setViewingMember(null); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'millerites' || activeTab === 'member_view' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
               <Users size={18} /> Millerites
+            </button>
+          )}
+
+          {profile.is_millerite && (
+            <button onClick={() => setActiveTab('dms')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'dms' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
+              <span className="flex items-center gap-3"><MessageCircle size={18} /> Messages</span>
+              {totalUnreadDms > 0 && (
+                <span className="bg-[#ff4d00] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                  {totalUnreadDms}
+                </span>
+              )}
             </button>
           )}
 
@@ -1774,7 +1787,7 @@ export default function Hub() {
                     )}
                   </div>
                   
-                  {/* 4. PRAYER WALL (Collapsible, expands full-width when open) */}
+                  {/* 4. PRAYERS (Collapsible, expands full-width when open) */}
                   <div className={`bg-white/85 backdrop-blur-2xl border border-white rounded-[24px] sm:rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-all ${openModules.prayers ? 'col-span-2' : ''}`}>
                     <button
                       type="button"
@@ -1787,7 +1800,7 @@ export default function Hub() {
                         </span>
                         <div className="min-w-0">
                           <h3 className="text-slate-900 font-black uppercase tracking-wider text-[10px] sm:text-xs leading-tight truncate">
-                            Prayer Wall
+                            Prayers
                           </h3>
                           <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
                             {activePrayersCount} Active • {answeredPrayersCount} Ans
@@ -2456,6 +2469,76 @@ export default function Hub() {
               </div>
             )}
 
+            {/* DIRECT MESSAGES INBOX TAB */}
+            {activeTab === 'dms' && profile.is_millerite && (
+              <div className="animate-in fade-in duration-500 max-w-3xl mx-auto relative z-10 space-y-5">
+                <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-6 sm:p-8">
+                  <span className="inline-flex items-center gap-1.5 bg-slate-900/5 border border-slate-900/10 text-slate-700 text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2">
+                    <MessageCircle size={11} className="text-[#ff4d00]" /> Private Family Chat
+                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+                    Direct Messages
+                  </h1>
+                  <p className="text-slate-500 text-xs font-medium mt-1">
+                    Tap any family member below to open your private chat.
+                  </p>
+                </div>
+
+                <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] overflow-hidden divide-y divide-slate-200/75">
+                  {otherFamilyMembers.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <p className="text-slate-400 text-sm font-medium">No other family members yet.</p>
+                    </div>
+                  ) : (
+                    [...otherFamilyMembers]
+                      .sort((a, b) => (unreadDmSenders[b.id] || 0) - (unreadDmSenders[a.id] || 0))
+                      .map(member => {
+                        const unreadCount = unreadDmSenders[member.id] || 0;
+                        return (
+                          <button
+                            key={member.id}
+                            type="button"
+                            onClick={() => setDmRecipient(member)}
+                            className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors text-left"
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className="relative shrink-0">
+                                <div className="w-12 h-12 rounded-full bg-slate-100 ring-2 ring-slate-200/80 overflow-hidden flex items-center justify-center text-sm font-black text-slate-700">
+                                  {member.avatar_url ? (
+                                    <img src={member.avatar_url} className="w-full h-full object-cover" />
+                                  ) : (
+                                    member.first_name?.[0] || 'M'
+                                  )}
+                                </div>
+                                {unreadCount > 0 && (
+                                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow">
+                                    {unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-900 truncate">
+                                  {member.first_name} {member.last_name}
+                                </p>
+                                <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                                  {unreadCount > 0
+                                    ? `${unreadCount} new ${unreadCount === 1 ? 'message' : 'messages'}`
+                                    : `${member.status_emoji || '👋🏾'} ${member.status_text || 'Tap to message'}`}
+                                </p>
+                              </div>
+                            </div>
+
+                            <span className="text-[11px] font-bold text-[#ff4d00] bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full shrink-0">
+                              Chat
+                            </span>
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* ASSET VAULT TAB (DARK MODE) */}
             {activeTab === 'vault' && profile.is_client && (
               <div className="animate-in fade-in max-w-6xl mx-auto space-y-12">
@@ -2667,18 +2750,18 @@ export default function Hub() {
         )}
       </main>
 
-      {/* FLOATING GLASS MOBILE BOTTOM NAVIGATION */}
+      {/* FLOATING GLASS MOBILE BOTTOM NAVIGATION (Shrunken Centered Pill) */}
       <nav
-        className={`md:hidden fixed bottom-4 inset-x-4 z-30 rounded-[28px] backdrop-blur-2xl border flex justify-around items-center px-2 py-2.5 transition-all duration-500 ${
+        className={`md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-fit max-w-[calc(100%-2rem)] z-30 rounded-full backdrop-blur-2xl border flex items-center gap-1 px-2 py-1.5 transition-all duration-500 ${
           isLightMode
-            ? 'bg-white/75 border-white/90 shadow-[0_12px_40px_rgba(28,28,46,0.14)]'
-            : 'bg-[#141414]/80 border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.6)]'
+            ? 'bg-white/80 border-white/95 shadow-[0_12px_35px_rgba(28,28,46,0.14)]'
+            : 'bg-[#141414]/85 border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.6)]'
         }`}
       >
         {profile.is_client && (
           <button
             onClick={() => setActiveTab('vault')}
-            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
               activeTab === 'vault'
                 ? 'text-[#ff4d00] bg-[#ff4d00]/10'
                 : isLightMode
@@ -2686,14 +2769,14 @@ export default function Hub() {
                 : 'text-white/40 hover:text-white'
             }`}
           >
-            <FolderDown size={19} />
+            <FolderDown size={18} />
             <span className="text-[9px] uppercase font-bold tracking-wider">Vault</span>
           </button>
         )}
         {profile.is_millerite && (
           <button
             onClick={() => { setActiveTab('millerites'); setViewingMember(null); }}
-            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
               activeTab === 'millerites' || activeTab === 'member_view'
                 ? isLightMode
                   ? 'text-white bg-[#1C1C2E] shadow-sm'
@@ -2703,14 +2786,36 @@ export default function Hub() {
                 : 'text-white/40 hover:text-white'
             }`}
           >
-            <Users size={19} />
+            <Users size={18} />
             <span className="text-[9px] uppercase font-bold tracking-wider">Family</span>
+          </button>
+        )}
+        {profile.is_millerite && (
+          <button
+            onClick={() => setActiveTab('dms')}
+            className={`relative flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
+              activeTab === 'dms'
+                ? isLightMode
+                  ? 'text-white bg-[#1C1C2E] shadow-sm'
+                  : 'text-[#ff4d00] bg-[#ff4d00]/10'
+                : isLightMode
+                ? 'text-slate-400 hover:text-slate-700'
+                : 'text-white/40 hover:text-white'
+            }`}
+          >
+            <MessageCircle size={18} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">DMs</span>
+            {totalUnreadDms > 0 && (
+              <span className="absolute top-0.5 right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-[#ff4d00] text-white text-[8px] font-black flex items-center justify-center ring-2 ring-white">
+                {totalUnreadDms}
+              </span>
+            )}
           </button>
         )}
         {profile.is_client && blueprint && (
           <button
             onClick={() => setActiveTab('blueprint')}
-            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
               activeTab === 'blueprint'
                 ? 'text-[#ff4d00] bg-[#ff4d00]/10'
                 : isLightMode
@@ -2718,14 +2823,14 @@ export default function Hub() {
                 : 'text-white/40 hover:text-white'
             }`}
           >
-            <LayoutDashboard size={19} />
+            <LayoutDashboard size={18} />
             <span className="text-[9px] uppercase font-bold tracking-wider">Blueprint</span>
           </button>
         )}
         {profile.is_client && profile.has_retainer && (
           <button
             onClick={() => setActiveTab('retainer')}
-            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
               activeTab === 'retainer'
                 ? 'text-[#ff4d00] bg-[#ff4d00]/10'
                 : isLightMode
@@ -2733,13 +2838,13 @@ export default function Hub() {
                 : 'text-white/40 hover:text-white'
             }`}
           >
-            <Film size={19} />
+            <Film size={18} />
             <span className="text-[9px] uppercase font-bold tracking-wider">Retainer</span>
           </button>
         )}
         <button
           onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+          className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
             activeTab === 'profile'
               ? isLightMode
                 ? 'text-white bg-[#1C1C2E] shadow-sm'
@@ -2749,7 +2854,7 @@ export default function Hub() {
               : 'text-white/40 hover:text-white'
           }`}
         >
-          <User size={19} />
+          <User size={18} />
           <span className="text-[9px] uppercase font-bold tracking-wider">Profile</span>
         </button>
       </nav>
