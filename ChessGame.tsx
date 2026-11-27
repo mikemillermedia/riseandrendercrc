@@ -18,6 +18,9 @@ import {
   Hand,
   Flag,
   Trash2,
+  MessageCircle,
+  Send,
+  X,
 } from 'lucide-react';
 
 interface ChessGameProps {
@@ -71,7 +74,6 @@ function disposeGroupGeometries(group: THREE.Group) {
   group.clear();
 }
 
-// Smarter AI move picker: plays Checkmate-in-1, captures, checks, and avoids hanging pieces
 function pickSmartBotMove(chess: Chess) {
   const moves = chess.moves({ verbose: true });
   if (moves.length === 0) return null;
@@ -82,15 +84,12 @@ function pickSmartBotMove(chess: Chess) {
   for (const move of moves) {
     chess.move(move);
 
-    // 1. Immediate Checkmate wins instantly
     if (chess.isCheckmate()) {
       chess.undo();
       return move;
     }
 
-    let score = Math.random() * 2; // slight variety
-
-    // 2. Material evaluation (Black wants higher score)
+    let score = Math.random() * 2;
     const board = chess.board();
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
@@ -101,16 +100,10 @@ function pickSmartBotMove(chess: Chess) {
       }
     }
 
-    // 3. Bonus for putting opponent in check
     if (chess.inCheck()) score += 6;
-
-    // 4. Bonus for controlling center squares
     if (['d4', 'd5', 'e4', 'e5'].includes(move.to)) score += 3;
-
-    // 5. Avoid stalemate when ahead
     if (chess.isDraw() || chess.isStalemate()) score -= 50;
 
-    // 6. Penalize if opponent can immediately capture our moved piece with a cheaper one
     const oppReplies = chess.moves({ verbose: true });
     let maxOppCapture = 0;
     for (const reply of oppReplies) {
@@ -281,6 +274,15 @@ export default function ChessGame({
   const [showIntro, setShowIntro] = useState(false);
   const [showControlsHint, setShowControlsHint] = useState(false);
 
+  // IN-GAME CHAT STATE
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [unreadChat, setUnreadChat] = useState(0);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const isChatOpenRef = useRef(false);
+  isChatOpenRef.current = isChatOpen;
+
   const mountRef = useRef<HTMLDivElement | null>(null);
   const piecesGroupRef = useRef<THREE.Group | null>(null);
   const highlightsGroupRef = useRef<THREE.Group | null>(null);
@@ -392,11 +394,81 @@ export default function ChessGame({
     };
   }, [supabase]);
 
+  // LIVE IN-GAME CHAT SUBSCRIPTION
+  useEffect(() => {
+    if (!supabase || !activeGame || activeGame.isBotGame) {
+      setChatMessages([]);
+      setUnreadChat(0);
+      return;
+    }
+
+    const fetchChat = async () => {
+      const { data } = await supabase
+        .from('game_messages')
+        .select('*')
+        .eq('game_id', activeGame.id)
+        .order('created_at', { ascending: true });
+      if (data) setChatMessages(data);
+    };
+    fetchChat();
+
+    const chatChannel = supabase
+      .channel(`chess-chat-${activeGame.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'game_messages',
+          filter: `game_id=eq.${activeGame.id}`,
+        },
+        (payload: any) => {
+          if (!payload.new) return;
+          setChatMessages((prev) =>
+            prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new]
+          );
+          if (!isChatOpenRef.current && payload.new.sender_id !== userId) {
+            setUnreadChat((c) => c + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(chatChannel);
+    };
+  }, [supabase, activeGame?.id, activeGame?.isBotGame, userId]);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      setUnreadChat(0);
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
+    }
+  }, [isChatOpen, chatMessages.length]);
+
+  const handleSendChat = async () => {
+    if (!chatInput.trim() || !supabase || !userId || !activeGame || activeGame.isBotGame) return;
+    const text = chatInput.trim();
+    setChatInput('');
+    const { error } = await supabase.from('game_messages').insert([
+      {
+        game_id: activeGame.id,
+        sender_id: userId,
+        content: text,
+      },
+    ]);
+    if (error) alert('Error sending message: ' + error.message);
+  };
+
   const enterGame = (gameObj: any) => {
     setWebglError(null);
     setActiveGame(gameObj);
     setSelectedSquare(null);
     setValidMoves([]);
+    setIsChatOpen(false);
+    setUnreadChat(0);
     setShowIntro(gameObj.status !== 'finished');
   };
 
@@ -462,7 +534,6 @@ export default function ChessGame({
     enterGame(game);
   };
 
-  // Record a win in the per-game leaderboard
   const recordWin = async (winnerId: string | null) => {
     if (!supabase || !winnerId || winnerId === 'AI_BOT') return;
     await supabase.rpc('increment_game_win', {
@@ -1052,6 +1123,7 @@ export default function ChessGame({
             setSelectedSquare(null);
             setValidMoves([]);
             setShowIntro(false);
+            setIsChatOpen(false);
           }}
           className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full flex items-center gap-1"
         >
@@ -1061,6 +1133,23 @@ export default function ChessGame({
         <div className="flex items-center gap-1.5">
           {!activeGame.isBotGame && (
             <>
+              <button
+                type="button"
+                onClick={() => setIsChatOpen((o) => !o)}
+                className={`relative text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 transition-all ${
+                  isChatOpen
+                    ? 'bg-[#1C1C2E] text-white'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+              >
+                <MessageCircle size={12} /> Chat
+                {unreadChat > 0 && !isChatOpen && (
+                  <span className="ml-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-[#ff4d00] text-white text-[9px] font-black flex items-center justify-center">
+                    {unreadChat}
+                  </span>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => sendSmsInvite(activeGame.id)}
@@ -1158,6 +1247,75 @@ export default function ChessGame({
           </div>
         ) : (
           <div ref={mountRef} className="w-full h-full touch-none" />
+        )}
+
+        {/* LIVE IN-GAME CHAT DRAWER (Multiplayer Only) */}
+        {isChatOpen && !activeGame.isBotGame && (
+          <div className="absolute inset-x-3 bottom-3 z-20 h-[270px] bg-[#121216]/90 backdrop-blur-xl border border-amber-400/30 rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-in fade-in duration-200">
+            <div className="px-3.5 py-2.5 border-b border-white/10 flex items-center justify-between shrink-0">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <MessageCircle size={13} /> Match Chat
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(false)}
+                className="text-white/50 hover:text-white p-1 rounded-full"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+              {chatMessages.length === 0 ? (
+                <p className="text-[11px] text-white/40 text-center mt-8">
+                  No messages yet. Say good luck!
+                </p>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMine = msg.sender_id === userId;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                    >
+                      <span className="text-[9px] text-white/45 font-semibold px-1 mb-0.5">
+                        {isMine ? 'You' : getMemberName(msg.sender_id)}
+                      </span>
+                      <div
+                        className={`max-w-[82%] px-3 py-1.5 rounded-2xl text-xs leading-snug ${
+                          isMine
+                            ? 'bg-[#ff4d00] text-white rounded-br-sm'
+                            : 'bg-white/10 text-white/90 rounded-bl-sm'
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="p-2 border-t border-white/10 flex items-center gap-2 shrink-0">
+              <input
+                type="text"
+                placeholder="Type a message..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+                className="flex-1 bg-white/10 border border-white/10 rounded-full px-3.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-amber-400/50"
+              />
+              <button
+                type="button"
+                onClick={handleSendChat}
+                disabled={!chatInput.trim()}
+                className="bg-[#ff4d00] hover:bg-orange-600 text-white p-2 rounded-full transition-colors disabled:opacity-40 shrink-0"
+              >
+                <Send size={13} />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* CINEMATIC MATCH INTRO OVERLAY */}
