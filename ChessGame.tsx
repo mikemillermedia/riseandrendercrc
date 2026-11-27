@@ -16,6 +16,7 @@ import {
   Trophy,
   Sparkles,
   Hand,
+  Flag,
 } from 'lucide-react';
 
 interface ChessGameProps {
@@ -26,7 +27,7 @@ interface ChessGameProps {
 }
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+const PIECE_VALUES: Record<string, number> = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 900 };
 
 // Shared materials so mobile GPU memory never leaks
 const WHITE_MAT = new THREE.MeshStandardMaterial({
@@ -49,6 +50,11 @@ const SELECT_MAT = new THREE.MeshBasicMaterial({
   transparent: true,
   opacity: 0.55,
 });
+const CHECK_MAT = new THREE.MeshBasicMaterial({
+  color: 0xef4444,
+  transparent: true,
+  opacity: 0.65,
+});
 const MOVE_DOT_MAT = new THREE.MeshBasicMaterial({
   color: 0x22c55e,
   side: THREE.DoubleSide,
@@ -62,6 +68,67 @@ function disposeGroupGeometries(group: THREE.Group) {
     }
   });
   group.clear();
+}
+
+// Smarter AI move picker: plays Checkmate-in-1, captures, checks, and avoids hanging pieces
+function pickSmartBotMove(chess: Chess) {
+  const moves = chess.moves({ verbose: true });
+  if (moves.length === 0) return null;
+
+  let bestMove = moves[0];
+  let bestScore = -Infinity;
+
+  for (const move of moves) {
+    chess.move(move);
+
+    // 1. Immediate Checkmate wins instantly
+    if (chess.isCheckmate()) {
+      chess.undo();
+      return move;
+    }
+
+    let score = Math.random() * 2; // slight variety
+
+    // 2. Material evaluation (Black wants higher score)
+    const board = chess.board();
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const piece = board[r][c];
+        if (!piece) continue;
+        const val = PIECE_VALUES[piece.type] || 0;
+        score += piece.color === 'b' ? val : -val;
+      }
+    }
+
+    // 3. Bonus for putting opponent in check
+    if (chess.inCheck()) score += 6;
+
+    // 4. Bonus for controlling center squares
+    if (['d4', 'd5', 'e4', 'e5'].includes(move.to)) score += 3;
+
+    // 5. Avoid stalemate when ahead
+    if (chess.isDraw() || chess.isStalemate()) score -= 50;
+
+    // 6. Penalize if opponent can immediately capture our moved piece with a cheaper one
+    const oppReplies = chess.moves({ verbose: true });
+    let maxOppCapture = 0;
+    for (const reply of oppReplies) {
+      if (reply.captured) {
+        const capVal = PIECE_VALUES[reply.captured] || 0;
+        if (capVal > maxOppCapture) maxOppCapture = capVal;
+      }
+    }
+    score -= maxOppCapture * 0.85;
+
+    chess.undo();
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+
+  return bestMove;
 }
 
 function createStoneFloorTexture() {
@@ -394,7 +461,33 @@ export default function ChessGame({
     enterGame(game);
   };
 
-  // AI Bot Move Effect
+  const handleResign = async () => {
+    if (!activeGame || !userId) return;
+    if (!confirm('Resign this match?')) return;
+    const winnerId =
+      activeGame.white_player_id === userId
+        ? activeGame.black_player_id
+        : activeGame.white_player_id;
+
+    setActiveGame((prev: any) => ({
+      ...prev,
+      status: 'finished',
+      winner_id: winnerId,
+    }));
+
+    if (!activeGame.isBotGame && supabase) {
+      await supabase
+        .from('chess_games')
+        .update({
+          status: 'finished',
+          winner_id: winnerId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', activeGame.id);
+    }
+  };
+
+  // Smart AI Bot Move Effect
   useEffect(() => {
     if (
       !activeGame?.isBotGame ||
@@ -410,19 +503,9 @@ export default function ChessGame({
         setActiveGame((prev: any) => ({ ...prev, status: 'finished' }));
         return;
       }
-      const moves = chess.moves({ verbose: true });
-      if (moves.length === 0) return;
 
-      const captures = moves.filter((m: any) => m.captured);
-      let chosen: any;
-      if (captures.length > 0) {
-        captures.sort(
-          (a: any, b: any) => (PIECE_VALUES[b.captured] || 0) - (PIECE_VALUES[a.captured] || 0)
-        );
-        chosen = captures[0];
-      } else {
-        chosen = moves[Math.floor(Math.random() * moves.length)];
-      }
+      const chosen = pickSmartBotMove(chess);
+      if (!chosen) return;
 
       chess.move(chosen);
       const isOver = chess.isGameOver();
@@ -433,7 +516,7 @@ export default function ChessGame({
         status: isOver ? 'finished' : 'active',
         winner_id: chess.isCheckmate() ? 'AI_BOT' : null,
       }));
-    }, 650);
+    }, 550);
 
     return () => clearTimeout(timer);
   }, [activeGame?.fen, activeGame?.isBotGame, activeGame?.turn, activeGame?.status, showIntro]);
@@ -451,41 +534,46 @@ export default function ChessGame({
     if (!myColor || chess.turn() !== myColor) return;
 
     if (selectedSquareRef.current && validMovesRef.current.includes(square)) {
-      const move = chess.move({
-        from: selectedSquareRef.current,
-        to: square,
-        promotion: 'q',
-      });
-
-      if (move) {
-        const isOver = chess.isGameOver();
-        const winnerId = chess.isCheckmate() ? userId : null;
-        const nextStatus = isOver ? 'finished' : 'active';
-
-        setActiveGame({
-          ...game,
-          fen: chess.fen(),
-          turn: chess.turn(),
-          status: nextStatus,
-          winner_id: winnerId,
-          last_move: `${move.from}${move.to}`,
+      try {
+        const move = chess.move({
+          from: selectedSquareRef.current,
+          to: square,
+          promotion: 'q',
         });
+
+        if (move) {
+          const isOver = chess.isGameOver();
+          const winnerId = chess.isCheckmate() ? userId : null;
+          const nextStatus = isOver ? 'finished' : 'active';
+
+          setActiveGame({
+            ...game,
+            fen: chess.fen(),
+            turn: chess.turn(),
+            status: nextStatus,
+            winner_id: winnerId,
+            last_move: `${move.from}${move.to}`,
+          });
+          setSelectedSquare(null);
+          setValidMoves([]);
+
+          if (!game.isBotGame && supabase) {
+            await supabase
+              .from('chess_games')
+              .update({
+                fen: chess.fen(),
+                turn: chess.turn(),
+                status: nextStatus,
+                winner_id: winnerId,
+                last_move: `${move.from}${move.to}`,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', game.id);
+          }
+        }
+      } catch {
         setSelectedSquare(null);
         setValidMoves([]);
-
-        if (!game.isBotGame && supabase) {
-          await supabase
-            .from('chess_games')
-            .update({
-              fen: chess.fen(),
-              turn: chess.turn(),
-              status: nextStatus,
-              winner_id: winnerId,
-              last_move: `${move.from}${move.to}`,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', game.id);
-        }
       }
       return;
     }
@@ -516,7 +604,7 @@ export default function ChessGame({
 
     const onContextLost = (e: Event) => {
       e.preventDefault();
-      setWebglError('3D view paused by browser memory. Tap Lobby and resume your match.');
+      setWebglError('3D view paused by browser memory. Tap Reload 3D Board.');
     };
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
 
@@ -580,15 +668,14 @@ export default function ChessGame({
     scene.add(floor);
 
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0x5c4d3e, roughness: 0.8 });
-    const pillarPositions = [
+    [
       [-11, -11],
       [11, -11],
       [-11, 11],
       [11, 11],
       [-14, 0],
       [14, 0],
-    ];
-    pillarPositions.forEach(([px, pz]) => {
+    ].forEach(([px, pz]) => {
       const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 14, 12), pillarMat);
       pillar.position.set(px, 4.8, pz);
       const pBase = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 2.2), pillarMat);
@@ -604,10 +691,7 @@ export default function ChessGame({
     tableTop.position.y = -0.32;
     scene.add(tableTop);
 
-    const goldFrame = new THREE.Mesh(
-      new THREE.BoxGeometry(8.35, 0.16, 8.35),
-      GOLD_MAT
-    );
+    const goldFrame = new THREE.Mesh(new THREE.BoxGeometry(8.35, 0.16, 8.35), GOLD_MAT);
     goldFrame.position.y = -0.05;
     scene.add(goldFrame);
 
@@ -708,7 +792,7 @@ export default function ChessGame({
     };
   }, [activeGame?.id]);
 
-  // 1. Rebuild 3D Pieces ONLY when FEN actually changes (disposing old geometries)
+  // Rebuild 3D Pieces ONLY when FEN changes
   useEffect(() => {
     if (!activeGame || !piecesGroupRef.current) return;
     const piecesGroup = piecesGroupRef.current;
@@ -727,11 +811,29 @@ export default function ChessGame({
     });
   }, [activeGame?.fen, activeGame?.id]);
 
-  // 2. Rebuild Highlights ONLY when selection changes (disposing old geometries)
+  // Rebuild Highlights (Selected Square, Legal Moves, AND Red King-in-Check Tile)
   useEffect(() => {
     if (!activeGame || !highlightsGroupRef.current) return;
     const highlightsGroup = highlightsGroupRef.current;
     disposeGroupGeometries(highlightsGroup);
+
+    const chess = new Chess(activeGame.fen);
+
+    // Highlight King in RED if currently in check
+    if (chess.inCheck()) {
+      const turnColor = chess.turn();
+      chess.board().forEach((row, rIdx) => {
+        row.forEach((cell, fIdx) => {
+          if (cell && cell.type === 'k' && cell.color === turnColor) {
+            const rank = 8 - rIdx;
+            const checkTile = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), CHECK_MAT);
+            checkTile.rotation.x = -Math.PI / 2;
+            checkTile.position.set(fIdx - 3.5, 0.055, 3.5 - (rank - 1));
+            highlightsGroup.add(checkTile);
+          }
+        });
+      });
+    }
 
     if (selectedSquare) {
       const f = FILES.indexOf(selectedSquare[0]);
@@ -750,7 +852,7 @@ export default function ChessGame({
       dot.position.set(f - 3.5, 0.07, 3.5 - r);
       highlightsGroup.add(dot);
     });
-  }, [selectedSquare, validMoves, activeGame?.id]);
+  }, [selectedSquare, validMoves, activeGame?.fen, activeGame?.id]);
 
   // LOBBY VIEW
   if (!activeGame) {
@@ -895,6 +997,18 @@ export default function ChessGame({
         : activeGame.white_player_id
       : null);
 
+  const endReason = chessInstance.isCheckmate()
+    ? 'Checkmate!'
+    : chessInstance.isStalemate()
+    ? 'Stalemate'
+    : chessInstance.isThreefoldRepetition()
+    ? 'Draw by Repetition'
+    : chessInstance.isInsufficientMaterial()
+    ? 'Draw (Insufficient Material)'
+    : resolvedWinnerId
+    ? 'Match Resigned'
+    : 'Draw';
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -930,6 +1044,17 @@ export default function ChessGame({
                 {copiedId === activeGame.id ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
               </button>
             </>
+          )}
+
+          {!isFinished && myColor && (
+            <button
+              type="button"
+              onClick={handleResign}
+              className="p-1.5 rounded-full bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-500"
+              title="Resign Match"
+            >
+              <Flag size={13} />
+            </button>
           )}
 
           <button
@@ -1033,7 +1158,7 @@ export default function ChessGame({
               <Trophy size={30} />
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-1">
-              {resolvedWinnerId ? 'Checkmate!' : 'Stalemate / Draw'}
+              {endReason}
             </span>
             <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
               {resolvedWinnerId
@@ -1070,7 +1195,7 @@ export default function ChessGame({
       <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 px-1">
         <span>⚪ {getMemberName(activeGame.white_player_id)}</span>
         <span className="flex items-center gap-1 text-[#ff4d00] font-bold">
-          <Swords size={12} /> {chessInstance.inCheck() ? 'CHECK!' : 'Swipe to orbit • Tap to move'}
+          <Swords size={12} /> {chessInstance.inCheck() ? 'CHECK! Protect your King' : 'Swipe to orbit • Tap to move'}
         </span>
         <span>⚫ {getMemberName(activeGame.black_player_id)}</span>
       </div>
