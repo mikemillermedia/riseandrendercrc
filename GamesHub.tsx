@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gamepad2, Crown, Sparkles, Lock, ArrowLeft } from 'lucide-react';
+import { Gamepad2, Crown, Sparkles, Lock, ArrowLeft, Trophy } from 'lucide-react';
 import ChessGame from './ChessGame';
 
 interface GamesHubProps {
@@ -9,6 +9,11 @@ interface GamesHubProps {
   initialChessGameId?: string | null;
   onClearInitialGame?: () => void;
 }
+
+const GAME_LABELS: Record<string, string> = {
+  all: 'All Games',
+  chess: '3D Chess',
+};
 
 export default function GamesHub({
   supabase,
@@ -20,12 +25,56 @@ export default function GamesHub({
   const [selectedGame, setSelectedGame] = useState<'chess' | null>(
     initialChessGameId ? 'chess' : null
   );
+  const [scores, setScores] = useState<any[]>([]);
+  const [leaderboardFilter, setLeaderboardFilter] = useState<string>('chess');
 
   useEffect(() => {
     if (initialChessGameId) {
       setSelectedGame('chess');
     }
   }, [initialChessGameId]);
+
+  const fetchScores = async () => {
+    if (!supabase) return;
+    const { data } = await supabase
+      .from('game_scores')
+      .select('*')
+      .order('wins', { ascending: false });
+    if (data) setScores(data);
+  };
+
+  // Refresh leaderboard whenever opening the Games Hub or returning from a match
+  useEffect(() => {
+    if (!selectedGame) {
+      fetchScores();
+    }
+  }, [selectedGame, supabase]);
+
+  const getMember = (id: string) => familyMembers.find((m) => m.id === id);
+
+  const getMyWins = (gameType: string) =>
+    scores.find((s) => s.user_id === userId && s.game_type === gameType)?.wins || 0;
+
+  // Dynamically include any future game types stored in game_scores
+  const availableTypes = Array.from(
+    new Set(['all', 'chess', ...scores.map((s) => s.game_type)])
+  );
+
+  // Build ranked leaderboard for the selected filter
+  const leaderboard = (() => {
+    if (leaderboardFilter === 'all') {
+      const totals: Record<string, number> = {};
+      scores.forEach((s) => {
+        totals[s.user_id] = (totals[s.user_id] || 0) + (s.wins || 0);
+      });
+      return Object.entries(totals)
+        .map(([uid, wins]) => ({ user_id: uid, wins }))
+        .sort((a, b) => b.wins - a.wins);
+    }
+    return scores
+      .filter((s) => s.game_type === leaderboardFilter && s.wins > 0)
+      .sort((a, b) => b.wins - a.wins);
+  })();
 
   if (selectedGame === 'chess') {
     return (
@@ -81,9 +130,14 @@ export default function GamesHub({
             <span className="w-11 h-11 rounded-2xl bg-[#ff4d00]/20 border border-[#ff4d00]/30 flex items-center justify-center text-amber-400">
               <Crown size={22} />
             </span>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
-              Live 3D
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-400/15 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-full">
+                🏆 {getMyWins('chess')} {getMyWins('chess') === 1 ? 'Win' : 'Wins'}
+              </span>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+                Live 3D
+              </span>
+            </div>
           </div>
           <h2 className="text-xl font-black tracking-tight mb-1">3D Chess</h2>
           <p className="text-xs text-white/65 leading-relaxed mb-4">
@@ -113,6 +167,77 @@ export default function GamesHub({
             </p>
           </div>
         </div>
+      </div>
+
+      {/* FAMILY LEADERBOARD */}
+      <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-6 sm:p-7 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-slate-900 font-black uppercase tracking-wider text-xs sm:text-sm flex items-center gap-2">
+            <Trophy size={16} className="text-[#ff4d00]" /> Family Leaderboard
+          </h2>
+
+          {/* Per-Game Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {availableTypes.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setLeaderboardFilter(type)}
+                className={`text-[10px] font-extrabold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                  leaderboardFilter === type
+                    ? 'bg-[#1C1C2E] text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {GAME_LABELS[type] || type}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {leaderboard.length === 0 ? (
+          <div className="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200/70">
+            <p className="text-xs text-slate-400 font-medium">
+              No wins recorded for {GAME_LABELS[leaderboardFilter] || leaderboardFilter} yet. Win a match to claim #1!
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-200/75">
+            {leaderboard.map((entry, idx) => {
+              const member = getMember(entry.user_id);
+              const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+              return (
+                <div
+                  key={entry.user_id}
+                  className="py-3 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-7 text-center text-sm font-black text-slate-500 shrink-0">
+                      {medal}
+                    </span>
+                    <div className="w-9 h-9 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center text-xs font-black text-slate-700 ring-2 ring-slate-200/80">
+                      {member?.avatar_url ? (
+                        <img src={member.avatar_url} className="w-full h-full object-cover" />
+                      ) : (
+                        member?.first_name?.[0] || 'M'
+                      )}
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {member ? `${member.first_name || 'Family'} ${member.last_name || ''}`.trim() : 'Family Member'}
+                      {entry.user_id === userId && (
+                        <span className="ml-1.5 text-[10px] font-extrabold text-[#ff4d00]">(You)</span>
+                      )}
+                    </p>
+                  </div>
+
+                  <span className="text-xs font-black text-slate-900 bg-amber-500/15 border border-amber-500/25 px-3 py-1 rounded-full shrink-0">
+                    {entry.wins} {entry.wins === 1 ? 'Win' : 'Wins'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
