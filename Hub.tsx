@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import InstallAppBanner from './InstallAppBanner';
 import WelcomeTourModal from './WelcomeTourModal';
 import DirectMessageModal from './DirectMessageModal';
+import GamesHub from './GamesHub';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, LogOut, Video, LayoutDashboard, FolderDown, Lock, 
   User, Film, Camera, Save, Users, MessageSquare, Heart, Send, 
-  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, Plus, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle, Award, Sun, Moon
+  BookHeart, MoreVertical, Edit2, Trash2, Repeat, Image as ImageIcon, Grid, X, BookOpen, Sparkles, CheckCircle2, Plus, Smile, CalendarHeart, AtSign, ChevronDown, MessageCircle, Award, Sun, Moon, Gamepad2
 } from 'lucide-react';
 
 import RetainerDashboard from './RetainerDashboard';
@@ -48,6 +49,11 @@ export default function Hub() {
   
   const [activeTab, setActiveTab] = useState('vault'); 
   const [isLoading, setIsLoading] = useState(true);
+
+  // GAMES DEEP-LINK STATE (?chess=<game_id> from SMS invite links)
+  const [initialChessGameId, setInitialChessGameId] = useState<string | null>(() => {
+    return new URLSearchParams(window.location.search).get('chess');
+  });
 
   // USER & PROFILE STATE
   const [userId, setUserId] = useState<string | null>(null);
@@ -165,8 +171,13 @@ export default function Hub() {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES, DMS & PROFILE
-  const isHubThemeable = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile' || activeTab === 'dms';
+  // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES, DMS, GAMES & PROFILE
+  const isHubThemeable =
+    activeTab === 'millerites' ||
+    activeTab === 'member_view' ||
+    activeTab === 'profile' ||
+    activeTab === 'dms' ||
+    activeTab === 'games';
   const isLightMode = isHubThemeable && theme === 'light';
   const isDarkHub = isHubThemeable && theme === 'dark';
 
@@ -374,7 +385,12 @@ export default function Hub() {
           });
           setStatusEmojiInput(cleanEmoji);
           setStatusTextInput(profileData.status_text || '');
-          if (isFamilyOnly) setActiveTab('millerites');
+
+          if (new URLSearchParams(window.location.search).get('chess') && profileData.is_millerite) {
+            setActiveTab('games');
+          } else if (isFamilyOnly) {
+            setActiveTab('millerites');
+          }
         }
         await fetchCommunityData();
         await fetchUnreadDms(session.user.id);
@@ -1081,6 +1097,12 @@ export default function Hub() {
                   {totalUnreadDms}
                 </span>
               )}
+            </button>
+          )}
+
+          {profile.is_millerite && (
+            <button onClick={() => setActiveTab('games')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'games' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
+              <Gamepad2 size={18} /> Games
             </button>
           )}
 
@@ -2707,6 +2729,20 @@ export default function Hub() {
               </div>
             )}
 
+            {/* GAMES ARCADE TAB */}
+            {activeTab === 'games' && profile.is_millerite && (
+              <GamesHub
+                supabase={supabase}
+                userId={userId}
+                familyMembers={familyMembers}
+                initialChessGameId={initialChessGameId}
+                onClearInitialGame={() => {
+                  setInitialChessGameId(null);
+                  window.history.replaceState({}, '', window.location.pathname);
+                }}
+              />
+            )}
+
             {/* ASSET VAULT TAB (DARK MODE) */}
             {activeTab === 'vault' && profile.is_client && (
               <div className="animate-in fade-in max-w-6xl mx-auto space-y-12">
@@ -2982,6 +3018,23 @@ export default function Hub() {
                 {totalUnreadDms}
               </span>
             )}
+          </button>
+        )}
+        {profile.is_millerite && (
+          <button
+            onClick={() => setActiveTab('games')}
+            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
+              activeTab === 'games'
+                ? isLightMode
+                  ? 'text-white bg-[#1C1C2E] shadow-sm'
+                  : 'text-[#ff4d00] bg-[#ff4d00]/10'
+                : isLightMode
+                ? 'text-slate-400 hover:text-slate-700'
+                : 'text-white/40 hover:text-white'
+            }`}
+          >
+            <Gamepad2 size={18} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Games</span>
           </button>
         )}
         {profile.is_client && blueprint && (
