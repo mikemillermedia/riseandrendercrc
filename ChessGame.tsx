@@ -17,6 +17,7 @@ import {
   Sparkles,
   Hand,
   Flag,
+  Trash2,
 } from 'lucide-react';
 
 interface ChessGameProps {
@@ -487,6 +488,17 @@ export default function ChessGame({
     }
   };
 
+  const handleDeleteGame = async (gameId: string) => {
+    if (!supabase || !confirm('Cancel and remove this match?')) return;
+    const { error } = await supabase.from('chess_games').delete().eq('id', gameId);
+    if (error) {
+      alert('Error canceling match: ' + error.message);
+      return;
+    }
+    setGames((prev) => prev.filter((g) => g.id !== gameId));
+    if (activeGame?.id === gameId) setActiveGame(null);
+  };
+
   // Smart AI Bot Move Effect
   useEffect(() => {
     if (
@@ -819,7 +831,6 @@ export default function ChessGame({
 
     const chess = new Chess(activeGame.fen);
 
-    // Highlight King in RED if currently in check
     if (chess.inCheck()) {
       const turnColor = chess.turn();
       chess.board().forEach((row, rIdx) => {
@@ -974,6 +985,16 @@ export default function ChessGame({
                     >
                       {isParticipant ? 'Resume' : g.status === 'waiting' ? 'Join' : 'Watch'}
                     </button>
+                    {isParticipant && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGame(g.id)}
+                        className="p-2 rounded-full bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                        title="Cancel / Delete match"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
