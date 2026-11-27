@@ -28,7 +28,42 @@ interface ChessGameProps {
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
 
-// Procedural stone floor texture for the Grand Hall
+// Shared materials so mobile GPU memory never leaks
+const WHITE_MAT = new THREE.MeshStandardMaterial({
+  color: 0xf5efe2,
+  roughness: 0.28,
+  metalness: 0.12,
+});
+const BLACK_MAT = new THREE.MeshStandardMaterial({
+  color: 0x1a1a22,
+  roughness: 0.22,
+  metalness: 0.35,
+});
+const GOLD_MAT = new THREE.MeshStandardMaterial({
+  color: 0xd4af37,
+  roughness: 0.25,
+  metalness: 0.85,
+});
+const SELECT_MAT = new THREE.MeshBasicMaterial({
+  color: 0xd4af37,
+  transparent: true,
+  opacity: 0.55,
+});
+const MOVE_DOT_MAT = new THREE.MeshBasicMaterial({
+  color: 0x22c55e,
+  side: THREE.DoubleSide,
+});
+
+function disposeGroupGeometries(group: THREE.Group) {
+  group.traverse((obj) => {
+    if ((obj as THREE.Mesh).isMesh) {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.dispose();
+    }
+  });
+  group.clear();
+}
+
 function createStoneFloorTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -58,7 +93,6 @@ function createStoneFloorTexture() {
   return tex;
 }
 
-// Procedural gold-rune obsidian border texture for the table
 function createRuneBorderTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -67,7 +101,6 @@ function createRuneBorderTexture() {
   ctx.fillStyle = '#0d0d11';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Subtle marble veins
   ctx.strokeStyle = 'rgba(212, 175, 55, 0.14)';
   ctx.lineWidth = 1.5;
   for (let i = 0; i < 24; i++) {
@@ -77,100 +110,85 @@ function createRuneBorderTexture() {
     ctx.stroke();
   }
 
-  // Outer & inner gold trim lines
   ctx.strokeStyle = '#d4af37';
   ctx.lineWidth = 5;
   ctx.strokeRect(18, 18, 476, 476);
   ctx.lineWidth = 2;
   ctx.strokeRect(32, 32, 448, 448);
 
-  const tex = new THREE.CanvasTexture(canvas);
-  return tex;
+  return new THREE.CanvasTexture(canvas);
 }
 
-// Ornate gold-trimmed 3D chess pieces
 function buildPieceMesh(type: string, color: 'w' | 'b') {
   const group = new THREE.Group();
   const isWhite = color === 'w';
+  const bodyMat = isWhite ? WHITE_MAT : BLACK_MAT;
 
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: isWhite ? 0xf5efe2 : 0x1a1a22,
-    roughness: isWhite ? 0.28 : 0.22,
-    metalness: isWhite ? 0.12 : 0.35,
-  });
-
-  const goldMat = new THREE.MeshStandardMaterial({
-    color: 0xd4af37,
-    roughness: 0.25,
-    metalness: 0.85,
-  });
-
-  // Pedestal + gold trim ring
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.37, 0.14, 20), bodyMat);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.37, 0.14, 16), bodyMat);
   base.position.y = 0.07;
-  const baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.025, 10, 20), goldMat);
+  const baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.025, 8, 16), GOLD_MAT);
   baseRing.rotation.x = Math.PI / 2;
   baseRing.position.y = 0.14;
   group.add(base, baseRing);
 
   if (type === 'p') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.25, 0.44, 16), bodyMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.25, 0.44, 14), bodyMat);
     body.position.y = 0.36;
-    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.022, 8, 16), goldMat);
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.022, 8, 14), GOLD_MAT);
     collar.rotation.x = Math.PI / 2;
     collar.position.y = 0.56;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 16), bodyMat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 14, 14), bodyMat);
     head.position.y = 0.68;
     group.add(body, collar, head);
   } else if (type === 'r') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.27, 0.64, 16), bodyMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.27, 0.64, 14), bodyMat);
     body.position.y = 0.46;
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.2, 14), bodyMat);
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.2, 12), bodyMat);
     top.position.y = 0.84;
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.028, 8, 16), goldMat);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.028, 8, 14), GOLD_MAT);
     rim.rotation.x = Math.PI / 2;
     rim.position.y = 0.94;
     group.add(body, top, rim);
   } else if (type === 'n') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.27, 0.52, 16), bodyMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.27, 0.52, 14), bodyMat);
     body.position.y = 0.4;
     const neck = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.44, 0.32), bodyMat);
     neck.position.set(0, 0.74, isWhite ? -0.04 : 0.04);
     neck.rotation.x = isWhite ? -0.25 : 0.25;
     const snout = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.34), bodyMat);
     snout.position.set(0, 0.86, isWhite ? -0.18 : 0.18);
-    const crest = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.34, 0.1), goldMat);
+    const crest = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.34, 0.1), GOLD_MAT);
     crest.position.set(0, 0.84, isWhite ? 0.11 : -0.11);
     group.add(body, neck, snout, crest);
   } else if (type === 'b') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.26, 0.7, 16), bodyMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.26, 0.7, 14), bodyMat);
     body.position.y = 0.49;
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 8, 16), goldMat);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 8, 14), GOLD_MAT);
     band.rotation.x = Math.PI / 2;
     band.position.y = 0.82;
-    const mitre = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), bodyMat);
+    const mitre = new THREE.Mesh(new THREE.SphereGeometry(0.18, 14, 14), bodyMat);
     mitre.scale.set(1, 1.38, 1);
     mitre.position.y = 0.94;
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 12), goldMat);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 10), GOLD_MAT);
     tip.position.y = 1.22;
     group.add(body, band, mitre, tip);
   } else if (type === 'q') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.29, 0.88, 18), bodyMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.29, 0.88, 16), bodyMat);
     body.position.y = 0.58;
-    const crown = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.05, 10, 18), goldMat);
+    const crown = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.05, 8, 16), GOLD_MAT);
     crown.rotation.x = Math.PI / 2;
     crown.position.y = 1.06;
-    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), goldMat);
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 14), GOLD_MAT);
     orb.position.y = 1.2;
     group.add(body, crown, orb);
   } else if (type === 'k') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.31, 0.98, 18), bodyMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.31, 0.98, 16), bodyMat);
     body.position.y = 0.63;
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.19, 0.12, 16), goldMat);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.19, 0.12, 14), GOLD_MAT);
     collar.position.y = 1.13;
-    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.08), goldMat);
+    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.08), GOLD_MAT);
     crossV.position.y = 1.32;
-    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.08), goldMat);
+    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.08), GOLD_MAT);
     crossH.position.y = 1.36;
     group.add(body, collar, crossV, crossH);
   }
@@ -192,7 +210,6 @@ export default function ChessGame({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webglError, setWebglError] = useState<string | null>(null);
 
-  // Intro & Outro Overlay State
   const [showIntro, setShowIntro] = useState(false);
   const [showControlsHint, setShowControlsHint] = useState(false);
 
@@ -389,6 +406,10 @@ export default function ChessGame({
     }
     const timer = setTimeout(() => {
       const chess = new Chess(activeGame.fen);
+      if (chess.isGameOver()) {
+        setActiveGame((prev: any) => ({ ...prev, status: 'finished' }));
+        return;
+      }
       const moves = chess.moves({ verbose: true });
       if (moves.length === 0) return;
 
@@ -422,6 +443,8 @@ export default function ChessGame({
     if (!game || !userId || game.status === 'finished') return;
 
     const chess = new Chess(game.fen);
+    if (chess.isGameOver()) return;
+
     const myColor =
       game.white_player_id === userId ? 'w' : game.black_player_id === userId ? 'b' : null;
 
@@ -478,7 +501,7 @@ export default function ChessGame({
     }
   };
 
-  // Initialize Grand Hall 3D Scene + OrbitControls (Swipe/Tilt/Pan/Zoom)
+  // Initialize Grand Hall 3D Scene + OrbitControls
   useEffect(() => {
     if (!activeGame || !mountRef.current) return;
     const container = mountRef.current;
@@ -490,6 +513,12 @@ export default function ChessGame({
       setWebglError('3D graphics could not start on this browser.');
       return;
     }
+
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      setWebglError('3D view paused by browser memory. Tap Lobby and resume your match.');
+    };
+    renderer.domElement.addEventListener('webglcontextlost', onContextLost);
 
     const initWidth = Math.max(container.clientWidth, 300);
     const initHeight = Math.max(container.clientHeight, 420);
@@ -508,14 +537,13 @@ export default function ChessGame({
     camera.position.set(0, camHeight, isBlack ? -radius : radius);
 
     renderer.setSize(initWidth, initHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // OrbitControls: Swipe to orbit/tilt, 2-finger drag / right-click to pan, pinch/scroll to zoom
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -529,7 +557,6 @@ export default function ChessGame({
     controls.update();
     controlsRef.current = controls;
 
-    // Warm Grand Hall Lighting
     scene.add(new THREE.AmbientLight(0xfff1dc, 0.85));
     const mainLight = new THREE.DirectionalLight(0xffe8c2, 1.25);
     mainLight.position.set(7, 15, 7);
@@ -543,7 +570,6 @@ export default function ChessGame({
     torchRight.position.set(9, 6, 8);
     scene.add(torchRight);
 
-    // Stone Tile Hall Floor
     const floorTex = createStoneFloorTexture();
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(46, 46),
@@ -553,7 +579,6 @@ export default function ChessGame({
     floor.position.y = -2.2;
     scene.add(floor);
 
-    // Grand Hall Stone Pillars in background
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0x5c4d3e, roughness: 0.8 });
     const pillarPositions = [
       [-11, -11],
@@ -564,14 +589,13 @@ export default function ChessGame({
       [14, 0],
     ];
     pillarPositions.forEach(([px, pz]) => {
-      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 14, 16), pillarMat);
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 14, 12), pillarMat);
       pillar.position.set(px, 4.8, pz);
       const pBase = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 2.2), pillarMat);
       pBase.position.set(px, -1.75, pz);
       scene.add(pillar, pBase);
     });
 
-    // Ornate Obsidian & Gold-Rune Pedestal Table
     const runeTex = createRuneBorderTexture();
     const tableTop = new THREE.Mesh(
       new THREE.BoxGeometry(10.6, 0.55, 10.6),
@@ -582,7 +606,7 @@ export default function ChessGame({
 
     const goldFrame = new THREE.Mesh(
       new THREE.BoxGeometry(8.35, 0.16, 8.35),
-      new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.25, metalness: 0.85 })
+      GOLD_MAT
     );
     goldFrame.position.y = -0.05;
     scene.add(goldFrame);
@@ -594,7 +618,6 @@ export default function ChessGame({
     pedestal.position.y = -1.4;
     scene.add(pedestal);
 
-    // 64 Marble & Obsidian Squares
     const squareMeshes: THREE.Mesh[] = [];
     const lightMat = new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.35, metalness: 0.05 });
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x16181f, roughness: 0.3, metalness: 0.2 });
@@ -619,20 +642,6 @@ export default function ChessGame({
     piecesGroupRef.current = piecesGroup;
     highlightsGroupRef.current = highlightsGroup;
 
-    // Populate initial pieces immediately
-    const initialChess = new Chess(activeGame.fen);
-    initialChess.board().forEach((row, rIdx) => {
-      row.forEach((cell, fIdx) => {
-        if (!cell) return;
-        const rank = 8 - rIdx;
-        const mesh = buildPieceMesh(cell.type, cell.color);
-        mesh.position.set(fIdx - 3.5, 0.05, 3.5 - (rank - 1));
-        mesh.userData.square = cell.square;
-        piecesGroup.add(mesh);
-      });
-    });
-
-    // Distinguish TAP (select/move piece) vs SWIPE (orbit/pan camera)
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     let downX = 0;
@@ -645,7 +654,7 @@ export default function ChessGame({
 
     const onPointerUp = (e: PointerEvent) => {
       const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
-      if (dist > 8) return; // User was swiping/orbiting, not tapping a piece
+      if (dist > 8) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -688,6 +697,9 @@ export default function ChessGame({
       cancelAnimationFrame(animId);
       resizeObserver.disconnect();
       controls.dispose();
+      disposeGroupGeometries(piecesGroup);
+      disposeGroupGeometries(highlightsGroup);
+      renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       floorTex.dispose();
@@ -696,13 +708,11 @@ export default function ChessGame({
     };
   }, [activeGame?.id]);
 
-  // Sync 3D Pieces & Glowing Highlights on every move or selection
+  // 1. Rebuild 3D Pieces ONLY when FEN actually changes (disposing old geometries)
   useEffect(() => {
-    if (!activeGame || !piecesGroupRef.current || !highlightsGroupRef.current) return;
+    if (!activeGame || !piecesGroupRef.current) return;
     const piecesGroup = piecesGroupRef.current;
-    const highlightsGroup = highlightsGroupRef.current;
-    piecesGroup.clear();
-    highlightsGroup.clear();
+    disposeGroupGeometries(piecesGroup);
 
     const chess = new Chess(activeGame.fen);
     chess.board().forEach((row, rIdx) => {
@@ -715,14 +725,18 @@ export default function ChessGame({
         piecesGroup.add(mesh);
       });
     });
+  }, [activeGame?.fen, activeGame?.id]);
+
+  // 2. Rebuild Highlights ONLY when selection changes (disposing old geometries)
+  useEffect(() => {
+    if (!activeGame || !highlightsGroupRef.current) return;
+    const highlightsGroup = highlightsGroupRef.current;
+    disposeGroupGeometries(highlightsGroup);
 
     if (selectedSquare) {
       const f = FILES.indexOf(selectedSquare[0]);
       const r = Number(selectedSquare[1]) - 1;
-      const selTile = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.95, 0.95),
-        new THREE.MeshBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.55 })
-      );
+      const selTile = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), SELECT_MAT);
       selTile.rotation.x = -Math.PI / 2;
       selTile.position.set(f - 3.5, 0.06, 3.5 - r);
       highlightsGroup.add(selTile);
@@ -731,17 +745,14 @@ export default function ChessGame({
     validMoves.forEach((sq) => {
       const f = FILES.indexOf(sq[0]);
       const r = Number(sq[1]) - 1;
-      const dot = new THREE.Mesh(
-        new THREE.RingGeometry(0.18, 0.35, 24),
-        new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide })
-      );
+      const dot = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.35, 20), MOVE_DOT_MAT);
       dot.rotation.x = -Math.PI / 2;
       dot.position.set(f - 3.5, 0.07, 3.5 - r);
       highlightsGroup.add(dot);
     });
-  }, [activeGame?.fen, selectedSquare, validMoves]);
+  }, [selectedSquare, validMoves, activeGame?.id]);
 
-  // LOBBY & MODE SELECTOR VIEW
+  // LOBBY VIEW
   if (!activeGame) {
     return (
       <div className="space-y-5">
@@ -874,12 +885,18 @@ export default function ChessGame({
   const chessInstance = new Chess(activeGame.fen);
   const myColor =
     activeGame.white_player_id === userId ? 'w' : activeGame.black_player_id === userId ? 'b' : null;
-  const isMyTurn = myColor && chessInstance.turn() === myColor && activeGame.status !== 'finished';
-  const isFinished = activeGame.status === 'finished';
+  const isFinished = activeGame.status === 'finished' || chessInstance.isGameOver();
+  const isMyTurn = myColor && chessInstance.turn() === myColor && !isFinished;
+  const resolvedWinnerId =
+    activeGame.winner_id ||
+    (chessInstance.isCheckmate()
+      ? chessInstance.turn() === 'w'
+        ? activeGame.black_player_id
+        : activeGame.white_player_id
+      : null);
 
   return (
     <div className="space-y-3">
-      {/* Top Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
@@ -936,7 +953,6 @@ export default function ChessGame({
 
       {/* 3D Grand Hall Arena Container */}
       <div className="relative w-full h-[460px] sm:h-[540px] rounded-[28px] overflow-hidden bg-[#16120f] border border-amber-500/25 shadow-2xl">
-        {/* Floating Wizard-Style HUD Pills */}
         <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between gap-2 pointer-events-none">
           <span className="bg-black/65 backdrop-blur-md border border-amber-400/35 text-amber-300 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
             Millerites Chess
@@ -961,7 +977,6 @@ export default function ChessGame({
           </span>
         </div>
 
-        {/* Controls Hint Popover */}
         {showControlsHint && (
           <div className="absolute top-14 right-3 z-20 bg-black/85 backdrop-blur-md border border-amber-400/30 text-white rounded-2xl p-3.5 text-[11px] space-y-1.5 max-w-[210px] shadow-xl">
             <p className="font-black text-amber-300 uppercase tracking-wider text-[10px]">3D Camera Controls</p>
@@ -972,10 +987,16 @@ export default function ChessGame({
           </div>
         )}
 
-        {/* 3D WebGL Mount */}
         {webglError ? (
-          <div className="w-full h-full flex items-center justify-center p-6 text-center text-white/70 text-xs font-semibold">
-            {webglError}
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white/80 text-xs font-semibold gap-3">
+            <p>{webglError}</p>
+            <button
+              type="button"
+              onClick={() => setWebglError(null)}
+              className="bg-[#ff4d00] text-white px-4 py-2 rounded-full text-xs font-bold"
+            >
+              Reload 3D Board
+            </button>
           </div>
         ) : (
           <div ref={mountRef} className="w-full h-full touch-none" />
@@ -1012,11 +1033,11 @@ export default function ChessGame({
               <Trophy size={30} />
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-1">
-              {activeGame.winner_id ? 'Checkmate!' : 'Stalemate / Draw'}
+              {resolvedWinnerId ? 'Checkmate!' : 'Stalemate / Draw'}
             </span>
             <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
-              {activeGame.winner_id
-                ? `${getMemberName(activeGame.winner_id)} Wins!`
+              {resolvedWinnerId
+                ? `${getMemberName(resolvedWinnerId)} Wins!`
                 : 'Match Ended in a Draw'}
             </h3>
             <p className="text-xs text-white/65 mb-6">
@@ -1046,7 +1067,6 @@ export default function ChessGame({
         )}
       </div>
 
-      {/* Bottom Match Status Bar */}
       <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 px-1">
         <span>⚪ {getMemberName(activeGame.white_player_id)}</span>
         <span className="flex items-center gap-1 text-[#ff4d00] font-bold">
