@@ -14,7 +14,11 @@ import RetainerDashboard from './RetainerDashboard';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    })
+  : null;
 
 const VIBE_EMOJIS = [
   '👋🏾', '🙏🏾', '🙌🏾', '💪🏾', '🫶🏾', '✌🏾', '🤞🏾', '👊🏾', '🤙🏾', '👏🏾', '🫱🏾‍🫲🏽', '🤳🏾',
@@ -188,6 +192,9 @@ export default function Hub() {
         if (userId) {
           await OneSignal.login(userId);
         }
+        if (profile.is_millerite) {
+          OneSignal.User.addTag("group", "millerites");
+        }
 
         if (OneSignal.Notifications.permission) {
           alert("Alerts enabled! You'll now get notified for new Millerites updates and DMs.");
@@ -324,6 +331,19 @@ export default function Hub() {
       try {
         if (!supabase) { setIsLoading(false); return; }
         const { data: { session } } = await supabase.auth.getSession();
+
+        // Enforce temporary session if user unchecked "Stay logged in"
+        if (
+          session &&
+          localStorage.getItem('millerites_temp_session') === 'true' &&
+          !sessionStorage.getItem('millerites_active_tab')
+        ) {
+          localStorage.removeItem('millerites_temp_session');
+          await supabase.auth.signOut();
+          navigate('/login');
+          return;
+        }
+
         if (!session) { navigate('/login'); return; }
         setUserId(session.user.id);
 
@@ -753,7 +773,10 @@ export default function Hub() {
   };
 
   const handleSignOut = async () => {
-    try { if (supabase) await supabase.auth.signOut(); } 
+    try {
+      localStorage.removeItem('millerites_temp_session');
+      if (supabase) await supabase.auth.signOut();
+    } 
     catch (error) { console.error(error); } 
     finally { navigate('/'); }
   };
@@ -813,6 +836,19 @@ export default function Hub() {
   const newPostsCount = lastSeenAt
     ? posts.filter(p => p.user_id !== userId && new Date(p.created_at) > new Date(lastSeenAt)).length
     : posts.filter(p => p.user_id !== userId).length;
+
+  // UPDATE HOME SCREEN APP ICON BADGE (iOS / Supported PWAs)
+  useEffect(() => {
+    const nav = navigator as any;
+    if (!nav.setAppBadge) return;
+
+    const badgeTotal = totalUnreadDms + newPostsCount;
+    if (badgeTotal > 0) {
+      nav.setAppBadge(badgeTotal).catch(() => {});
+    } else if (nav.clearAppBadge) {
+      nav.clearAppBadge().catch(() => {});
+    }
+  }, [totalUnreadDms, newPostsCount]);
 
   // Live Member Profile Posts & Interactive Modal Post
   const currentMemberPosts = viewingMember
