@@ -462,6 +462,15 @@ export default function ChessGame({
     enterGame(game);
   };
 
+  // Record a win in the per-game leaderboard
+  const recordWin = async (winnerId: string | null) => {
+    if (!supabase || !winnerId || winnerId === 'AI_BOT') return;
+    await supabase.rpc('increment_game_win', {
+      p_user_id: winnerId,
+      p_game_type: 'chess',
+    });
+  };
+
   const handleResign = async () => {
     if (!activeGame || !userId) return;
     if (!confirm('Resign this match?')) return;
@@ -475,6 +484,8 @@ export default function ChessGame({
       status: 'finished',
       winner_id: winnerId,
     }));
+
+    recordWin(winnerId);
 
     if (!activeGame.isBotGame && supabase) {
       await supabase
@@ -556,6 +567,7 @@ export default function ChessGame({
         if (move) {
           const isOver = chess.isGameOver();
           const winnerId = chess.isCheckmate() ? userId : null;
+          if (winnerId) recordWin(winnerId);
           const nextStatus = isOver ? 'finished' : 'active';
 
           setActiveGame({
