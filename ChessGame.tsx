@@ -28,30 +28,29 @@ function buildPieceMesh(type: string, color: 'w' | 'b') {
   const group = new THREE.Group();
   const isWhite = color === 'w';
   const mat = new THREE.MeshStandardMaterial({
-    color: isWhite ? 0xf5f0e6 : 0x222226,
-    roughness: isWhite ? 0.35 : 0.25,
-    metalness: isWhite ? 0.1 : 0.25,
+    color: isWhite ? 0xf8f3ea : 0x26262c,
+    roughness: isWhite ? 0.35 : 0.28,
+    metalness: isWhite ? 0.08 : 0.25,
   });
 
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.14, 24), mat);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.14, 20), mat);
   base.position.y = 0.07;
-  base.castShadow = true;
   group.add(base);
 
   if (type === 'p') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.25, 0.42, 20), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.25, 0.42, 16), mat);
     body.position.y = 0.35;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 20, 20), mat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 16), mat);
     head.position.y = 0.64;
     group.add(body, head);
   } else if (type === 'r') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.62, 20), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.62, 16), mat);
     body.position.y = 0.45;
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.2, 16), mat);
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.2, 14), mat);
     top.position.y = 0.82;
     group.add(body, top);
   } else if (type === 'n') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.27, 0.5, 20), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.27, 0.5, 16), mat);
     body.position.y = 0.38;
     const neck = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.32), mat);
     neck.position.set(0, 0.72, isWhite ? -0.04 : 0.04);
@@ -60,27 +59,27 @@ function buildPieceMesh(type: string, color: 'w' | 'b') {
     snout.position.set(0, 0.84, isWhite ? -0.18 : 0.18);
     group.add(body, neck, snout);
   } else if (type === 'b') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.26, 0.68, 20), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.26, 0.68, 16), mat);
     body.position.y = 0.48;
-    const mitre = new THREE.Mesh(new THREE.SphereGeometry(0.18, 20, 20), mat);
+    const mitre = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), mat);
     mitre.scale.set(1, 1.35, 1);
     mitre.position.y = 0.9;
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), mat);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), mat);
     tip.position.y = 1.16;
     group.add(body, mitre, tip);
   } else if (type === 'q') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.28, 0.85, 24), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.28, 0.85, 18), mat);
     body.position.y = 0.56;
-    const crown = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.05, 12, 24), mat);
+    const crown = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.05, 10, 18), mat);
     crown.rotation.x = Math.PI / 2;
     crown.position.y = 1.04;
-    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 20, 20), mat);
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), mat);
     orb.position.y = 1.16;
     group.add(body, crown, orb);
   } else if (type === 'k') {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.3, 0.95, 24), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.3, 0.95, 18), mat);
     body.position.y = 0.61;
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.12, 20), mat);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.12, 16), mat);
     collar.position.y = 1.1;
     const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, 0.08), mat);
     crossV.position.y = 1.28;
@@ -105,6 +104,7 @@ export default function ChessGame({
   const [cameraAngle, setCameraAngle] = useState(0);
   const [inviteeId, setInviteeId] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [webglError, setWebglError] = useState<string | null>(null);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const piecesGroupRef = useRef<THREE.Group | null>(null);
@@ -146,7 +146,17 @@ export default function ChessGame({
     }
   };
 
-  // Fetch lobby games & subscribe to live updates
+  const positionCamera = (camera: THREE.PerspectiveCamera, width: number, height: number, angleOffset: number) => {
+    const game = activeGameRef.current;
+    const isBlack = game?.black_player_id === userId;
+    const angle = (isBlack ? Math.PI : 0) + angleOffset;
+    const isPortrait = height > width;
+    const radius = isPortrait ? 13.5 : 9.8;
+    const camHeight = isPortrait ? 11.2 : 8.4;
+    camera.position.set(Math.sin(angle) * radius, camHeight, Math.cos(angle) * radius);
+    camera.lookAt(0, 0, 0);
+  };
+
   const fetchGames = async () => {
     if (!supabase) return;
     const { data } = await supabase
@@ -163,7 +173,6 @@ export default function ChessGame({
     }
   };
 
-  // Auto-open game if user arrived via SMS invite link (?chess=GAME_ID)
   useEffect(() => {
     if (!initialGameId || !supabase || !userId) return;
     const loadInvitedGame = async () => {
@@ -207,9 +216,9 @@ export default function ChessGame({
     };
   }, [supabase]);
 
-  // 1. START LOCAL AI BOT MATCH
   const handleStartBotGame = () => {
     const fresh = new Chess();
+    setWebglError(null);
     setActiveGame({
       id: `bot-${Date.now()}`,
       isBotGame: true,
@@ -224,9 +233,9 @@ export default function ChessGame({
     setValidMoves([]);
   };
 
-  // 2. CREATE LIVE MULTIPLAYER MATCH (Optional specific family member or SMS)
   const handleCreateLiveGame = async (openSms = false) => {
     if (!supabase || !userId) return;
+    setWebglError(null);
     const payload: any = {
       white_player_id: userId,
       black_player_id: inviteeId || null,
@@ -250,6 +259,7 @@ export default function ChessGame({
 
   const handleJoinGame = async (game: any) => {
     if (!supabase || !userId) return;
+    setWebglError(null);
     if (game.white_player_id === userId || game.black_player_id === userId) {
       setActiveGame(game);
       return;
@@ -273,7 +283,7 @@ export default function ChessGame({
     setActiveGame(game);
   };
 
-  // AI Bot Move Effect (plays Black after 600ms)
+  // AI Bot Move Effect
   useEffect(() => {
     if (!activeGame?.isBotGame || activeGame.status === 'finished' || activeGame.turn !== 'b') {
       return;
@@ -283,7 +293,6 @@ export default function ChessGame({
       const moves = chess.moves({ verbose: true });
       if (moves.length === 0) return;
 
-      // Smart-casual AI: prioritize highest-value captures, otherwise random legal move
       const captures = moves.filter((m: any) => m.captured);
       let chosen: any;
       if (captures.length > 0) {
@@ -309,7 +318,6 @@ export default function ChessGame({
     return () => clearTimeout(timer);
   }, [activeGame?.fen, activeGame?.isBotGame, activeGame?.turn, activeGame?.status]);
 
-  // Handle Tapping a 3D Square or Piece
   const handleSquareClick = async (square: Square) => {
     const game = activeGameRef.current;
     if (!game || !userId || game.status === 'finished') return;
@@ -371,48 +379,57 @@ export default function ChessGame({
     }
   };
 
-  // Initialize Three.js 3D Scene
+  // Initialize Three.js 3D Scene (Mobile-Safe + ResizeObserver)
   useEffect(() => {
     if (!activeGame || !mountRef.current) return;
     const container = mountRef.current;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      42,
-      container.clientWidth / container.clientHeight,
-      0.1,
-      100
-    );
-    cameraRef.current = camera;
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'default' });
+    } catch {
+      setWebglError('3D graphics could not start on this browser.');
+      return;
+    }
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
+    const initWidth = Math.max(container.clientWidth, 300);
+    const initHeight = Math.max(container.clientHeight, 380);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, initWidth / initHeight, 0.1, 100);
+    cameraRef.current = camera;
+    positionCamera(camera, initWidth, initHeight, cameraAngle);
+
+    renderer.setSize(initWidth, initHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-    const dirLight = new THREE.DirectionalLight(0xfff5e4, 1.1);
-    dirLight.position.set(6, 12, 6);
-    dirLight.castShadow = true;
+    // Bright, clear lighting for mobile screens
+    scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+    const dirLight = new THREE.DirectionalLight(0xfff5e4, 1.15);
+    dirLight.position.set(6, 14, 6);
     scene.add(dirLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff8c42, 0.35);
-    rimLight.position.set(-6, 5, -6);
+    const rimLight = new THREE.DirectionalLight(0xff8c42, 0.45);
+    rimLight.position.set(-6, 6, -6);
     scene.add(rimLight);
 
+    // Board Frame
     const frame = new THREE.Mesh(
       new THREE.BoxGeometry(8.7, 0.45, 8.7),
-      new THREE.MeshStandardMaterial({ color: 0x1c1c2e, roughness: 0.4, metalness: 0.2 })
+      new THREE.MeshStandardMaterial({ color: 0x242438, roughness: 0.4, metalness: 0.15 })
     );
     frame.position.y = -0.25;
-    frame.receiveShadow = true;
     scene.add(frame);
 
+    // 64 Squares
     const squareMeshes: THREE.Mesh[] = [];
-    const lightMat = new THREE.MeshStandardMaterial({ color: 0xe8dec8, roughness: 0.55 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x6b4c3b, roughness: 0.55 });
+    const lightMat = new THREE.MeshStandardMaterial({ color: 0xefe6d5, roughness: 0.5 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x7c5843, roughness: 0.5 });
 
     for (let rank = 0; rank < 8; rank++) {
       for (let file = 0; file < 8; file++) {
@@ -422,7 +439,6 @@ export default function ChessGame({
           isLight ? lightMat : darkMat
         );
         sqMesh.position.set(file - 3.5, -0.02, 3.5 - rank);
-        sqMesh.receiveShadow = true;
         sqMesh.userData.square = `${FILES[file]}${rank + 1}` as Square;
         scene.add(sqMesh);
         squareMeshes.push(sqMesh);
@@ -434,6 +450,19 @@ export default function ChessGame({
     scene.add(piecesGroup, highlightsGroup);
     piecesGroupRef.current = piecesGroup;
     highlightsGroupRef.current = highlightsGroup;
+
+    // Immediately populate initial pieces so first frame is never empty
+    const initialChess = new Chess(activeGame.fen);
+    initialChess.board().forEach((row, rIdx) => {
+      row.forEach((cell, fIdx) => {
+        if (!cell) return;
+        const rank = 8 - rIdx;
+        const mesh = buildPieceMesh(cell.type, cell.color);
+        mesh.position.set(fIdx - 3.5, 0.02, 3.5 - (rank - 1));
+        mesh.userData.square = cell.square;
+        piecesGroup.add(mesh);
+      });
+    });
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -453,13 +482,20 @@ export default function ChessGame({
     };
 
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
-    const onResize = () => {
+
+    const handleResize = () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w === 0 || h === 0) return;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      positionCamera(camera, w, h, cameraAngle);
+      renderer.setSize(w, h);
     };
-    window.addEventListener('resize', onResize);
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
 
     let animId = 0;
     const animate = () => {
@@ -470,23 +506,21 @@ export default function ChessGame({
 
     return () => {
       cancelAnimationFrame(animId);
+      resizeObserver.disconnect();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('resize', onResize);
       renderer.dispose();
     };
   }, [activeGame?.id]);
 
-  // Camera Angle
+  // Update Camera Angle when user taps Rotate
   useEffect(() => {
-    if (!cameraRef.current || !activeGame) return;
-    const isBlack = activeGame.black_player_id === userId;
-    const angle = (isBlack ? Math.PI : 0) + cameraAngle;
-    const radius = 9.5;
-    cameraRef.current.position.set(Math.sin(angle) * radius, 8.2, Math.cos(angle) * radius);
-    cameraRef.current.lookAt(0, 0, 0);
+    if (!cameraRef.current || !mountRef.current || !activeGame) return;
+    const w = mountRef.current.clientWidth || 320;
+    const h = mountRef.current.clientHeight || 400;
+    positionCamera(cameraRef.current, w, h, cameraAngle);
   }, [activeGame?.id, activeGame?.black_player_id, userId, cameraAngle]);
 
-  // Sync 3D Pieces & Highlights
+  // Sync 3D Pieces & Highlights on every move or selection
   useEffect(() => {
     if (!activeGame || !piecesGroupRef.current || !highlightsGroupRef.current) return;
     const piecesGroup = piecesGroupRef.current;
@@ -544,9 +578,7 @@ export default function ChessGame({
           </p>
         </div>
 
-        {/* Mode Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Play vs AI Bot */}
           <button
             type="button"
             onClick={handleStartBotGame}
@@ -561,7 +593,6 @@ export default function ChessGame({
             </div>
           </button>
 
-          {/* Text Invite Link */}
           <button
             type="button"
             onClick={() => handleCreateLiveGame(true)}
@@ -577,7 +608,6 @@ export default function ChessGame({
           </button>
         </div>
 
-        {/* Challenge a Specific Family Member */}
         <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2.5">
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Users size={12} className="text-[#ff4d00]" /> Challenge a Family Member
@@ -605,7 +635,6 @@ export default function ChessGame({
           </div>
         </div>
 
-        {/* Live Matches List */}
         <div className="space-y-2.5">
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">
             Live & Recent Family Matches
@@ -666,7 +695,6 @@ export default function ChessGame({
     );
   }
 
-  // ACTIVE 3D BOARD VIEW
   const chessInstance = new Chess(activeGame.fen);
   const myColor =
     activeGame.white_player_id === userId ? 'w' : activeGame.black_player_id === userId ? 'b' : null;
@@ -738,10 +766,16 @@ export default function ChessGame({
       </div>
 
       {/* 3D Canvas */}
-      <div
-        ref={mountRef}
-        className="w-full h-[400px] sm:h-[480px] rounded-[28px] overflow-hidden bg-gradient-to-b from-slate-900 to-black border border-slate-200/30 shadow-xl touch-none"
-      />
+      {webglError ? (
+        <div className="w-full h-[380px] rounded-[28px] bg-slate-900 text-white/70 flex items-center justify-center p-6 text-center text-xs font-semibold">
+          {webglError}
+        </div>
+      ) : (
+        <div
+          ref={mountRef}
+          className="w-full h-[380px] sm:h-[480px] rounded-[28px] overflow-hidden bg-gradient-to-b from-slate-900 to-black border border-slate-200/30 shadow-xl touch-none"
+        />
+      )}
 
       <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 px-1">
         <span>⚪ {getMemberName(activeGame.white_player_id)}</span>
