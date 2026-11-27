@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Gamepad2,
-  Crown,
-  Sparkles,
-  Lock,
   ArrowLeft,
   Trophy,
   Swords,
@@ -11,6 +8,14 @@ import {
   Users,
 } from 'lucide-react';
 import ChessGame from './ChessGame';
+import Connect4Game from './Connect4Game';
+import WordleGame from './WordleGame';
+import CheckersGame from './CheckersGame';
+import BattleshipGame from './BattleshipGame';
+import DrawGuessGame from './DrawGuessGame';
+import TriviaGame from './TriviaGame';
+import DominoesGame from './DominoesGame';
+import SpadesGame from './SpadesGame';
 
 interface GamesHubProps {
   supabase: any;
@@ -20,10 +25,48 @@ interface GamesHubProps {
   onClearInitialGame?: () => void;
 }
 
+type GameKey =
+  | 'chess'
+  | 'connect4'
+  | 'checkers'
+  | 'battleship'
+  | 'draw'
+  | 'trivia'
+  | 'wordle'
+  | 'dominoes'
+  | 'spades';
+
 const GAME_LABELS: Record<string, string> = {
   all: 'All Games',
   chess: '3D Chess',
+  connect4: '3D Connect 4',
+  checkers: '3D Checkers',
+  battleship: 'Battleship',
+  draw: 'Draw & Guess',
+  trivia: 'Trivia',
+  wordle: 'Wordle',
+  dominoes: 'Dominoes',
+  spades: 'Spades',
 };
+
+const ARCADE_CATALOG: {
+  key: GameKey;
+  title: string;
+  emoji: string;
+  tag: string;
+  desc: string;
+  dark?: boolean;
+}[] = [
+  { key: 'chess', title: '3D Chess', emoji: '👑', tag: 'Live 3D', desc: 'Grand Hall 3D chess vs. AI, family, or SMS invite.', dark: true },
+  { key: 'connect4', title: '3D Connect 4', emoji: '🔴', tag: 'Live 3D', desc: 'Drop discs in 3D to connect 4 in a row.' },
+  { key: 'checkers', title: '3D Checkers', emoji: '⚫', tag: 'Live 3D', desc: 'Jump opponent pieces and crown your Kings.' },
+  { key: 'dominoes', title: 'Dominoes', emoji: '🁣', tag: 'Live 1v1', desc: 'Classic Double-Six dominoes vs. AI or family.' },
+  { key: 'spades', title: 'Spades', emoji: '♠️', tag: '4-Player', desc: 'Bid, cut with Spades, and win tricks with your partner.' },
+  { key: 'draw', title: 'Draw & Guess', emoji: '🎨', tag: 'Party', desc: 'Sketch prompts live while the family races to guess.' },
+  { key: 'trivia', title: 'Family & Bible Trivia', emoji: '🧠', tag: 'Group', desc: 'Solo challenge or live family quiz rooms.' },
+  { key: 'battleship', title: 'Battleship', emoji: '🚢', tag: 'Live 1v1', desc: 'Hunt and sink the enemy fleet on an 8x8 ocean grid.' },
+  { key: 'wordle', title: 'Millerites Wordle', emoji: '🟩', tag: 'Daily', desc: 'Guess the family 5-letter word of the day.' },
+];
 
 export default function GamesHub({
   supabase,
@@ -32,7 +75,7 @@ export default function GamesHub({
   initialChessGameId,
   onClearInitialGame,
 }: GamesHubProps) {
-  const [selectedGame, setSelectedGame] = useState<'chess' | null>(
+  const [selectedGame, setSelectedGame] = useState<GameKey | null>(
     initialChessGameId ? 'chess' : null
   );
   const [launchGameId, setLaunchGameId] = useState<string | null>(
@@ -41,7 +84,7 @@ export default function GamesHub({
   const [scores, setScores] = useState<any[]>([]);
   const [activeMatches, setActiveMatches] = useState<any[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
-  const [leaderboardFilter, setLeaderboardFilter] = useState<string>('chess');
+  const [leaderboardFilter, setLeaderboardFilter] = useState<string>('all');
   const [isLaunching, setIsLaunching] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +113,6 @@ export default function GamesHub({
     if (data) setActiveMatches(data);
   };
 
-  // Refresh scores & live matches whenever viewing the Arcade Hub
   useEffect(() => {
     if (!selectedGame) {
       fetchScores();
@@ -78,7 +120,6 @@ export default function GamesHub({
     }
   }, [selectedGame, supabase]);
 
-  // Live subscription for active matches + Arcade Presence (who is online right now)
   useEffect(() => {
     if (!supabase || !userId) return;
 
@@ -87,9 +128,7 @@ export default function GamesHub({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'chess_games' },
-        () => {
-          fetchActiveMatches();
-        }
+        () => fetchActiveMatches()
       )
       .subscribe();
 
@@ -99,8 +138,7 @@ export default function GamesHub({
 
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
-        const state = presenceChannel.presenceState();
-        setOnlineUserIds(Object.keys(state));
+        setOnlineUserIds(Object.keys(presenceChannel.presenceState()));
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
@@ -119,18 +157,15 @@ export default function GamesHub({
   const getMyWins = (gameType: string) =>
     scores.find((s) => s.user_id === userId && s.game_type === gameType)?.wins || 0;
 
-  // Find if a member is currently live in an active match
   const getMemberActiveMatch = (memberId: string) =>
     activeMatches.find(
       (g) => g.white_player_id === memberId || g.black_player_id === memberId
     );
 
-  // Instant 1-tap challenge from a member's avatar
   const handleChallengeMember = async (opponentId: string) => {
     if (!supabase || !userId) return;
     setIsLaunching(opponentId);
     try {
-      // If you already have an active match with this person, resume it
       const existing = activeMatches.find(
         (g) =>
           (g.white_player_id === userId && g.black_player_id === opponentId) ||
@@ -141,19 +176,11 @@ export default function GamesHub({
         setSelectedGame('chess');
         return;
       }
-
       const { data, error } = await supabase
         .from('chess_games')
-        .insert([
-          {
-            white_player_id: userId,
-            black_player_id: opponentId,
-            status: 'active',
-          },
-        ])
+        .insert([{ white_player_id: userId, black_player_id: opponentId, status: 'active' }])
         .select()
         .single();
-
       if (error) throw error;
       setLaunchGameId(data.id);
       setSelectedGame('chess');
@@ -164,17 +191,10 @@ export default function GamesHub({
     }
   };
 
-  const handleWatchMatch = (gameId: string) => {
-    setLaunchGameId(gameId);
-    setSelectedGame('chess');
-  };
-
-  // Dynamically include any future game types stored in game_scores
   const availableTypes = Array.from(
     new Set(['all', 'chess', ...scores.map((s) => s.game_type)])
   );
 
-  // Build ranked leaderboard for the selected filter
   const leaderboard = (() => {
     if (leaderboardFilter === 'all') {
       const totals: Record<string, number> = {};
@@ -192,14 +212,13 @@ export default function GamesHub({
 
   const topWinnerId = leaderboard.length > 0 ? leaderboard[0].user_id : null;
 
-  // Sort avatars: Live in a game first, then Online in Arcade, then everyone else
   const sortedMembers = [...familyMembers].sort((a, b) => {
     const aLive = getMemberActiveMatch(a.id) ? 2 : onlineUserIds.includes(a.id) ? 1 : 0;
     const bLive = getMemberActiveMatch(b.id) ? 2 : onlineUserIds.includes(b.id) ? 1 : 0;
     return bLive - aLive;
   });
 
-  if (selectedGame === 'chess') {
+  if (selectedGame) {
     return (
       <div className="animate-in fade-in duration-300 max-w-4xl mx-auto relative z-10 space-y-4">
         <button
@@ -215,12 +234,33 @@ export default function GamesHub({
         </button>
 
         <div className="bg-white/85 backdrop-blur-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] p-5 sm:p-7">
-          <ChessGame
-            supabase={supabase}
-            userId={userId}
-            familyMembers={familyMembers}
-            initialGameId={launchGameId}
-          />
+          {selectedGame === 'chess' && (
+            <ChessGame supabase={supabase} userId={userId} familyMembers={familyMembers} initialGameId={launchGameId} />
+          )}
+          {selectedGame === 'connect4' && (
+            <Connect4Game supabase={supabase} userId={userId} familyMembers={familyMembers} />
+          )}
+          {selectedGame === 'checkers' && (
+            <CheckersGame supabase={supabase} userId={userId} familyMembers={familyMembers} />
+          )}
+          {selectedGame === 'battleship' && (
+            <BattleshipGame supabase={supabase} userId={userId} familyMembers={familyMembers} />
+          )}
+          {selectedGame === 'draw' && (
+            <DrawGuessGame supabase={supabase} userId={userId} familyMembers={familyMembers} />
+          )}
+          {selectedGame === 'trivia' && (
+            <TriviaGame supabase={supabase} userId={userId} familyMembers={familyMembers} />
+          )}
+          {selectedGame === 'wordle' && (
+            <WordleGame supabase={supabase} userId={userId} />
+          )}
+          {selectedGame === 'dominoes' && (
+            <DominoesGame supabase={supabase} userId={userId} familyMembers={familyMembers} />
+          )}
+          {selectedGame === 'spades' && (
+            <SpadesGame supabase={supabase} userId={userId} />
+          )}
         </div>
       </div>
     );
@@ -237,7 +277,7 @@ export default function GamesHub({
           Family Games
         </h1>
         <p className="text-slate-500 text-xs font-medium mt-1">
-          Tap any family avatar below to challenge them live or watch their active match.
+          9 live games — challenge a family avatar below or pick a game from the arcade.
         </p>
       </div>
 
@@ -267,8 +307,7 @@ export default function GamesHub({
             const opponent = getMember(opponentId);
             const isPlayingWithMe =
               activeMatch &&
-              (activeMatch.white_player_id === userId ||
-                activeMatch.black_player_id === userId);
+              (activeMatch.white_player_id === userId || activeMatch.black_player_id === userId);
 
             return (
               <div
@@ -279,17 +318,8 @@ export default function GamesHub({
                     : 'bg-slate-50/80 border-slate-200/70'
                 }`}
               >
-                {/* Champ Crown Badge */}
-                {isChamp && (
-                  <span
-                    className="absolute top-2 right-2 text-xs"
-                    title="Arcade Leader"
-                  >
-                    👑
-                  </span>
-                )}
+                {isChamp && <span className="absolute top-2 right-2 text-xs" title="Arcade Leader">👑</span>}
 
-                {/* Avatar Character Circle */}
                 <div className="relative mb-2">
                   <div
                     className={`w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center text-lg font-black shadow-md ${
@@ -301,21 +331,14 @@ export default function GamesHub({
                     } bg-slate-200 text-slate-700`}
                   >
                     {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={member.avatar_url} className="w-full h-full object-cover" />
                     ) : (
                       member.first_name?.[0] || 'M'
                     )}
                   </div>
-
-                  {/* Character Vibe Emoji Badge */}
                   <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-xs">
                     {activeMatch ? '⚔️' : member.status_emoji || '🎮'}
                   </span>
-
-                  {/* Live / Online Indicator Dot */}
                   {(activeMatch || isOnline) && (
                     <span
                       className={`absolute -top-1 -left-1 w-3 h-3 rounded-full ring-2 ring-white ${
@@ -325,12 +348,9 @@ export default function GamesHub({
                   )}
                 </div>
 
-                {/* Member Name */}
                 <p className="text-xs font-black text-slate-900 truncate w-full">
                   {isMe ? 'You' : member.first_name || 'Family'}
                 </p>
-
-                {/* Live Status Subtitle */}
                 <p className="text-[10px] font-semibold text-slate-500 truncate w-full mt-0.5 mb-2.5">
                   {activeMatch
                     ? `Live vs ${opponent?.first_name || 'Opponent'}`
@@ -339,26 +359,20 @@ export default function GamesHub({
                     : 'Ready to play'}
                 </p>
 
-                {/* Action Button */}
                 {activeMatch ? (
                   <button
                     type="button"
-                    onClick={() => handleWatchMatch(activeMatch.id)}
+                    onClick={() => {
+                      setLaunchGameId(activeMatch.id);
+                      setSelectedGame('chess');
+                    }}
                     className={`w-full py-1.5 px-2.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1 transition-all ${
                       isPlayingWithMe
                         ? 'bg-[#ff4d00] hover:bg-orange-600 text-white shadow-sm'
                         : 'bg-[#1C1C2E] hover:bg-slate-800 text-white'
                     }`}
                   >
-                    {isPlayingWithMe ? (
-                      <>
-                        <Swords size={11} /> Resume
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={11} /> Watch Live
-                      </>
-                    )}
+                    {isPlayingWithMe ? <><Swords size={11} /> Resume</> : <><Eye size={11} /> Watch Live</>}
                   </button>
                 ) : isMe ? (
                   <span className="w-full py-1.5 px-2.5 rounded-xl text-[10px] font-bold bg-slate-200/70 text-slate-500">
@@ -381,59 +395,63 @@ export default function GamesHub({
         </div>
       </div>
 
-      {/* Games Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* 1. 3D CHESS (LIVE) */}
-        <button
-          type="button"
-          onClick={() => {
-            setLaunchGameId(null);
-            setSelectedGame('chess');
-          }}
-          className="text-left group bg-gradient-to-br from-[#1C1C2E] to-slate-900 text-white rounded-[32px] p-6 shadow-[0_12px_35px_rgba(28,28,46,0.18)] relative overflow-hidden hover:scale-[1.01] transition-all"
-        >
-          <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-[#ff4d00]/20 rounded-full blur-2xl pointer-events-none" />
-          <div className="flex items-center justify-between mb-4">
-            <span className="w-11 h-11 rounded-2xl bg-[#ff4d00]/20 border border-[#ff4d00]/30 flex items-center justify-center text-amber-400">
-              <Crown size={22} />
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-400/15 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-full">
-                🏆 {getMyWins('chess')} {getMyWins('chess') === 1 ? 'Win' : 'Wins'}
+      {/* ALL 9 ARCADE GAMES GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {ARCADE_CATALOG.map((g) => {
+          const wins = getMyWins(g.key);
+          return (
+            <button
+              key={g.key}
+              type="button"
+              onClick={() => {
+                setLaunchGameId(null);
+                setSelectedGame(g.key);
+              }}
+              className={`text-left group rounded-[28px] p-5 relative overflow-hidden hover:scale-[1.01] transition-all flex flex-col justify-between ${
+                g.dark
+                  ? 'bg-gradient-to-br from-[#1C1C2E] to-slate-900 text-white shadow-[0_12px_35px_rgba(28,28,46,0.18)]'
+                  : 'bg-white/85 backdrop-blur-2xl border border-white text-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3.5">
+                  <span
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg ${
+                      g.dark
+                        ? 'bg-[#ff4d00]/20 border border-[#ff4d00]/30'
+                        : 'bg-slate-100 border border-slate-200/70'
+                    }`}
+                  >
+                    {g.emoji}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {wins > 0 && (
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-600 px-2 py-0.5 rounded-full">
+                        🏆 {wins}
+                      </span>
+                    )}
+                    <span
+                      className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        g.dark
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {g.tag}
+                    </span>
+                  </div>
+                </div>
+                <h2 className="text-lg font-black tracking-tight mb-1">{g.title}</h2>
+                <p className={`text-xs leading-relaxed mb-4 ${g.dark ? 'text-white/65' : 'text-slate-500'}`}>
+                  {g.desc}
+                </p>
+              </div>
+              <span className={`inline-flex items-center gap-1 text-xs font-bold group-hover:translate-x-1 transition-transform ${g.dark ? 'text-amber-400' : 'text-[#ff4d00]'}`}>
+                Play Now →
               </span>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
-                Live 3D
-              </span>
-            </div>
-          </div>
-          <h2 className="text-xl font-black tracking-tight mb-1">3D Chess</h2>
-          <p className="text-xs text-white/65 leading-relaxed mb-4">
-            Play against the AI Bot, challenge a Millerite live, or text an invite link.
-          </p>
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
-            Open Lobby →
-          </span>
-        </button>
-
-        {/* 2. COMING SOON PLACEHOLDER */}
-        <div className="bg-white/75 backdrop-blur-2xl border border-white/90 rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col justify-between opacity-75">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400">
-                <Sparkles size={20} />
-              </span>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full flex items-center gap-1">
-                <Lock size={10} /> Coming Soon
-              </span>
-            </div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight mb-1">
-              More Games Soon
-            </h2>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Checkers, Family Trivia, and Word Games are on the way.
-            </p>
-          </div>
-        </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* FAMILY LEADERBOARD */}
@@ -443,7 +461,7 @@ export default function GamesHub({
             <Trophy size={16} className="text-[#ff4d00]" /> Family Leaderboard
           </h2>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {availableTypes.map((type) => (
               <button
                 key={type}
@@ -473,14 +491,9 @@ export default function GamesHub({
               const member = getMember(entry.user_id);
               const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
               return (
-                <div
-                  key={entry.user_id}
-                  className="py-3 flex items-center justify-between gap-3"
-                >
+                <div key={entry.user_id} className="py-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-7 text-center text-sm font-black text-slate-500 shrink-0">
-                      {medal}
-                    </span>
+                    <span className="w-7 text-center text-sm font-black text-slate-500 shrink-0">{medal}</span>
                     <div className="w-9 h-9 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center text-xs font-black text-slate-700 ring-2 ring-slate-200/80">
                       {member?.avatar_url ? (
                         <img src={member.avatar_url} className="w-full h-full object-cover" />
