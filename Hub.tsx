@@ -160,9 +160,10 @@ export default function Hub() {
   const [mentionTarget, setMentionTarget] = useState<'post' | 'reply' | null>(null);
   const [mentionQuery, setMentionQuery] = useState('');
 
-  // MEMBER PROFILE VIEW & POST MODAL STATE
+  // MEMBER PROFILE VIEW, POST MODAL & LIGHTBOX STATE
   const [viewingMember, setViewingMember] = useState<any | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES, DMS & PROFILE
   const isHubThemeable = activeTab === 'millerites' || activeTab === 'member_view' || activeTab === 'profile' || activeTab === 'dms';
@@ -948,7 +949,7 @@ export default function Hub() {
 
   const activePulse = pulseSlides[pulseIndex % pulseSlides.length] || pulseSlides[0];
 
-  // Reusable Swipeable Media Gallery for Single or Multi-Media Posts
+  // Reusable Swipeable Media Gallery for Single or Multi-Media Posts (Tap photo to enlarge)
   const renderPostMedia = (mediaUrl?: string | null, isModal = false) => {
     const mediaList = getPostMedia(mediaUrl);
     if (mediaList.length === 0) return null;
@@ -960,7 +961,11 @@ export default function Hub() {
           {isVideo(url) ? (
             <video src={url} controls playsInline className={`w-full ${isModal ? 'max-h-[380px]' : 'max-h-[480px]'} object-contain`} />
           ) : (
-            <img src={url} className={`w-full ${isModal ? 'max-h-[420px]' : 'max-h-[520px]'} object-cover`} />
+            <img
+              src={url}
+              onClick={() => setLightboxImage(url)}
+              className={`w-full ${isModal ? 'max-h-[420px]' : 'max-h-[520px]'} object-cover cursor-zoom-in`}
+            />
           )}
         </div>
       );
@@ -984,10 +989,11 @@ export default function Hub() {
               ) : (
                 <img
                   src={url}
-                  className={`w-full ${isModal ? 'h-64' : 'h-72 sm:h-80'} object-cover`}
+                  onClick={() => setLightboxImage(url)}
+                  className={`w-full ${isModal ? 'h-64' : 'h-72 sm:h-80'} object-cover cursor-zoom-in`}
                 />
               )}
-              <span className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+              <span className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full pointer-events-none">
                 {idx + 1} / {mediaList.length}
               </span>
             </div>
@@ -1301,6 +1307,28 @@ export default function Hub() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* FULL-SCREEN PHOTO LIGHTBOX */}
+        {lightboxImage && (
+          <div
+            onClick={() => setLightboxImage(null)}
+            className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxImage(null)}
+              aria-label="Close enlarged photo"
+              className="absolute top-5 right-5 bg-white/15 hover:bg-white/25 text-white p-2.5 rounded-full backdrop-blur-md transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={lightboxImage}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-[88vh] object-contain rounded-2xl shadow-2xl"
+            />
           </div>
         )}
 
