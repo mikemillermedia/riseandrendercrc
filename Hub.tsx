@@ -55,6 +55,9 @@ export default function Hub() {
     return new URLSearchParams(window.location.search).get('chess');
   });
 
+  // LIVE GAME HUB PLAYERS STATE
+  const [liveGamePlayers, setLiveGamePlayers] = useState<Record<string, { game: string; roomId?: string }>>({});
+
   // USER & PROFILE STATE
   const [userId, setUserId] = useState<string | null>(null);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
@@ -173,6 +176,68 @@ export default function Hub() {
     postId: string;
     tab: 'likes' | 'reposts';
   } | null>(null);
+
+  // TRACK LIVE PLAYERS IN THE GAME HUB (Presence + Chess + Black Card Revoked)
+  useEffect(() => {
+    if (!supabase) return;
+
+    let presenceIds: string[] = [];
+
+    const refreshLiveGames = async () => {
+      const map: Record<string, { game: string; roomId?: string }> = {};
+
+      // 1. Anyone currently in the Arcade (Presence)
+      presenceIds.forEach((uid) => {
+        map[uid] = { game: 'In Games Hub' };
+      });
+
+      // 2. Active 3D Chess matches
+      const { data: chessMatches } = await supabase
+        .from('chess_games')
+        .select('id, white_player_id, black_player_id')
+        .eq('status', 'active');
+
+      (chessMatches || []).forEach((m: any) => {
+        if (m.white_player_id) map[m.white_player_id] = { game: '3D Chess', roomId: m.id };
+        if (m.black_player_id) map[m.black_player_id] = { game: '3D Chess', roomId: m.id };
+      });
+
+      // 3. Active Black Card Revoked rooms
+      const { data: bcrRooms } = await supabase
+        .from('bcr_rooms')
+        .select('id, code, players')
+        .in('status', ['lobby', 'playing', 'tiebreaker', 'reveal']);
+
+      (bcrRooms || []).forEach((r: any) => {
+        (r.players || []).forEach((p: any) => {
+          if (p?.id) map[p.id] = { game: `Black Card (${r.code})` };
+        });
+      });
+
+      setLiveGamePlayers(map);
+    };
+
+    refreshLiveGames();
+
+    const presenceChannel = supabase.channel('millerites-arcade-presence');
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        presenceIds = Object.keys(presenceChannel.presenceState());
+        refreshLiveGames();
+      })
+      .subscribe();
+
+    const gamesSub = supabase
+      .channel('pulse-live-games')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chess_games' }, refreshLiveGames)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bcr_rooms' }, refreshLiveGames)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+      supabase.removeChannel(gamesSub);
+    };
+  }, []);
 
   // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES, DMS, GAMES & PROFILE
   const isHubThemeable =
@@ -902,8 +967,40 @@ export default function Hub() {
     .filter(m => m.created_at)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
 
+  // Live Game Hub Players Summary for Family Pulse
+  const livePlayersList = Object.entries(liveGamePlayers)
+    .map(([uid, info]) => {
+      const member = familyMembers.find(m => m.id === uid);
+      return {
+        uid,
+        name: uid === userId ? 'You' : (member?.first_name || 'Family'),
+        game: info.game,
+      };
+    });
+
   // Build the rotating Family Pulse slides
   const pulseSlides = [
+    ...(livePlayersList.length > 0
+      ? [
+          {
+            id: 'live-games',
+            badge: '🎮 Live in Arcade',
+            headline:
+              livePlayersList.length === 1
+                ? `${livePlayersList[0].name} is Playing`
+                : `${livePlayersList.length} Playing Live`,
+            subHeadline: '',
+            detail:
+              livePlayersList.length === 1
+                ? `${livePlayersList[0].game} • Tap to join or watch`
+                : `${livePlayersList.slice(0, 3).map(p => p.name).join(', ')} • ${livePlayersList[0].game}`,
+            progress: 100,
+            footerLeft: 'Millerites Game Hub',
+            footerRight: 'Jump in →',
+            onClick: () => setActiveTab('games'),
+          },
+        ]
+      : []),
     {
       id: 'updates',
       badge: 'Family Pulse',
@@ -1049,12 +1146,17 @@ export default function Hub() {
         {familyMembers.map(member => {
           const isSelected = viewingMember?.id === member.id && activeTab === 'member_view';
           const unreadCount = unreadDmSenders[member.id] || 0;
+          const liveGame = liveGamePlayers[member.id];
           return (
             <button
               key={member.id}
               type="button"
               onClick={() => openMemberProfile(member.id)}
-              title={`${member.first_name || 'Family'} ${member.last_name || ''}`.trim()}
+              title={
+                liveGame
+                  ? `${member.first_name || 'Family'} — Playing ${liveGame.game}`
+                  : `${member.first_name || 'Family'} ${member.last_name || ''}`.trim()
+              }
               className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none w-14"
             >
               <div className="relative">
@@ -1062,6 +1164,8 @@ export default function Hub() {
                   className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-xs font-black transition-all shadow-sm ${
                     isSelected
                       ? 'ring-2 ring-[#ff4d00] scale-105'
+                      : liveGame
+                      ? 'ring-2 ring-[#ff4d00] ring-offset-2 ring-offset-white'
                       : 'ring-2 ring-slate-200/80 group-hover:ring-amber-400 group-hover:scale-105'
                   } bg-slate-100 text-slate-700`}
                 >
@@ -1077,8 +1181,17 @@ export default function Hub() {
                     {unreadCount}
                   </span>
                 )}
+
+                {liveGame && (
+                  <span
+                    title={`Live: ${liveGame.game}`}
+                    className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#1C1C2E] text-[10px] flex items-center justify-center ring-2 ring-white shadow animate-pulse"
+                  >
+                    🎮
+                  </span>
+                )}
               </div>
-              <span className={`text-[10px] font-bold truncate w-full text-center transition-colors ${isSelected ? 'text-[#ff4d00]' : 'text-slate-600 group-hover:text-slate-900'}`}>
+              <span className={`text-[10px] font-bold truncate w-full text-center transition-colors ${isSelected || liveGame ? 'text-[#ff4d00]' : 'text-slate-600 group-hover:text-slate-900'}`}>
                 {member.id === userId ? 'You' : (member.first_name || 'Family')}
               </span>
             </button>
@@ -1123,8 +1236,13 @@ export default function Hub() {
           )}
 
           {profile.is_millerite && (
-            <button onClick={() => setActiveTab('games')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'games' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
-              <Gamepad2 size={18} /> Games
+            <button onClick={() => setActiveTab('games')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'games' ? (isLightMode ? 'bg-[#1C1C2E] text-white shadow-md shadow-slate-900/10' : 'bg-[#ff4d00]/10 text-[#ff4d00]') : (isLightMode ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5')}`}>
+              <span className="flex items-center gap-3"><Gamepad2 size={18} /> Games</span>
+              {livePlayersList.length > 0 && (
+                <span className="bg-[#ff4d00] text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                  {livePlayersList.length} Live
+                </span>
+              )}
             </button>
           )}
 
@@ -3161,7 +3279,7 @@ export default function Hub() {
         {profile.is_millerite && (
           <button
             onClick={() => setActiveTab('games')}
-            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
+            className={`relative flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-full transition-all ${
               activeTab === 'games'
                 ? isLightMode
                   ? 'text-white bg-[#1C1C2E] shadow-sm'
@@ -3173,6 +3291,9 @@ export default function Hub() {
           >
             <Gamepad2 size={18} />
             <span className="text-[9px] uppercase font-bold tracking-wider">Games</span>
+            {livePlayersList.length > 0 && (
+              <span className="absolute top-1 right-2.5 w-2 h-2 rounded-full bg-[#ff4d00] ring-2 ring-white animate-pulse" />
+            )}
           </button>
         )}
         {profile.is_client && blueprint && (
