@@ -162,14 +162,17 @@ export default function Hub() {
   const [replyingToPostId, setReplyingToPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [expandedReactionsPostId, setExpandedReactionsPostId] = useState<string | null>(null);
   const [mentionTarget, setMentionTarget] = useState<'post' | 'reply' | null>(null);
   const [mentionQuery, setMentionQuery] = useState('');
 
-  // MEMBER PROFILE VIEW, POST MODAL & LIGHTBOX STATE
+  // MEMBER PROFILE VIEW, POST MODAL, LIGHTBOX & ACTIVITY MODAL STATE
   const [viewingMember, setViewingMember] = useState<any | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [activityModal, setActivityModal] = useState<{
+    postId: string;
+    tab: 'likes' | 'reposts';
+  } | null>(null);
 
   // APPLE LIGHT / DARK THEME TOGGLE FOR MILLERITES, DMS, GAMES & PROFILE
   const isHubThemeable =
@@ -469,10 +472,13 @@ export default function Hub() {
         likes: safeLikes
           .filter((l: any) => l.post_id === p.id)
           .map((l: any) => ({ ...l, emoji: l.emoji || '❤️', profile: profileMap[l.user_id] })),
+        reposts: safePosts
+          .filter((rp: any) => rp.original_post_id === p.id)
+          .map((rp: any) => ({ ...rp, profile: profileMap[rp.user_id] })),
         replies: safeReplies
           .filter((r: any) => r.post_id === p.id)
           .map((r: any) => ({ ...r, profiles: profileMap[r.user_id] }))
-          .sort((a:any, b:any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       })));
 
       setPrayers(safePrayers.map((p: any) => ({ 
@@ -1251,9 +1257,35 @@ export default function Hub() {
                     onClick={() => handleRepost(activeModalPost)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-semibold transition-colors"
                   >
-                    <Repeat size={14} /> Repost
+                    <Repeat size={14} /> Repost ({activeModalPost.reposts?.length || 0})
                   </button>
                 </div>
+
+                {/* Clickable Likes / Reposts Summary in Modal */}
+                {(activeModalPost.likes.length > 0 || (activeModalPost.reposts?.length || 0) > 0) && (
+                  <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-500">
+                    {activeModalPost.likes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setActivityModal({ postId: activeModalPost.id, tab: 'likes' })}
+                        className="hover:text-slate-900 transition-colors"
+                      >
+                        <strong className="text-slate-900">{activeModalPost.likes.length}</strong>{' '}
+                        {activeModalPost.likes.length === 1 ? 'Like' : 'Likes'}
+                      </button>
+                    )}
+                    {(activeModalPost.reposts?.length || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setActivityModal({ postId: activeModalPost.id, tab: 'reposts' })}
+                        className="hover:text-slate-900 transition-colors"
+                      >
+                        <strong className="text-slate-900">{activeModalPost.reposts.length}</strong>{' '}
+                        {activeModalPost.reposts.length === 1 ? 'Repost' : 'Reposts'}
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Replies List */}
                 <div className="space-y-3 pt-2">
@@ -1353,6 +1385,99 @@ export default function Hub() {
             />
           </div>
         )}
+
+        {/* WHO LIKED / REPOSTED MODAL */}
+        {activityModal && (() => {
+          const targetPost = posts.find(p => p.id === activityModal.postId);
+          if (!targetPost) return null;
+          const likesList = targetPost.likes || [];
+          const repostsList = targetPost.reposts || [];
+          const activeList = activityModal.tab === 'likes' ? likesList : repostsList;
+
+          return (
+            <div
+              onClick={() => setActivityModal(null)}
+              className="fixed inset-0 z-[55] bg-black/65 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full sm:max-w-sm max-h-[70vh] bg-white border border-slate-200/80 rounded-t-[28px] sm:rounded-[28px] shadow-2xl flex flex-col overflow-hidden"
+              >
+                <div className="px-5 py-3.5 border-b border-slate-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-full">
+                    <button
+                      type="button"
+                      onClick={() => setActivityModal({ ...activityModal, tab: 'likes' })}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                        activityModal.tab === 'likes'
+                          ? 'bg-[#1C1C2E] text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Likes ({likesList.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivityModal({ ...activityModal, tab: 'reposts' })}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                        activityModal.tab === 'reposts'
+                          ? 'bg-[#1C1C2E] text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Reposts ({repostsList.length})
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivityModal(null)}
+                    className="text-slate-400 hover:text-slate-900 bg-slate-100 p-1.5 rounded-full"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2.5 custom-scrollbar">
+                  {activeList.length === 0 ? (
+                    <p className="text-center text-xs text-slate-400 py-6">
+                      No {activityModal.tab} yet.
+                    </p>
+                  ) : (
+                    activeList.map((item: any) => (
+                      <div
+                        key={item.id || item.user_id}
+                        onClick={() => {
+                          setActivityModal(null);
+                          setSelectedPostId(null);
+                          openMemberProfile(item.user_id);
+                        }}
+                        className="flex items-center justify-between gap-3 p-2 rounded-2xl hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-700">
+                            {item.profile?.avatar_url ? (
+                              <img src={item.profile.avatar_url} className="w-full h-full object-cover" />
+                            ) : (
+                              item.profile?.first_name?.[0] || 'M'
+                            )}
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 truncate">
+                            {item.profile?.first_name
+                              ? `${item.profile.first_name} ${item.profile.last_name || ''}`.trim()
+                              : 'Family Member'}
+                          </p>
+                        </div>
+                        <span className="text-base shrink-0">
+                          {activityModal.tab === 'likes' ? item.emoji || '❤️' : '🔁'}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* SUBTLE TOP-RIGHT DARK / LIGHT MODE TOGGLE */}
         {isHubThemeable && (
@@ -2379,73 +2504,70 @@ export default function Hub() {
                                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all text-xs font-semibold"
                                     >
                                       <MessageSquare size={14} /> 
-                                      <span>{post.replies.length > 0 ? post.replies.length : 'Reply'}</span>
+                                      <span>{post.replies.length}</span>
                                     </button>
 
                                     <button 
                                       onClick={() => handleRepost(post)} 
-                                      className="flex items-center p-1.5 rounded-full text-slate-400 hover:bg-slate-200/50 hover:text-slate-900 transition-all"
+                                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all text-xs font-semibold"
                                       title="Repost"
                                     >
                                       <Repeat size={14} />
+                                      <span>{post.reposts?.length || 0}</span>
                                     </button>
                                   </div>
                                 </div>
 
-                                {post.likes.length > 0 && (
-                                  <div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setExpandedReactionsPostId(expandedReactionsPostId === post.id ? null : post.id)}
-                                      className="flex items-center gap-2 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition-colors"
-                                    >
-                                      <div className="flex -space-x-1.5">
-                                        {post.likes.slice(0, 4).map((like: any) => (
-                                          <div
-                                            key={like.id || like.user_id}
-                                            className="w-4 h-4 rounded-full ring-2 ring-[#F5F5F7] bg-slate-200 overflow-hidden flex items-center justify-center text-[7px] font-bold text-slate-700"
-                                          >
-                                            {like.profile?.avatar_url ? (
-                                              <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
-                                            ) : (
-                                              like.profile?.first_name?.[0] || 'M'
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                      <span>
-                                        {post.likes.length === 1
-                                          ? `${post.likes[0].profile?.first_name || 'Someone'} reacted`
-                                          : post.likes.length === 2
-                                          ? `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes[1].profile?.first_name || '1 other'} reacted`
-                                          : `${post.likes[0].profile?.first_name || 'Someone'} & ${post.likes.length - 1} others reacted`}
-                                      </span>
-                                    </button>
-
-                                    {expandedReactionsPostId === post.id && (
-                                      <div className="mt-2 pl-2 border-l-2 border-slate-200 space-y-1.5 animate-in fade-in">
-                                        {post.likes.map((like: any) => (
-                                          <div
-                                            key={like.id || like.user_id}
-                                            onClick={() => openMemberProfile(like.user_id)}
-                                            className="flex items-center justify-between gap-2 cursor-pointer group max-w-xs"
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[9px] font-bold text-slate-700">
-                                                {like.profile?.avatar_url ? (
-                                                  <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
-                                                ) : (
-                                                  like.profile?.first_name?.[0] || 'M'
-                                                )}
-                                              </div>
-                                              <span className="text-xs font-semibold text-slate-700 group-hover:text-[#ff4d00] transition-colors">
-                                                {like.profile?.first_name ? `${like.profile.first_name} ${like.profile.last_name || ''}`.trim() : 'Family Member'}
-                                              </span>
+                                {/* Clickable Likes, Replies & Reposts Stats Bar */}
+                                {(post.likes.length > 0 || (post.reposts?.length || 0) > 0 || post.replies.length > 0) && (
+                                  <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-semibold text-slate-500">
+                                    {post.likes.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setActivityModal({ postId: post.id, tab: 'likes' })}
+                                        className="flex items-center gap-1.5 hover:text-slate-900 transition-colors"
+                                      >
+                                        <div className="flex -space-x-1.5">
+                                          {post.likes.slice(0, 3).map((like: any) => (
+                                            <div
+                                              key={like.id || like.user_id}
+                                              className="w-4 h-4 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden flex items-center justify-center text-[7px] font-bold text-slate-700"
+                                            >
+                                              {like.profile?.avatar_url ? (
+                                                <img src={like.profile.avatar_url} className="w-full h-full object-cover" />
+                                              ) : (
+                                                like.profile?.first_name?.[0] || 'M'
+                                              )}
                                             </div>
-                                            <span className="text-xs">{like.emoji || '❤️'}</span>
-                                          </div>
-                                        ))}
-                                      </div>
+                                          ))}
+                                        </div>
+                                        <span>
+                                          <strong className="text-slate-800">{post.likes.length}</strong>{' '}
+                                          {post.likes.length === 1 ? 'Like' : 'Likes'}
+                                        </span>
+                                      </button>
+                                    )}
+
+                                    {post.replies.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setReplyingToPostId(replyingToPostId === post.id ? null : post.id)}
+                                        className="hover:text-slate-900 transition-colors"
+                                      >
+                                        <strong className="text-slate-800">{post.replies.length}</strong>{' '}
+                                        {post.replies.length === 1 ? 'Reply' : 'Replies'}
+                                      </button>
+                                    )}
+
+                                    {(post.reposts?.length || 0) > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setActivityModal({ postId: post.id, tab: 'reposts' })}
+                                        className="hover:text-slate-900 transition-colors"
+                                      >
+                                        <strong className="text-slate-800">{post.reposts.length}</strong>{' '}
+                                        {post.reposts.length === 1 ? 'Repost' : 'Reposts'}
+                                      </button>
                                     )}
                                   </div>
                                 )}
@@ -2454,7 +2576,7 @@ export default function Hub() {
                               {/* Clean Threaded Replies */}
                               {(replyingToPostId === post.id || post.replies.length > 0) && (
                                 <div className="mt-3 pt-2 pl-3 border-l-2 border-slate-200/80 space-y-2.5">
-                                  {post.replies.map((reply:any) => (
+                                  {post.replies.map((reply: any) => (
                                     <div key={reply.id} className="flex gap-2.5 items-start">
                                       <div 
                                         className="w-6 h-6 rounded-full bg-slate-200/80 shrink-0 overflow-hidden mt-0.5 cursor-pointer" 
