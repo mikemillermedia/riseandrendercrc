@@ -741,18 +741,34 @@ export default function Hub() {
     if (!userId || !supabase) return;
     try {
       const existingReaction = post.likes.find((l: any) => l.user_id === userId);
+      let res;
       if (existingReaction) {
         if ((existingReaction.emoji || '❤️') === emoji) {
-          await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', userId);
+          res = await supabase
+            .from('post_likes')
+            .delete()
+            .eq('post_id', post.id)
+            .eq('user_id', userId);
         } else {
-          await supabase.from('post_likes').update({ emoji }).eq('post_id', post.id).eq('user_id', userId);
+          res = await supabase
+            .from('post_likes')
+            .update({ emoji })
+            .eq('post_id', post.id)
+            .eq('user_id', userId);
         }
       } else {
-        await supabase.from('post_likes').insert([{ post_id: post.id, user_id: userId, emoji }]);
+        res = await supabase
+          .from('post_likes')
+          .insert([{ post_id: post.id, user_id: userId, emoji }]);
+      }
+
+      if (res?.error) {
+        alert('Could not save reaction: ' + res.error.message);
+        return;
       }
       await fetchCommunityData();
     } catch (err: any) {
-      console.error("Error toggling reaction:", err);
+      alert('Error toggling reaction: ' + err.message);
     }
   };
 
