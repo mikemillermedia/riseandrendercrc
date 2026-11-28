@@ -16,6 +16,7 @@ import DrawGuessGame from './DrawGuessGame';
 import TriviaGame from './TriviaGame';
 import DominoesGame from './DominoesGame';
 import SpadesGame from './SpadesGame';
+import BlackCardRevoked from './BlackCardRevoked';
 
 interface GamesHubProps {
   supabase: any;
@@ -34,7 +35,8 @@ type GameKey =
   | 'trivia'
   | 'wordle'
   | 'dominoes'
-  | 'spades';
+  | 'spades'
+  | 'black_card';
 
 const GAME_LABELS: Record<string, string> = {
   all: 'All Games',
@@ -47,6 +49,7 @@ const GAME_LABELS: Record<string, string> = {
   wordle: 'Wordle',
   dominoes: 'Dominoes',
   spades: 'Spades',
+  black_card: 'Black Card Revoked',
 };
 
 const ARCADE_CATALOG: {
@@ -58,6 +61,7 @@ const ARCADE_CATALOG: {
   dark?: boolean;
 }[] = [
   { key: 'chess', title: '3D Chess', emoji: '👑', tag: 'Live 3D', desc: 'Grand Hall 3D chess vs. AI, family, or SMS invite.', dark: true },
+  { key: 'black_card', title: 'Black Card Revoked', emoji: '🃏', tag: 'Party', desc: 'Correct Answer & Majority Rules culture cards. Hit 0 and get REVOKED.', dark: true },
   { key: 'connect4', title: '3D Connect 4', emoji: '🔴', tag: 'Live 3D', desc: 'Drop discs in 3D to connect 4 in a row.' },
   { key: 'checkers', title: '3D Checkers', emoji: '⚫', tag: 'Live 3D', desc: 'Jump opponent pieces and crown your Kings.' },
   { key: 'dominoes', title: 'Dominoes', emoji: '🁣', tag: 'Live 1v1', desc: 'Classic Double-Six dominoes vs. AI or family.' },
@@ -218,6 +222,18 @@ export default function GamesHub({
     return bLive - aLive;
   });
 
+  // Black Card Revoked manages its own full-bleed layout & Back button
+  if (selectedGame === 'black_card') {
+    return (
+      <BlackCardRevoked
+        supabase={supabase}
+        userId={userId}
+        familyMembers={familyMembers}
+        onBack={() => setSelectedGame(null)}
+      />
+    );
+  }
+
   if (selectedGame) {
     return (
       <div className="animate-in fade-in duration-300 max-w-4xl mx-auto relative z-10 space-y-4">
@@ -277,7 +293,7 @@ export default function GamesHub({
           Family Games
         </h1>
         <p className="text-slate-500 text-xs font-medium mt-1">
-          9 live games — challenge a family avatar below or pick a game from the arcade.
+          10 live games — challenge a family avatar below or pick a game from the arcade.
         </p>
       </div>
 
@@ -395,7 +411,7 @@ export default function GamesHub({
         </div>
       </div>
 
-      {/* ALL 9 ARCADE GAMES GRID */}
+      {/* ALL 10 ARCADE GAMES GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {ARCADE_CATALOG.map((g) => {
           const wins = getMyWins(g.key);
